@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài HS By TVB</title>
+<title>Chấm Bài KT HS By TVB</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -22,6 +22,7 @@
   .btn { width: 100%; padding: 12px; background: #0f52ba; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; display: block; text-align: center; }
   .btn:active { opacity: 0.85; }
   .btn-file { background: #7c3aed; font-size: 13px; padding: 10px; }
+  .btn-clear-ans { background: #ef4444; font-size: 12px; padding: 8px; margin-top: 6px; }
   .btn-cam { background: #16a34a; }
   .btn-gallery { background: #0d9488; }
   .btn-pdf-stu { background: #e11d48; }
@@ -34,7 +35,6 @@
   .btn-clear { background: #64748b; margin-top: 6px; padding: 8px; font-size: 13px; }
   .btn-danger { background: #dc2626; padding: 8px; font-size: 13px; margin-top: 8px; }
 
-  /* Khu vực nút Lưu / Xóa bảo mật API Key */
   .api-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 6px; }
   .api-btn-row { display: flex; gap: 6px; margin-top: 6px; }
   .btn-api-save { flex: 1.2; background: #16a34a; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
@@ -90,7 +90,7 @@
     </div>
 
     <div id="configArea">
-      <!-- KHU VỰC QUẢN LÝ & BẢO MẬT API KEY ĐỘC LẬP -->
+      <!-- KHU VỰC QUẢN LÝ & BẢO MẬT API KEY -->
       <div class="api-box">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <label style="margin-top:0;">🔑 Gemini API Key cá nhân:</label>
@@ -116,9 +116,12 @@
         </select>
       </div>
 
+      <!-- KHU VỰC NẠP & XÓA FILE ĐÁP ÁN -->
       <label>Nạp tự động từ file Word (.docx) hoặc PDF hướng dẫn chấm:</label>
+      <div class="hint">* Khi tải file đáp án mới lên, ứng dụng sẽ <b>tự động xóa sạch</b> toàn bộ nội dung đáp án của file cũ trước khi điền đáp án mới.</div>
       <input type="file" id="ansFileInput" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleAnswerFile(event)">
-      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án (.docx / .pdf) để lọc tự động</button>
+      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án mới (.docx / .pdf) — Tự xóa file cũ</button>
+      <button type="button" class="btn btn-clear-ans" onclick="clearAnswerKeysManual()">🗑️ Xóa trắng toàn bộ Đáp án & Biểu điểm hiện tại</button>
       <div id="fileStatusBox" class="file-status"></div>
 
       <!-- QUẢN LÝ NHIỀU MÃ ĐỀ -->
@@ -193,6 +196,9 @@
   <!-- 2. CHỌN CÂU CẦN CHẤM, GOM ẢNH & NẠP PDF BÀI LÀM -->
   <div class="card">
     <h3>📷 2. Chọn câu cần chấm & Đưa bài làm HS lên</h3>
+    <div class="hint" style="color:#0f52ba; font-style:normal; font-weight:600; margin-bottom:6px;">
+      ✨ AI sẽ TỰ ĐỘNG ĐỌC chữ viết tay trên bài thi gồm: <b>Họ và tên, Lớp, Số báo danh (SBD), Mã phách (nếu có) và Mã đề</b> — Bạn không cần phải tự gõ tay!
+    </div>
     <div class="row">
       <div style="flex: 1.5;">
         <label>Chọn câu Tự luận cần chấm:</label>
@@ -224,7 +230,7 @@
       <div class="packet-title"><span>🗂️ Túi bài làm của HS đang chấm:</span><span id="pageCountLbl">0 tệp</span></div>
       <div class="img-grid" id="imgList"></div>
       <div id="saveMergedImgArea" style="display:none; margin-top:8px; border-top:1px solid #cbd5e1; padding-top:8px;">
-        <input type="text" id="mergedImgName" placeholder="Tên học sinh lưu ảnh (VD: Nguyễn Văn A - 8A4)">
+        <input type="text" id="mergedImgName" placeholder="Tên học sinh / Mã phách lưu ảnh (Tự động điền sau khi chấm)">
         <button type="button" class="btn btn-dl-img" onclick="downloadMergedStudentImage()">📥 Ghép các trang & Tải 1 file ảnh tên HS về máy</button>
       </div>
       <button type="button" class="btn btn-clear" id="clearBtn" onclick="clearImages()" style="display:none">🗑️ Xóa túi bài làm này</button>
@@ -236,7 +242,7 @@
   <div class="card" id="resCard" style="display:none">
     <h3>📊 3. Kiểm tra & Lưu điểm từng câu</h3>
     <div id="resBody"></div>
-    <button type="button" class="btn btn-dl-img" onclick="downloadMergedStudentImage()">🖼️ Tải file Ảnh ghép bài làm mang tên HS này</button>
+    <button type="button" class="btn btn-dl-img" onclick="downloadMergedStudentImage()">🖼️ Tải file Ảnh ghép bài làm mang tên HS / Mã phách này</button>
     <button type="button" class="btn btn-save" onclick="saveStudentRecord()">💾 Lưu điểm vào Danh sách lớp</button>
   </div>
 
@@ -244,8 +250,8 @@
   <div class="card">
     <h3>📁 4. Bảng điểm tổng hợp (<span id="countBadge">0</span> HS)</h3>
     <div class="roster-box">
-      <div class="sec-title" style="color:#166534;">📋 Danh sách Học sinh mẫu (Để so sánh & xếp đúng thứ tự sổ điểm):</div>
-      <div class="hint">* Tải file danh sách lớp (.xlsx, .xls, .csv hoặc .docx) để chuẩn hóa Họ tên và xếp đúng thứ tự mẫu. Nếu không tải, App xếp theo mặc định bên dưới.</div>
+      <div class="sec-title" style="color:#166534;">📋 Danh sách Học sinh mẫu (Để so sánh Họ tên / SBD / Mã phách & xếp đúng thứ tự):</div>
+      <div class="hint">* Tải file danh sách lớp (.xlsx, .xls, .csv hoặc .docx) để chuẩn hóa Họ tên, khớp SBD/Mã phách và xếp đúng thứ tự mẫu. Nếu không tải, App xếp theo mặc định bên dưới.</div>
       <input type="file" id="rosterFileInput" accept=".xlsx,.xls,.csv,.docx" style="display:none" onchange="handleRosterFile(event)">
       <button type="button" class="btn btn-roster" onclick="document.getElementById('rosterFileInput').click()">📋 Tải Danh sách Học sinh mẫu (.xlsx / .docx)</button>
       <div id="rosterInfoArea" style="display:none;">
@@ -265,6 +271,7 @@
       <option value="ROSTER" id="optRosterSort" disabled>📋 Theo thứ tự Danh sách mẫu (Chưa nạp)</option>
       <option value="NAME" selected>Theo Tên học sinh (A → Z)</option>
       <option value="SBD">Theo Số báo danh tăng dần</option>
+      <option value="PHACH">Theo Mã phách tăng dần</option>
       <option value="TIME">Theo thứ tự thời gian chấm</option>
     </select>
 
@@ -272,7 +279,7 @@
       <table id="gradeTable">
         <thead>
           <tr>
-            <th>STT</th><th>SBD</th><th>Mã đề</th><th>Họ và tên</th><th>Lớp</th><th>TN</th><th>TL từng câu</th><th>Tổng TL</th><th>Tổng cộng</th><th>Xóa</th>
+            <th>STT</th><th>SBD</th><th>Mã phách</th><th>Mã đề</th><th>Họ và tên</th><th>Lớp</th><th>TN</th><th>TL từng câu</th><th>Tổng TL</th><th>Tổng cộng</th><th>Xóa</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -302,17 +309,11 @@
   var currentMcqState = [], currentTfState = [], currentSaState = [], currentEssayState = [];
   var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
 
-  // QUẢN LÝ BẢO MẬT API KEY: LƯU THỦ CÔNG / XÓA NGAY / TỰ XÓA KHI THOÁT NẾU KHÔNG BẤM LƯU
+  // 1. QUẢN LÝ BẢO MẬT API KEY
   function toggleApiVisibility() {
-    var inp = document.getElementById('apiKey');
-    var btn = document.getElementById('btnEyeApi');
-    if (inp.type === 'password') {
-      inp.type = 'text';
-      btn.innerText = '🙈 Ẩn';
-    } else {
-      inp.type = 'password';
-      btn.innerText = '👁️ Hiện';
-    }
+    var inp = document.getElementById('apiKey'), btn = document.getElementById('btnEyeApi');
+    if (inp.type === 'password') { inp.type = 'text'; btn.innerText = '🙈 Ẩn'; }
+    else { inp.type = 'password'; btn.innerText = '👁️ Hiện'; }
   }
 
   function onApiInputChanged() {
@@ -333,26 +334,40 @@
 
   function saveApiKeyExplicit() {
     var key = document.getElementById('apiKey').value.trim();
-    if (!key) {
-      alert('Vui lòng dán Gemini API Key vào ô trước khi bấm Lưu!');
-      return;
-    }
+    if (!key) { alert('Vui lòng dán Gemini API Key vào ô trước khi bấm Lưu!'); return; }
     safeSet('g_api', key);
     onApiInputChanged();
-    alert('✅ Đã lưu API Key cố định trên thiết bị này!\n(Lưu ý: Không bấm Lưu trên máy tính dùng chung để tránh người khác dùng hết hạn mức của bạn).');
+    alert('✅ Đã lưu API Key cố định trên thiết bị này!');
   }
 
   function deleteApiKeyExplicit() {
     var inp = document.getElementById('apiKey');
-    if (!inp.value && !safeGet('g_api')) {
-      alert('Ô API Key hiện đã trống!');
-      return;
-    }
+    if (!inp.value && !safeGet('g_api')) { alert('Ô API Key hiện đã trống!'); return; }
     inp.value = '';
     safeRemove('g_api');
     try { window.sessionStorage.removeItem('g_api'); } catch (e) {}
     onApiInputChanged();
     alert('🗑️ Đã xóa sạch API Key khỏi ứng dụng và bộ nhớ trình duyệt!');
+  }
+
+  // 2. XÓA SẠCH ĐÁP ÁN CŨ KHI TẢI FILE MỚI HOẶC BẤM NÚT XÓA
+  function resetAllAnswerFields() {
+    document.getElementById('useMultiCodeChk').checked = false;
+    document.getElementById('multiCodeData').value = '';
+    document.getElementById('mcqKey').value = '';
+    document.getElementById('tfKey').value = '';
+    document.getElementById('saKey').value = '';
+    document.getElementById('essayRubric').value = '';
+    toggleMultiCodeUI();
+    saveConfig();
+  }
+
+  function clearAnswerKeysManual() {
+    if (!confirm('Xóa trắng toàn bộ Đáp án Trắc nghiệm, Mã đề và Hướng dẫn chấm Tự luận hiện tại để nhập đề mới?')) return;
+    resetAllAnswerFields();
+    var statusBox = document.getElementById('fileStatusBox');
+    statusBox.style.display = 'block';
+    statusBox.innerText = '🗑️ Đã xóa sạch toàn bộ Đáp án & Biểu điểm cũ!';
   }
 
   function toggleConfig() {
@@ -384,7 +399,6 @@
 
   function onSortOrderChange() { safeSet('g_sort', document.getElementById('sortOrder').value); renderTable(); }
 
-  // LƯU CẤU HÌNH ĐÁP ÁN (TUYỆT ĐỐI KHÔNG TỰ ĐỘNG LƯU API KEY Ở ĐÂY)
   function saveConfig() {
     safeSet('g_model', document.getElementById('aiModel').value);
     safeSet('g_ismulti', document.getElementById('useMultiCodeChk').checked ? '1' : '0');
@@ -401,9 +415,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', function() {
-    if (safeGet('g_api')) {
-      document.getElementById('apiKey').value = safeGet('g_api');
-    }
+    if (safeGet('g_api')) document.getElementById('apiKey').value = safeGet('g_api');
     onApiInputChanged();
 
     if (safeGet('g_model')) document.getElementById('aiModel').value = safeGet('g_model');
@@ -471,25 +483,41 @@
     return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  function matchStudentInMasterRoster(name, sbd) {
+  // ĐỐI CHIẾU HỌC SINH TRONG DANH SÁCH MẪU THEO: MÃ PHÁCH -> SBD -> HỌ TÊN
+  function matchStudentInMasterRoster(name, sbd, blindCode) {
     if (!masterRoster || masterRoster.length === 0) return null;
+    var cleanPhach = String(blindCode || '').trim().toLowerCase();
     var cleanSbd = String(sbd || '').trim().toLowerCase();
     var cleanName = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
     var noTone = removeVietnameseTones(name);
 
+    // 1. Khớp theo Mã phách (nếu có)
+    if (cleanPhach !== '') {
+      for (var p = 0; p < masterRoster.length; p++) {
+        var rPhach = String(masterRoster[p].blindCode || '').trim().toLowerCase();
+        if (rPhach !== '' && rPhach === cleanPhach) return masterRoster[p];
+      }
+    }
+
+    // 2. Khớp theo Số báo danh (nếu có)
     if (cleanSbd !== '') {
       for (var i = 0; i < masterRoster.length; i++) {
         var rSbd = String(masterRoster[i].sbd || '').trim().toLowerCase();
         if (rSbd !== '' && (rSbd === cleanSbd || parseInt(rSbd, 10) === parseInt(cleanSbd, 10))) return masterRoster[i];
       }
     }
-    if (!cleanName || cleanName === 'chưa rõ tên') return null;
+
+    if (!cleanName || cleanName === 'chưa rõ tên' || cleanName.indexOf('phách:') === 0) return null;
+
+    // 3. Khớp chính xác Họ tên có dấu
     for (var j = 0; j < masterRoster.length; j++) {
       if (masterRoster[j].fullName.trim().toLowerCase().replace(/\s+/g, ' ') === cleanName) return masterRoster[j];
     }
+    // 4. Khớp Họ tên không dấu
     for (var k = 0; k < masterRoster.length; k++) {
       if (removeVietnameseTones(masterRoster[k].fullName) === noTone) return masterRoster[k];
     }
+    // 5. Khớp Họ + Tên chính (nếu viết tắt tên đệm)
     var partsA = noTone.split(' ');
     if (partsA.length >= 2) {
       var firstA = partsA[partsA.length - 1], lastA = partsA[0];
@@ -502,14 +530,20 @@
     return null;
   }
 
-  function findExistingStudent(name, sbd) {
-    var cleanName = String(name || '').trim().toLowerCase();
+  // TÌM HỌC SINH ĐÃ CHẤM ĐỂ GHÉP CÂU (CÓ BẢO VỆ CHỐNG GỘP NHẦM BÀI CẮT PHÁCH KHÔNG TÊN)
+  function findExistingStudent(name, sbd, blindCode) {
+    var cleanPhach = String(blindCode || '').trim().toLowerCase();
     var cleanSbd = String(sbd || '').trim().toLowerCase();
+    var cleanName = String(name || '').trim().toLowerCase();
     var noTone = removeVietnameseTones(name);
+
     return classRecords.findIndex(function(r) {
+      if (cleanPhach !== '' && String(r.blindCode || '').trim().toLowerCase() === cleanPhach) return true;
       if (cleanSbd !== '' && String(r.sbd || '').trim().toLowerCase() === cleanSbd) return true;
-      if (cleanName !== '' && cleanName !== 'chưa rõ tên' && String(r.fullName || '').trim().toLowerCase() === cleanName) return true;
-      if (noTone !== '' && noTone !== 'chua ro ten' && removeVietnameseTones(r.fullName) === noTone) return true;
+      if (cleanName !== '' && cleanName !== 'chưa rõ tên' && cleanName.indexOf('phách:') !== 0) {
+        if (String(r.fullName || '').trim().toLowerCase() === cleanName) return true;
+        if (noTone !== '' && removeVietnameseTones(r.fullName) === noTone) return true;
+      }
       return false;
     });
   }
@@ -522,7 +556,7 @@
         var data = await file.arrayBuffer();
         var wb = XLSX.read(data, { type: 'array' });
         var rawRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
-        var hIdx = -1, cName = -1, cLast = -1, cFirst = -1, cSbd = -1, cCls = -1;
+        var hIdx = -1, cName = -1, cLast = -1, cFirst = -1, cSbd = -1, cPhach = -1, cCls = -1;
 
         for (var r = 0; r < Math.min(rawRows.length, 20); r++) {
           var cells = (rawRows[r] || []).map(function(c) { return String(c || '').trim().toLowerCase(); });
@@ -532,6 +566,7 @@
             else if (v === 'họ và tên đệm' || v === 'họ đệm' || v === 'họ') { hIdx = r; cLast = c; }
             else if (v === 'tên') { cFirst = c; }
             else if (v === 'sbd' || v === 'số báo danh' || v === 'mã hs' || v === 'mã học sinh') { cSbd = c; }
+            else if (v === 'mã phách' || v === 'số phách' || v === 'phách') { cPhach = c; }
             else if (v === 'lớp' || v === 'tên lớp') { cCls = c; }
           }
           if (hIdx !== -1) break;
@@ -553,6 +588,7 @@
             extracted.push({
               order: extracted.length + 1,
               sbd: cSbd !== -1 ? String(row[cSbd] || '').trim() : '',
+              blindCode: cPhach !== -1 ? String(row[cPhach] || '').trim() : '',
               fullName: full,
               className: cCls !== -1 ? String(row[cCls] || '').trim() : ''
             });
@@ -563,7 +599,7 @@
             for (var c = 0; c < row.length; c++) {
               var val = String(row[c] || '').trim();
               if (val.split(/\s+/).length >= 2 && isNaN(val) && val.length > 4 && val.toLowerCase() !== 'họ và tên') {
-                extracted.push({ order: extracted.length + 1, sbd: '', fullName: val, className: '' });
+                extracted.push({ order: extracted.length + 1, sbd: '', blindCode: '', fullName: val, className: '' });
                 break;
               }
             }
@@ -574,7 +610,7 @@
         res.value.split(/\r?\n/).forEach(function(line) {
           var clean = line.trim().replace(/^\d+[\.\)\-\s]+/, '').trim();
           if (clean.split(/\s+/).length >= 2 && clean.length > 4 && clean.length < 40) {
-            extracted.push({ order: extracted.length + 1, sbd: '', fullName: clean, className: '' });
+            extracted.push({ order: extracted.length + 1, sbd: '', blindCode: '', fullName: clean, className: '' });
           }
         });
       }
@@ -583,8 +619,14 @@
       masterRoster = extracted;
       safeSet('g_roster', JSON.stringify(masterRoster));
       classRecords.forEach(function(rec) {
-        var m = matchStudentInMasterRoster(rec.fullName, rec.sbd);
-        if (m) { rec.fullName = m.fullName; if (!rec.sbd && m.sbd) rec.sbd = m.sbd; if (!rec.className && m.className) rec.className = m.className; rec.rosterOrder = m.order; }
+        var m = matchStudentInMasterRoster(rec.fullName, rec.sbd, rec.blindCode);
+        if (m) {
+          rec.fullName = m.fullName;
+          if (!rec.sbd && m.sbd) rec.sbd = m.sbd;
+          if (!rec.blindCode && m.blindCode) rec.blindCode = m.blindCode;
+          if (!rec.className && m.className) rec.className = m.className;
+          rec.rosterOrder = m.order;
+        }
       });
       safeSet('g_records', JSON.stringify(classRecords));
       updateRosterUI();
@@ -623,11 +665,12 @@
     });
   }
 
+  // NẠP FILE ĐÁP ÁN MỚI -> TỰ ĐỘNG XÓA SẠCH NỘI DUNG FILE ĐÁP ÁN CŨ TRƯỚC KHI ĐIỀN
   async function handleAnswerFile(event) {
     var file = event.target.files[0]; if (!file) return;
     var statusBox = document.getElementById('fileStatusBox');
     statusBox.style.display = 'block';
-    statusBox.innerText = '⏳ Đang đọc file "' + file.name + '"...';
+    statusBox.innerText = '⏳ Đang xóa đáp án cũ & đọc file mới "' + file.name + '"...';
     var apiKey = document.getElementById('apiKey').value.trim();
     var selectedModel = document.getElementById('aiModel').value || 'gemini-3.5-flash-lite';
     var fName = file.name.toLowerCase();
@@ -636,12 +679,14 @@
       if (fName.endsWith('.docx')) {
         var res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
         var rawText = res.value.trim();
+        // Xóa sạch toàn bộ đáp án cũ trước khi nạp file mới
+        resetAllAnswerFields();
         if (!apiKey) {
           document.getElementById('essayRubric').value = rawText;
           saveConfig();
-          statusBox.innerText = '✅ Đã nạp văn bản từ file Word!';
+          statusBox.innerText = '✅ Đã xóa file cũ và nạp văn bản từ file Word mới!';
         } else {
-          statusBox.innerText = '🤖 Đang dùng AI lọc tự động 4 phần từ file Word...';
+          statusBox.innerText = '🤖 Đang dùng AI lọc tự động 4 phần từ file Word mới...';
           await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + rawText }], file.name);
         }
       } else if (fName.endsWith('.pdf')) {
@@ -651,7 +696,9 @@
           event.target.value = '';
           return;
         }
-        statusBox.innerText = '🤖 Đang gửi file PDF lên AI để lọc Đáp án & Biểu điểm...';
+        // Xóa sạch toàn bộ đáp án cũ trước khi nạp file PDF mới
+        resetAllAnswerFields();
+        statusBox.innerText = '🤖 Đang gửi file PDF mới lên AI để lọc Đáp án & Biểu điểm...';
         var b64Pdf = await fileToBase64(file);
         await extractRubricWithAI(apiKey, selectedModel, [{ inline_data: { mime_type: "application/pdf", data: b64Pdf } }], file.name);
       }
@@ -666,10 +713,10 @@
     var statusBox = document.getElementById('fileStatusBox');
     var prompt = `Bạn là trợ lý giáo viên. Hãy đọc tài liệu Đáp án/Hướng dẫn chấm đính kèm và trích xuất thành JSON:
 1. "multi_codes": Nếu tài liệu có NHIỀU MÃ ĐỀ trắc nghiệm ABCD (VD: Mã 101, 102...), xuất chuỗi mỗi mã đề 1 dòng theo cú pháp "101 | 1A, 2B, 3C...". Nếu chỉ có 1 bộ đáp án chung thì để "".
-2. "mcq_key": Đáp án trắc nghiệm ABCD chung dạng "1A, 2B, 3C..." (nếu có).
-3. "tf_key": Đáp án Đúng/Sai dạng "1aĐ, 1bS, 1cĐ, 1dS..." (nếu có).
-4. "sa_key": Đáp án Trả lời ngắn dạng "1: 12.5 | 2: 4..." (nếu có).
-5. "essay_rubric": Toàn bộ hướng dẫn chấm và biểu điểm chi tiết từng câu Tự luận (Câu 1, Câu 2...).
+2. "mcq_key": Đáp án trắc nghiệm ABCD chung dạng "1A, 2B, 3C..." (nếu không có để "").
+3. "tf_key": Đáp án Đúng/Sai dạng "1aĐ, 1bS, 1cĐ, 1dS..." (nếu không có để "").
+4. "sa_key": Đáp án Trả lời ngắn dạng "1: 12.5 | 2: 4..." (nếu không có để "").
+5. "essay_rubric": Toàn bộ hướng dẫn chấm và biểu điểm chi tiết từng câu Tự luận (nếu không có để "").
 
 Trả về đúng JSON:
 {"multi_codes": "", "mcq_key": "", "tf_key": "", "sa_key": "", "essay_rubric": ""}`;
@@ -677,18 +724,21 @@ Trả về đúng JSON:
     contentParts.unshift({ text: prompt });
     var parsed = await callGeminiAPI(apiKey, modelName, contentParts, 0.0);
 
+    // Ghi đè hoàn toàn từ file mới (phần nào file mới không có sẽ giữ trống '')
     if (parsed.multi_codes && parsed.multi_codes.trim() !== '') {
       document.getElementById('useMultiCodeChk').checked = true;
       toggleMultiCodeUI();
       document.getElementById('multiCodeData').value = parsed.multi_codes.trim();
-    } else if (parsed.mcq_key !== undefined && parsed.mcq_key.trim() !== '') {
-      document.getElementById('mcqKey').value = parsed.mcq_key.trim();
+    } else {
+      document.getElementById('useMultiCodeChk').checked = false;
+      toggleMultiCodeUI();
+      document.getElementById('mcqKey').value = (parsed.mcq_key || '').trim();
     }
-    if (parsed.tf_key !== undefined) document.getElementById('tfKey').value = parsed.tf_key.trim();
-    if (parsed.sa_key !== undefined) document.getElementById('saKey').value = parsed.sa_key.trim();
-    if (parsed.essay_rubric !== undefined) document.getElementById('essayRubric').value = parsed.essay_rubric.trim();
+    document.getElementById('tfKey').value = (parsed.tf_key || '').trim();
+    document.getElementById('saKey').value = (parsed.sa_key || '').trim();
+    document.getElementById('essayRubric').value = (parsed.essay_rubric || '').trim();
     saveConfig();
-    statusBox.innerText = '✅ Đã lọc tự động thành công từ: ' + fileName;
+    statusBox.innerText = '✅ Đã xóa đáp án cũ & nạp thành công đáp án mới từ: ' + fileName;
   }
 
   function addPages(event) {
@@ -748,8 +798,10 @@ Trả về đúng JSON:
     if (imgP.length === 0) { alert('Chỉ ghép được khi có ảnh chụp trong túi bài làm!'); return; }
     var stuNameInput = document.getElementById('curStuName') ? document.getElementById('curStuName').value.trim() : '';
     var stuClsInput = document.getElementById('curStuClass') ? document.getElementById('curStuClass').value.trim() : '';
+    var stuPhachInput = document.getElementById('curBlindCode') ? document.getElementById('curBlindCode').value.trim() : '';
     var customName = document.getElementById('mergedImgName').value.trim();
-    var title = customName || (stuNameInput ? (stuNameInput + (stuClsInput ? '_' + stuClsInput : '')) : 'Bai_Lam_HS');
+    var fallbackTitle = stuNameInput ? (stuNameInput + (stuClsInput ? '_' + stuClsInput : '')) : (stuPhachInput ? ('Phach_' + stuPhachInput) : 'Bai_Lam_HS');
+    var title = customName || fallbackTitle;
     var safeFile = title.replace(/[\\/:*?"<>|]/g, '_') + '.jpg';
 
     var canvas = document.createElement('canvas'), maxW = 1280, H = 60, GAP = 16, totH = H;
@@ -791,6 +843,7 @@ Trả về đúng JSON:
   function normalizeSaVal(v) { return String(v||'').trim().toLowerCase().replace(/,/g, '.').replace(/\s+/g, ''); }
   function normalizeQuestionLabel(l) { var m = String(l||'').match(/(\d+)/); return m ? ('Câu ' + m[1]) : (String(l||'Câu ?').trim()); }
 
+  // CHẤM BÀI & TỰ ĐỘNG NHẬN DIỆN: HỌ TÊN, LỚP, SBD, MÃ PHÁCH, MÃ ĐỀ
   async function runGrading() {
     saveConfig();
     var apiKey = document.getElementById('apiKey').value.trim();
@@ -801,7 +854,7 @@ Trả về đúng JSON:
     var targetQ = document.getElementById('targetQuestions').value.trim();
 
     if (!apiKey || pagesData.length === 0) { alert('Vui lòng dán Gemini API Key và đưa bài làm học sinh lên!'); return; }
-    var btn = document.getElementById('gradeBtn'); btn.innerText = '⏳ Đang chấm bằng ' + selectedModel + '...'; btn.disabled = true;
+    var btn = document.getElementById('gradeBtn'); btn.innerText = '⏳ Đang đọc thông tin HS & chấm bằng ' + selectedModel + '...'; btn.disabled = true;
 
     var mcqRule = (examMode === 'CIRCLE')
       ? 'CHỈ lấy chữ cái A, B, C, D có nét bút mực KHOANH TRÒN của học sinh. Tuyệt đối KHÔNG lấy chữ cái in sẵn của đề nếu không có nét khoanh (nếu câu nào học sinh không khoanh thì bỏ trống). Nếu gạch chéo (X) chữ cũ và khoanh chữ mới, lấy chữ mới.'
@@ -818,8 +871,14 @@ Trả về đúng JSON:
       ? (targetInstruction + ' ' + essayRule + ' Tuyệt đối KHÔNG đưa các câu Trắc nghiệm ABCD, Đúng/Sai, Trả lời ngắn vào mảng "essay_results".')
       : 'Bài này KHÔNG chấm Tự luận, bắt buộc trả về mảng "essay_results": [] rỗng.';
 
-    var prompt = `Bạn là giám khảo chấm thi môn KHTN chính xác. Đọc kỹ ${pagesData.length} tệp bài làm:
-0. Trích xuất Họ tên, Lớp, SBD, Mã đề thi ("exam_code"). Nếu các trang ghi 2 tên HS khác nhau, cảnh báo vào "page_mismatch_warning".
+    var prompt = `Bạn là giám khảo chấm thi môn KHTN chính xác. Hãy đọc kỹ ${pagesData.length} tệp bài làm của học sinh:
+0. TỰ ĐỘNG NHẬN DIỆN THÔNG TIN HÀNH CHÍNH TRÊN BÀI THI:
+   - "student_name": Họ và tên học sinh viết trên bài (nếu bài đã cắt phách không có tên thì để "").
+   - "student_class": Lớp (VD: "8A4", nếu không có để "").
+   - "student_id": Số báo danh / SBD (nếu không có để "").
+   - "blind_code": Mã phách / Số phách ghi trên bài thi (nếu có ô Số phách/Mã phách thì đọc chính xác, nếu không có để "").
+   - "exam_code": Mã đề thi (VD: "101", "357"... nếu không có để "").
+   - "page_mismatch_warning": Nếu phát hiện các trang ảnh có ghi 2 tên học sinh hoặc 2 mã phách khác nhau thì cảnh báo, nếu cùng 1 bài thì để "".
 1. Trắc nghiệm ABCD: ${mcqRule} Đưa vào "mcq_choices" dạng {"1": "A"}.
 2. Đúng/Sai: Chỉ đọc các ý học sinh có làm, đưa vào "tf_choices" dạng {"1a": "Đ", "1b": "S"}.
 3. Trả lời ngắn: Đưa vào "sa_choices" dạng {"1": "12.5"}.
@@ -829,7 +888,7 @@ HƯỚNG DẪN CHẤM TỰ LUẬN:
 ${rubric || 'Không có'}
 
 Trả về JSON:
-{"student_name": "", "student_class": "", "student_id": "", "exam_code": "", "page_mismatch_warning": "", "mcq_choices": {}, "tf_choices": {}, "sa_choices": {}, "essay_results": []}`;
+{"student_name": "", "student_class": "", "student_id": "", "blind_code": "", "exam_code": "", "page_mismatch_warning": "", "mcq_choices": {}, "tf_choices": {}, "sa_choices": {}, "essay_results": []}`;
 
     var parts = [{ text: prompt }];
     pagesData.forEach(function(p, i) {
@@ -872,7 +931,6 @@ Trả về JSON:
         currentSaState.push({ qNum: q, stuAns: v, rightAns: stdSa[q], isCorrect: (v !== '_' && normalizeSaVal(v) === normalizeSaVal(stdSa[q])) });
       });
 
-      // CHỐT CHẶN KHÓA ĐIỂM TỰ LUẬN KHI Ô RUBRIC TRỐNG
       if (!rubric || rubric === '') {
         currentEssayState = [];
       } else {
@@ -886,14 +944,28 @@ Trả về JSON:
         });
       }
 
-      var name = aiData.student_name || '', cls = aiData.student_class || '', sbd = aiData.student_id || '';
-      var rm = matchStudentInMasterRoster(name, sbd);
-      if (rm) { name = rm.fullName; if (!sbd && rm.sbd) sbd = rm.sbd; if (!cls && rm.className) cls = rm.className; }
-      if (name) document.getElementById('mergedImgName').value = name + (cls ? '_' + cls : '');
+      var name = (aiData.student_name || '').trim();
+      var cls = (aiData.student_class || '').trim();
+      var sbd = (aiData.student_id || '').trim();
+      var blindCode = (aiData.blind_code || '').trim();
+
+      var rm = matchStudentInMasterRoster(name, sbd, blindCode);
+      if (rm) {
+        name = rm.fullName;
+        if (!sbd && rm.sbd) sbd = rm.sbd;
+        if (!blindCode && rm.blindCode) blindCode = rm.blindCode;
+        if (!cls && rm.className) cls = rm.className;
+      }
+
+      if (name) {
+        document.getElementById('mergedImgName').value = name + (cls ? '_' + cls : '');
+      } else if (blindCode) {
+        document.getElementById('mergedImgName').value = 'Phach_' + blindCode;
+      }
 
       document.getElementById('configArea').style.display = 'none';
       document.getElementById('cfgToggleBtn').innerText = 'Mở rộng ▼';
-      renderResults(name, cls, sbd, currentDetectedExamCode);
+      renderResults(name, cls, sbd, blindCode, currentDetectedExamCode);
     } catch (e) {
       alert('Lỗi khi chấm: ' + e.message);
     } finally {
@@ -918,11 +990,12 @@ Trả về JSON:
       document.getElementById('curStuName').value = f.fullName;
       if (f.className) document.getElementById('curStuClass').value = f.className;
       if (f.sbd) document.getElementById('curStuId').value = f.sbd;
+      if (f.blindCode) document.getElementById('curBlindCode').value = f.blindCode;
       refreshCurrentView();
     }
   }
 
-  function renderResults(name, cls, sbd, eCode) {
+  function renderResults(name, cls, sbd, blindCode, eCode) {
     var pm = parseNum(document.getElementById('mcqPoint').value, 0.25);
     var ps = parseNum(document.getElementById('saPoint').value, 0.25);
     var mcqOk = currentMcqState.filter(function(x) { return x.isCorrect; }).length;
@@ -934,19 +1007,22 @@ Trả về JSON:
     var tot = +(mcqS + tfS + saS + esS).toFixed(2);
 
     var warnHtml = currentPageWarning ? '<div class="warn-banner">⚠️ CẢNH BÁO LẪN BÀI: ' + currentPageWarning + '</div>' : '';
-    var rm = matchStudentInMasterRoster(name, sbd);
+    var rm = matchStudentInMasterRoster(name, sbd, blindCode);
     var rosterOpts = '';
     if (masterRoster && masterRoster.length > 0) {
-      var badge = rm ? '<span class="badge-match">✓ Khớp STT ' + rm.order + ' trong DS mẫu</span>' : '<span class="badge-outside">⚠️ Chưa khớp tên trong DS mẫu</span>';
+      var badge = rm ? '<span class="badge-match">✓ Khớp STT ' + rm.order + ' trong DS mẫu</span>' : '<span class="badge-outside">⚠️ Chưa khớp trong DS mẫu</span>';
       rosterOpts = '<div style="margin-bottom:8px;"><div style="font-size:12px;margin-bottom:4px;">Đối chiếu DS mẫu: ' + badge + '</div>' +
         '<select id="rosterPickerSel" onchange="applyRosterStudentSelection(this.value)" style="background:#fff; font-size:13px; padding:7px;">' +
         '<option value="">-- Chạm để chọn nhanh HS từ Danh sách mẫu --</option>' +
-        masterRoster.map(function(m) { return '<option value="' + m.order + '" ' + (rm && rm.order === m.order ? 'selected' : '') + '>STT ' + m.order + ': ' + m.fullName + '</option>'; }).join('') +
+        masterRoster.map(function(m) {
+          var extraInfo = (m.sbd ? ' - SBD:' + m.sbd : '') + (m.blindCode ? ' - Phách:' + m.blindCode : '');
+          return '<option value="' + m.order + '" ' + (rm && rm.order === m.order ? 'selected' : '') + '>STT ' + m.order + ': ' + m.fullName + extraInfo + '</option>';
+        }).join('') +
         '</select></div>';
     }
 
-    var existIdx = findExistingStudent(name, sbd);
-    var mergeHtml = existIdx !== -1 ? '<div class="merge-notice">🔗 Học sinh này đã có trong danh sách. Bấm Lưu sẽ tự động ghép/cập nhật điểm câu mới!</div>' : '';
+    var existIdx = findExistingStudent(name, sbd, blindCode);
+    var mergeHtml = existIdx !== -1 ? '<div class="merge-notice">🔗 Bài của HS / Mã phách này đã có trong danh sách. Bấm Lưu sẽ tự động ghép/cập nhật điểm câu mới!</div>' : '';
 
     var mcqHtml = currentMcqState.length > 0 ? '<div><b>I. Trắc nghiệm ABCD (' + mcqS + 'đ - Đúng ' + mcqOk + '/' + currentMcqState.length + ' câu):</b></div><div class="hint">* Chạm vào từng ô câu bên dưới nếu muốn bật/tắt Đúng/Sai.</div><div class="mcq-grid">' +
       currentMcqState.map(function(x, i) { return '<div class="mcq-item ' + (x.isCorrect ? 'mcq-ok' : 'mcq-err') + '" onclick="toggleMcq(' + i + ')">Câu ' + x.qNum + ': ' + x.stuAns + ' ' + (x.isCorrect ? '✓' : '(' + x.rightAns + ')') + '</div>'; }).join('') + '</div>' : '';
@@ -969,10 +1045,13 @@ Trả về JSON:
     document.getElementById('resBody').innerHTML = warnHtml +
       '<div class="total-banner">' + rosterOpts +
       '<div class="row">' +
-        '<div style="flex:2;"><label style="margin-top:0">Họ tên:</label><input type="text" id="curStuName" value="' + (name || '') + '"></div>' +
-        '<div style="flex:0.8;"><label style="margin-top:0">Lớp:</label><input type="text" id="curStuClass" value="' + (cls || '') + '"></div>' +
-        '<div style="flex:0.8;"><label style="margin-top:0">SBD:</label><input type="text" id="curStuId" value="' + (sbd || '') + '"></div>' +
-        '<div style="flex:0.9;"><label style="margin-top:0">Mã đề:</label><input type="text" id="curExamCode" value="' + (eCode || '') + '" onchange="onChangeDetectedExamCode(this.value)"></div>' +
+        '<div style="flex:2.2;"><label style="margin-top:0">Họ và tên HS (AI tự đọc):</label><input type="text" id="curStuName" placeholder="Trống nếu cắt phách" value="' + (name || '') + '"></div>' +
+        '<div style="flex:0.9;"><label style="margin-top:0">Lớp:</label><input type="text" id="curStuClass" value="' + (cls || '') + '"></div>' +
+      '</div>' +
+      '<div class="row" style="margin-top:4px;">' +
+        '<div><label style="margin-top:2px">Số báo danh (SBD):</label><input type="text" id="curStuId" value="' + (sbd || '') + '"></div>' +
+        '<div><label style="margin-top:2px">Mã phách (Nếu có):</label><input type="text" id="curBlindCode" value="' + (blindCode || '') + '"></div>' +
+        '<div><label style="margin-top:2px">Mã đề:</label><input type="text" id="curExamCode" value="' + (eCode || '') + '" onchange="onChangeDetectedExamCode(this.value)"></div>' +
       '</div>' +
       '<div class="total-score" id="liveTotalScore">' + tot + ' điểm</div>' +
       '<div style="font-size:12px; color:#475569; text-align:center;">(ABCD: <b id="liveMcqScore">' + mcqS + '</b>đ | Đ/S: <b id="liveTfScore">' + tfS + '</b>đ | TLN: <b id="liveSaScore">' + saS + '</b>đ | TL: <b id="liveEssayScore">' + esS + '</b>đ)</div>' +
@@ -1006,6 +1085,7 @@ Trả về JSON:
       document.getElementById('curStuName').value,
       document.getElementById('curStuClass').value,
       document.getElementById('curStuId').value,
+      document.getElementById('curBlindCode').value,
       document.getElementById('curExamCode').value
     );
   }
@@ -1021,20 +1101,27 @@ Trả về JSON:
     var classInput = document.getElementById('curStuClass');
     var codeInput = document.getElementById('curExamCode');
     var idInput = document.getElementById('curStuId');
+    var phachInput = document.getElementById('curBlindCode');
 
-    var name = nameInput ? nameInput.value.trim() : 'Chưa rõ tên';
+    var name = nameInput ? nameInput.value.trim() : '';
     var cls = classInput ? classInput.value.trim() : '';
     var sbd = idInput ? idInput.value.trim() : '';
+    var blindCode = phachInput ? phachInput.value.trim() : '';
     var eCode = codeInput ? codeInput.value.trim().toUpperCase() : '';
-    if (!name) name = 'Chưa rõ tên';
 
-    var rm = matchStudentInMasterRoster(name, sbd);
+    var rm = matchStudentInMasterRoster(name, sbd, blindCode);
     var rosterOrder = null;
     if (rm) {
       name = rm.fullName;
       if (!sbd && rm.sbd) sbd = rm.sbd;
+      if (!blindCode && rm.blindCode) blindCode = rm.blindCode;
       if (!cls && rm.className) cls = rm.className;
       rosterOrder = rm.order;
+    }
+
+    // Nếu bài thi cắt phách chưa có tên học sinh thì hiển thị theo Mã phách để không bị trùng
+    if (!name) {
+      name = blindCode ? ('Phách: ' + blindCode) : (sbd ? ('SBD: ' + sbd) : ('Chưa rõ tên #' + (classRecords.length + 1)));
     }
 
     var mcqScore = parseNum(document.getElementById('liveMcqScore') ? document.getElementById('liveMcqScore').innerText : 0, 0);
@@ -1050,14 +1137,15 @@ Trả về JSON:
       });
     }
 
-    var existIdx = findExistingStudent(name, sbd);
+    var existIdx = findExistingStudent(name, sbd, blindCode);
     if (existIdx !== -1) {
       var ex = classRecords[existIdx];
-      if (confirm('Học sinh "' + ex.fullName + '" đã có trong danh sách.\n• Bấm OK để GHÉP / CẬP NHẬT điểm vào học sinh này.\n• Bấm Cancel để tạo dòng mới.')) {
+      if (confirm('Bài của "' + ex.fullName + '" đã có trong danh sách.\n• Bấm OK để GHÉP / CẬP NHẬT điểm vào học sinh này.\n• Bấm Cancel để tạo dòng mới.')) {
         if (mcqScore > 0) ex.mcqScore = mcqScore;
         if (tfScore > 0) ex.tfScore = tfScore;
         if (saScore > 0) ex.saScore = saScore;
         if (eCode) ex.examCode = eCode;
+        if (blindCode) ex.blindCode = blindCode;
         if (rosterOrder !== null) ex.rosterOrder = rosterOrder;
         if (!ex.essayMap) ex.essayMap = {};
         if (!ex.notesMap) ex.notesMap = {};
@@ -1079,6 +1167,7 @@ Trả về JSON:
       timestamp: Date.now(),
       rosterOrder: rosterOrder,
       sbd: sbd,
+      blindCode: blindCode,
       examCode: eCode,
       fullName: name,
       className: cls,
@@ -1129,9 +1218,10 @@ Trả về JSON:
       rows.forEach(function(row) {
         var rName = String(row['Họ và tên'] || row['Họ tên'] || '').trim();
         var rSbd = String(row['Số báo danh'] || row['SBD'] || '').trim();
+        var rPhach = String(row['Mã phách'] || row['Số phách'] || '').trim();
         var rCls = String(row['Lớp'] || '').trim();
         var rCode = String(row['Mã đề'] || '').trim();
-        if (!rName && !rSbd) return;
+        if (!rName && !rSbd && !rPhach) return;
         if (row['Tổng điểm'] === '' && row['Điểm TN ABCD'] === '') return;
 
         var rMcq = parseNum(row['Điểm TN ABCD'] || row['Tổng TN'], 0);
@@ -1143,16 +1233,22 @@ Trả về JSON:
           if (m && row[col] !== '' && row[col] !== undefined) rowEssayMap[normalizeQuestionLabel(m[1])] = parseNum(row[col], 0);
         });
 
-        var rm = matchStudentInMasterRoster(rName, rSbd);
-        if (rm) { rName = rm.fullName; if (!rSbd && rm.sbd) rSbd = rm.sbd; if (!rCls && rm.className) rCls = rm.className; }
+        var rm = matchStudentInMasterRoster(rName, rSbd, rPhach);
+        if (rm) {
+          rName = rm.fullName;
+          if (!rSbd && rm.sbd) rSbd = rm.sbd;
+          if (!rPhach && rm.blindCode) rPhach = rm.blindCode;
+          if (!rCls && rm.className) rCls = rm.className;
+        }
 
-        var existIdx = findExistingStudent(rName, rSbd);
+        var existIdx = findExistingStudent(rName, rSbd, rPhach);
         if (existIdx !== -1) {
           var ex = classRecords[existIdx];
           if (rMcq > 0) ex.mcqScore = rMcq;
           if (rTf > 0) ex.tfScore = rTf;
           if (rSa > 0) ex.saScore = rSa;
           if (rCode) ex.examCode = rCode;
+          if (rPhach) ex.blindCode = rPhach;
           if (!ex.essayMap) ex.essayMap = {};
           Object.keys(rowEssayMap).forEach(function(k) { ex.essayMap[k] = rowEssayMap[k]; });
           recalculateStudentTotals(ex);
@@ -1160,7 +1256,7 @@ Trả về JSON:
         } else {
           var nr = {
             timestamp: Date.now() + Math.random(), rosterOrder: rm ? rm.order : null,
-            sbd: rSbd, examCode: rCode, fullName: rName, className: rCls,
+            sbd: rSbd, blindCode: rPhach, examCode: rCode, fullName: rName || ('Phách: ' + rPhach), className: rCls,
             mcqScore: rMcq, tfScore: rTf, saScore: rSa, essayMap: rowEssayMap, notesMap: {}, essayScore: 0, totalScore: 0, notes: ''
           };
           recalculateStudentTotals(nr);
@@ -1189,7 +1285,7 @@ Trả về JSON:
         var f = classRecords.find(function(r) {
           if (usedTs[r.timestamp]) return false;
           if (r.rosterOrder === m.order) return true;
-          var matched = matchStudentInMasterRoster(r.fullName, r.sbd);
+          var matched = matchStudentInMasterRoster(r.fullName, r.sbd, r.blindCode);
           return matched && matched.order === m.order;
         });
         if (f) {
@@ -1199,7 +1295,7 @@ Trả về JSON:
           res.push(c);
         } else if (showUngraded) {
           res.push({
-            timestamp: null, displayOrder: m.order, sbd: m.sbd || '', examCode: '',
+            timestamp: null, displayOrder: m.order, sbd: m.sbd || '', blindCode: m.blindCode || '', examCode: '',
             fullName: m.fullName, className: m.className || '', essayMap: {}, totalScore: '', isUngradedPlaceholder: true
           });
         }
@@ -1220,6 +1316,8 @@ Trả về JSON:
       });
     } else if (mode === 'SBD') {
       copy.sort(function(a, b) { return (parseInt(a.sbd) || 9999) - (parseInt(b.sbd) || 9999); });
+    } else if (mode === 'PHACH') {
+      copy.sort(function(a, b) { return String(a.blindCode || 'ZZZZ').localeCompare(String(b.blindCode || 'ZZZZ'), 'vi', { numeric: true }); });
     }
     return copy;
   }
@@ -1228,13 +1326,13 @@ Trả về JSON:
     document.getElementById('countBadge').innerText = classRecords.length;
     var sorted = getSortedRecords(), tbody = document.getElementById('tableBody');
     if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#64748b;">Chưa có bài chấm.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:#64748b;">Chưa có bài chấm.</td></tr>';
       return;
     }
     tbody.innerHTML = sorted.map(function(r, idx) {
       var stt = r.displayOrder !== undefined ? r.displayOrder : (idx + 1);
       if (r.isUngradedPlaceholder) {
-        return '<tr class="row-ungraded"><td>' + stt + '</td><td>' + r.sbd + '</td><td>-</td><td>' + r.fullName + ' <small>(Chưa chấm)</small></td><td>' + r.className + '</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>';
+        return '<tr class="row-ungraded"><td>' + stt + '</td><td>' + (r.sbd || '') + '</td><td>' + (r.blindCode || '-') + '</td><td>-</td><td>' + r.fullName + ' <small>(Chưa chấm)</small></td><td>' + (r.className || '') + '</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>';
       }
       var tn = +(parseNum(r.mcqScore, 0) + parseNum(r.tfScore, 0) + parseNum(r.saScore, 0)).toFixed(2);
       var qKeys = Object.keys(r.essayMap || {}).sort(function(a, b) {
@@ -1246,6 +1344,7 @@ Trả về JSON:
       return '<tr class="' + (r.isOutsideRoster ? 'row-unmatched' : '') + '">' +
         '<td>' + stt + '</td>' +
         '<td>' + (r.sbd || '') + '</td>' +
+        '<td><b>' + (r.blindCode || '-') + '</b></td>' +
         '<td><b>' + (r.examCode || '-') + '</b></td>' +
         '<td><b>' + r.fullName + '</b>' + badge + '</td>' +
         '<td>' + (r.className || '') + '</td>' +
@@ -1278,6 +1377,7 @@ Trả về JSON:
       var obj = {
         "STT": r.displayOrder !== undefined ? r.displayOrder : (idx + 1),
         "Số báo danh": r.sbd || "",
+        "Mã phách": r.blindCode || "",
         "Mã đề": r.examCode || "",
         "Họ và tên": r.fullName,
         "Lớp": r.className || "",
@@ -1306,7 +1406,7 @@ Trả về JSON:
   function copyForExcel() {
     var sorted = getSortedRecords(); if (sorted.length === 0) { alert('Danh sách trống!'); return; }
     var qCols = getAllEssayCols();
-    var headers = ["STT", "Số báo danh", "Mã đề", "Họ và tên", "Lớp", "Điểm TN ABCD", "Điểm TN Đúng/Sai", "Điểm Trả lời ngắn"];
+    var headers = ["STT", "Số báo danh", "Mã phách", "Mã đề", "Họ và tên", "Lớp", "Điểm TN ABCD", "Điểm TN Đúng/Sai", "Điểm Trả lời ngắn"];
     qCols.forEach(function(k) { headers.push("TL " + k); });
     headers.push("Tổng điểm TL", "Tổng điểm", "Nhận xét");
 
@@ -1315,7 +1415,7 @@ Trả về JSON:
       var blank = r.isUngradedPlaceholder;
       var arr = [
         r.displayOrder !== undefined ? r.displayOrder : (idx + 1),
-        r.sbd || "", r.examCode || "", r.fullName, r.className || "",
+        r.sbd || "", r.blindCode || "", r.examCode || "", r.fullName, r.className || "",
         blank ? "" : (r.mcqScore || 0), blank ? "" : (r.tfScore || 0), blank ? "" : (r.saScore || 0)
       ];
       qCols.forEach(function(k) { arr.push((!blank && r.essayMap && r.essayMap[k] !== undefined) ? r.essayMap[k] : ""); });
