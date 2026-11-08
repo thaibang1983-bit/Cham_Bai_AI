@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT HS By TVB</title>
+<title>Chấm Bài KT HS By TVB CVA-HD-CM</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -37,12 +37,14 @@
 
   .api-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 6px; }
   .api-btn-row { display: flex; gap: 6px; margin-top: 6px; }
-  .btn-api-save { flex: 1.2; background: #16a34a; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
-  .btn-api-del { flex: 1.2; background: #dc2626; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-api-save { flex: 1.1; background: #16a34a; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-api-del { flex: 1.1; background: #dc2626; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-api-detect { flex: 1.4; background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
   .btn-api-eye { flex: 0.6; background: #64748b; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
   .api-status { font-size: 12px; margin-top: 6px; font-weight: 600; padding: 5px 8px; border-radius: 5px; }
   .api-temp { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
   .api-saved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .model-detect-note { font-size: 11px; color: #0f52ba; margin-top: 4px; font-weight: 600; }
 
   .file-status { font-size: 12px; color: #6d28d9; background: #f3e8ff; padding: 8px; border-radius: 6px; margin-top: 6px; display: none; }
   .roster-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
@@ -90,16 +92,17 @@
     </div>
 
     <div id="configArea">
-      <!-- KHU VỰC QUẢN LÝ & BẢO MẬT API KEY -->
+      <!-- KHU VỰC QUẢN LÝ BẢO MẬT API KEY & TỰ ĐỘNG DÒ MODEL THEO TÀI KHOẢN -->
       <div class="api-box">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <label style="margin-top:0;">🔑 Gemini API Key cá nhân:</label>
           <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:12px; color:#0f52ba; font-weight:bold; text-decoration:none;">👉 Lấy API Key miễn phí</a>
         </div>
-        <input type="password" id="apiKey" placeholder="Dán API Key của bạn vào đây..." oninput="onApiInputChanged()" autocomplete="off">
+        <input type="password" id="apiKey" placeholder="Dán API Key (Free hoặc Pro) vào đây..." oninput="onApiInputChanged()" autocomplete="off">
 
         <div class="api-btn-row">
           <button type="button" class="btn-api-eye" id="btnEyeApi" onclick="toggleApiVisibility()">👁️ Hiện</button>
+          <button type="button" class="btn-api-detect" onclick="detectAccountModels(false)">🔄 Tự dò Model theo API</button>
           <button type="button" class="btn-api-save" onclick="saveApiKeyExplicit()">💾 Lưu API</button>
           <button type="button" class="btn-api-del" onclick="deleteApiKeyExplicit()">🗑️ Xóa API</button>
         </div>
@@ -107,13 +110,19 @@
           🔒 Mặc định: Nếu không bấm "Lưu API", Key sẽ TỰ ĐỘNG XÓA SẠCH ngay khi đóng tab hoặc thoát App.
         </div>
 
-        <label style="margin-top:8px;">Phiên bản AI chấm bài:</label>
-        <select id="aiModel" onchange="saveConfig()">
-          <option value="gemini-3.5-flash-lite" selected>⚡ Gemini 3.5 Flash-Lite (Nhanh, Ổn định & Tiết kiệm hạn mức)</option>
-          <option value="gemini-3.8-flash">🔥 Gemini 3.8 Flash (Thông minh)</option>
-          <option value="gemini-3.1-pro">🧠 Gemini 3.1 Pro (Chuyên sâu - Tốn hạn mức hơn)</option>
-          <option value="gemini-4-argon">💎 Gemini 4 Argon (Đỉnh cao - Tốn hạn mức nhất)</option>
+        <label style="margin-top:8px;">Phiên bản AI chấm bài (Mặc định tương thích mọi tài khoản Free):</label>
+        <select id="aiModel" onchange="onModelSelectChange()">
+          <option value="AUTO_FREE" selected>🆓 Mặc định Free (Tự động chọn Model miễn phí ổn định nhất)</option>
+          <option value="gemini-3.8-flash">⚡ Gemini 3.8 Flash (Bản Free & Pro đều dùng tốt)</option>
+          <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash-Lite (Siêu nhanh & Tiết kiệm hạn mức)</option>
+          <option value="gemini-3.1-pro">🧠 Gemini 3.1 Pro (Chuyên sâu - Ưu tiên tài khoản Pro)</option>
+          <option value="gemini-4-argon">💎 Gemini 4 Argon (Đỉnh cao - Ưu tiên tài khoản Pro)</option>
+          <option value="CUSTOM">⚙️ Tự nhập tên Model tùy chỉnh...</option>
         </select>
+        <input type="text" id="customModelInput" placeholder="Nhập mã Model (VD: gemini-3.5-flash-lite)" style="display:none; margin-top:6px;" onchange="saveConfig()">
+        <div id="modelDetectNote" class="model-detect-note">
+          💡 Mẹo: Khi dán API Key, App sẽ tự động quét và nạp đúng các Model mà tài khoản của bạn được phép dùng!
+        </div>
       </div>
 
       <!-- KHU VỰC NẠP & XÓA FILE ĐÁP ÁN -->
@@ -308,8 +317,10 @@
   var examMode = 'CIRCLE', gradingStyle = 'FLEX', pagesData = [];
   var currentMcqState = [], currentTfState = [], currentSaState = [], currentEssayState = [];
   var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
+  var detectedAccountModels = []; // Danh sách model thực tế mà API Key của tài khoản hỗ trợ
+  var autoDetectTimer = null;
 
-  // 1. QUẢN LÝ BẢO MẬT API KEY
+  // 1. QUẢN LÝ BẢO MẬT API KEY & TỰ ĐỘNG DÒ MODEL THEO TÀI KHOẢN
   function toggleApiVisibility() {
     var inp = document.getElementById('apiKey'), btn = document.getElementById('btnEyeApi');
     if (inp.type === 'password') { inp.type = 'text'; btn.innerText = '🙈 Ẩn'; }
@@ -328,7 +339,87 @@
       banner.innerText = '📌 API Key này đang được lưu trên máy của bạn. Bấm "Xóa API" nếu muốn gỡ bỏ.';
     } else {
       banner.className = 'api-status api-temp';
-      banner.innerText = '🔒 Đang dùng tạm thời: Key này sẽ TỰ ĐỘNG XÓA SẠCH khi đóng tab/thoát App (Bấm "Lưu API" nếu muốn giữ lại trên máy này).';
+      banner.innerText = '🔒 Đang dùng tạm thời: Key này sẽ TỰ ĐỘNG XÓA SẠCH khi đóng tab/thoát App (Bấm "Lưu API" nếu muốn giữ lại).';
+    }
+
+    // Tự động dò danh sách Model của tài khoản sau khi người dùng dán Key (chờ 0.6s)
+    if (autoDetectTimer) clearTimeout(autoDetectTimer);
+    if (curKey.length >= 25) {
+      autoDetectTimer = setTimeout(function() {
+        detectAccountModels(true);
+      }, 600);
+    }
+  }
+
+  function onModelSelectChange() {
+    var sel = document.getElementById('aiModel').value;
+    var customInp = document.getElementById('customModelInput');
+    customInp.style.display = (sel === 'CUSTOM') ? 'block' : 'none';
+    saveConfig();
+  }
+
+  // HÀM QUÉT TRỰC TIẾP TÀI KHOẢN GOOGLE API XEM HỖ TRỢ NHỮNG MODEL NÀO
+  async function detectAccountModels(silent) {
+    var key = document.getElementById('apiKey').value.trim();
+    var noteBox = document.getElementById('modelDetectNote');
+    if (!key) {
+      if (!silent) alert('Vui lòng dán Gemini API Key vào ô trước khi bấm dò Model!');
+      return;
+    }
+
+    noteBox.innerText = '⏳ Đang kiểm tra tài khoản API của bạn hỗ trợ những mô hình nào...';
+    try {
+      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + key);
+      var data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+
+      var models = (data.models || []).filter(function(m) {
+        var methods = m.supportedGenerationMethods || [];
+        return methods.indexOf('generateContent') !== -1 && m.name && m.name.indexOf('models/gemini') === 0;
+      }).map(function(m) {
+        return {
+          id: m.name.replace('models/', ''),
+          title: m.displayName || m.name.replace('models/', '')
+        };
+      });
+
+      if (models.length === 0) throw new Error('Không tìm thấy model Gemini nào trên khóa API này.');
+
+      // Ưu tiên xếp các dòng Flash / Flash-Lite lên trước để dễ chọn
+      models.sort(function(a, b) {
+        var aScore = (a.id.indexOf('flash-lite') !== -1 ? 1 : (a.id.indexOf('flash') !== -1 ? 2 : 3));
+        var bScore = (b.id.indexOf('flash-lite') !== -1 ? 1 : (b.id.indexOf('flash') !== -1 ? 2 : 3));
+        if (aScore !== bScore) return aScore - bScore;
+        return b.id.localeCompare(a.id);
+      });
+
+      detectedAccountModels = models.map(function(m) { return m.id; });
+
+      var selectEl = document.getElementById('aiModel');
+      var prevVal = selectEl.value || 'AUTO_FREE';
+
+      var html = '<option value="AUTO_FREE">🆓 Mặc định Free (Tự động dùng Model miễn phí chuẩn nhất của tài khoản)</option>';
+      models.forEach(function(m) {
+        var isFlash = m.id.indexOf('flash') !== -1;
+        var icon = isFlash ? '⚡ [Free/Nhanh] ' : '🧠 [Chuyên sâu] ';
+        html += '<option value="' + m.id + '">' + icon + m.id + ' (' + m.title + ')</option>';
+      });
+      html += '<option value="CUSTOM">⚙️ Tự nhập tên Model tùy chỉnh...</option>';
+
+      selectEl.innerHTML = html;
+      // Giữ lại lựa chọn của người dùng nếu hợp lệ, nếu không thì để mặc định AUTO_FREE
+      var hasPrev = Array.from(selectEl.options).some(function(o) { return o.value === prevVal; });
+      selectEl.value = hasPrev ? prevVal : 'AUTO_FREE';
+      onModelSelectChange();
+
+      var flashCount = detectedAccountModels.filter(function(id) { return id.indexOf('flash') !== -1; }).length;
+      noteBox.innerText = '✅ Đã đồng bộ theo tài khoản của bạn: Phát hiện ' + models.length + ' mô hình khả dụng (có ' + flashCount + ' mô hình Flash/Lite miễn phí). Bạn có thể giữ "Mặc định Free" hoặc bấm vào menu trên để chọn riêng!';
+      if (!silent) {
+        alert('✅ Đã dò thành công ' + models.length + ' mô hình theo tài khoản API của bạn!\n\n• Mặc định ứng dụng đặt ở "🆓 Mặc định Free" để tương thích mọi tài khoản.\n• Bạn có thể bấm vào ô Phiên bản AI để chọn mô hình riêng (như 3.5 Flash-Lite, 3.8 Flash, Pro...) theo ý muốn.');
+      }
+    } catch (e) {
+      noteBox.innerText = '⚠️ Không thể tự dò danh sách Model (' + e.message + '). Ứng dụng sẽ dùng danh sách mặc định.';
+      if (!silent) alert('Lỗi khi kiểm tra API Key: ' + e.message);
     }
   }
 
@@ -401,6 +492,7 @@
 
   function saveConfig() {
     safeSet('g_model', document.getElementById('aiModel').value);
+    safeSet('g_custom_model', document.getElementById('customModelInput').value.trim());
     safeSet('g_ismulti', document.getElementById('useMultiCodeChk').checked ? '1' : '0');
     safeSet('g_multidata', document.getElementById('multiCodeData').value.trim());
     safeSet('g_mcq', document.getElementById('mcqKey').value.trim());
@@ -416,9 +508,24 @@
 
   window.addEventListener('DOMContentLoaded', function() {
     if (safeGet('g_api')) document.getElementById('apiKey').value = safeGet('g_api');
+    if (safeGet('g_custom_model')) document.getElementById('customModelInput').value = safeGet('g_custom_model');
+    if (safeGet('g_model')) {
+      var savedM = safeGet('g_model');
+      var selEl = document.getElementById('aiModel');
+      var exists = Array.from(selEl.options).some(function(o) { return o.value === savedM; });
+      if (!exists && savedM !== 'AUTO_FREE' && savedM !== 'CUSTOM') {
+        var opt = document.createElement('option');
+        opt.value = savedM;
+        opt.text = '⚡ ' + savedM;
+        selEl.add(opt, 1);
+      }
+      selEl.value = savedM;
+    } else {
+      document.getElementById('aiModel').value = 'AUTO_FREE';
+    }
+    onModelSelectChange();
     onApiInputChanged();
 
-    if (safeGet('g_model')) document.getElementById('aiModel').value = safeGet('g_model');
     if (safeGet('g_ismulti') === '1') { document.getElementById('useMultiCodeChk').checked = true; toggleMultiCodeUI(); }
     if (safeGet('g_multidata')) document.getElementById('multiCodeData').value = safeGet('g_multidata');
     if (safeGet('g_mcq') !== null) document.getElementById('mcqKey').value = safeGet('g_mcq');
@@ -442,12 +549,42 @@
     renderTable();
   });
 
-  async function callGeminiAPI(apiKey, modelName, parts, temp) {
-    var modelsToTry = [modelName];
-    if (modelName !== 'gemini-3.5-flash-lite') modelsToTry.push('gemini-3.5-flash-lite');
-    if (modelName !== 'gemini-3.8-flash') modelsToTry.push('gemini-3.8-flash');
+  // LẤY DANH SÁCH MODEL ƯU TIÊN DỰA TRÊN CHẾ ĐỘ FREE HOẶC TÙY CHỈNH CỦA TÀI KHOẢN
+  function resolveCandidateModels(selectedValue) {
+    var list = [];
+    if (selectedValue === 'CUSTOM') {
+      var cVal = document.getElementById('customModelInput').value.trim();
+      if (cVal) list.push(cVal);
+    } else if (selectedValue && selectedValue !== 'AUTO_FREE') {
+      // Nếu người dùng chủ động chọn 1 model cụ thể (VD: gemini-3.5-flash-lite hoặc gemini-3.1-pro), ưu tiên chạy đúng model đó trước
+      list.push(selectedValue);
+    }
 
+    // Bổ sung các model Flash / Flash-Lite miễn phí đã dò được từ tài khoản
+    detectedAccountModels.forEach(function(mId) {
+      if (mId.indexOf('flash') !== -1 && list.indexOf(mId) === -1) {
+        list.push(mId);
+      }
+    });
+
+    // Chuỗi dự phòng chuẩn cho cả tài khoản Free mới và tài khoản Pro
+    var defaultFreeFallbacks = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.0-flash'];
+    defaultFreeFallbacks.forEach(function(fb) {
+      if (list.indexOf(fb) === -1) list.push(fb);
+    });
+
+    return list;
+  }
+
+  async function callGeminiAPI(apiKey, selectedModelValue, parts, temp) {
+    // Nếu chưa dò model lần nào cho key này, tự động dò nhanh để biết chính xác model của tài khoản
+    if (detectedAccountModels.length === 0) {
+      await detectAccountModels(true);
+    }
+
+    var modelsToTry = resolveCandidateModels(selectedModelValue);
     var lastErr = null;
+
     for (var mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
       var curModel = modelsToTry[mIdx];
       for (var attempt = 0; attempt < 2; attempt++) {
@@ -463,12 +600,15 @@
           var data = await res.json();
           if (data.error) {
             var msg = data.error.message || '';
+            // Nếu model đang quá tải tạm thời, đợi 1.2s rồi thử lại hoặc chuyển sang model dự phòng kế tiếp
             if (msg.toLowerCase().indexOf('high demand') !== -1 || res.status === 503 || res.status === 429) {
               lastErr = new Error(msg);
-              await new Promise(function(r) { setTimeout(r, 1500); });
+              await new Promise(function(r) { setTimeout(r, 1200); });
               continue;
             }
-            throw new Error(msg);
+            // Nếu model này không mở cho tài khoản hiện tại, lập tức nhảy sang model tương thích kế tiếp
+            lastErr = new Error(msg);
+            break;
           }
           return JSON.parse(data.candidates[0].content.parts[0].text);
         } catch (err) {
@@ -483,7 +623,6 @@
     return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  // ĐỐI CHIẾU HỌC SINH TRONG DANH SÁCH MẪU THEO: MÃ PHÁCH -> SBD -> HỌ TÊN
   function matchStudentInMasterRoster(name, sbd, blindCode) {
     if (!masterRoster || masterRoster.length === 0) return null;
     var cleanPhach = String(blindCode || '').trim().toLowerCase();
@@ -491,33 +630,26 @@
     var cleanName = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
     var noTone = removeVietnameseTones(name);
 
-    // 1. Khớp theo Mã phách (nếu có)
     if (cleanPhach !== '') {
       for (var p = 0; p < masterRoster.length; p++) {
         var rPhach = String(masterRoster[p].blindCode || '').trim().toLowerCase();
         if (rPhach !== '' && rPhach === cleanPhach) return masterRoster[p];
       }
     }
-
-    // 2. Khớp theo Số báo danh (nếu có)
     if (cleanSbd !== '') {
       for (var i = 0; i < masterRoster.length; i++) {
         var rSbd = String(masterRoster[i].sbd || '').trim().toLowerCase();
         if (rSbd !== '' && (rSbd === cleanSbd || parseInt(rSbd, 10) === parseInt(cleanSbd, 10))) return masterRoster[i];
       }
     }
-
     if (!cleanName || cleanName === 'chưa rõ tên' || cleanName.indexOf('phách:') === 0) return null;
 
-    // 3. Khớp chính xác Họ tên có dấu
     for (var j = 0; j < masterRoster.length; j++) {
       if (masterRoster[j].fullName.trim().toLowerCase().replace(/\s+/g, ' ') === cleanName) return masterRoster[j];
     }
-    // 4. Khớp Họ tên không dấu
     for (var k = 0; k < masterRoster.length; k++) {
       if (removeVietnameseTones(masterRoster[k].fullName) === noTone) return masterRoster[k];
     }
-    // 5. Khớp Họ + Tên chính (nếu viết tắt tên đệm)
     var partsA = noTone.split(' ');
     if (partsA.length >= 2) {
       var firstA = partsA[partsA.length - 1], lastA = partsA[0];
@@ -530,7 +662,6 @@
     return null;
   }
 
-  // TÌM HỌC SINH ĐÃ CHẤM ĐỂ GHÉP CÂU (CÓ BẢO VỆ CHỐNG GỘP NHẦM BÀI CẮT PHÁCH KHÔNG TÊN)
   function findExistingStudent(name, sbd, blindCode) {
     var cleanPhach = String(blindCode || '').trim().toLowerCase();
     var cleanSbd = String(sbd || '').trim().toLowerCase();
@@ -665,21 +796,19 @@
     });
   }
 
-  // NẠP FILE ĐÁP ÁN MỚI -> TỰ ĐỘNG XÓA SẠCH NỘI DUNG FILE ĐÁP ÁN CŨ TRƯỚC KHI ĐIỀN
   async function handleAnswerFile(event) {
     var file = event.target.files[0]; if (!file) return;
     var statusBox = document.getElementById('fileStatusBox');
     statusBox.style.display = 'block';
     statusBox.innerText = '⏳ Đang xóa đáp án cũ & đọc file mới "' + file.name + '"...';
     var apiKey = document.getElementById('apiKey').value.trim();
-    var selectedModel = document.getElementById('aiModel').value || 'gemini-3.5-flash-lite';
+    var selectedModel = document.getElementById('aiModel').value || 'AUTO_FREE';
     var fName = file.name.toLowerCase();
 
     try {
       if (fName.endsWith('.docx')) {
         var res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
         var rawText = res.value.trim();
-        // Xóa sạch toàn bộ đáp án cũ trước khi nạp file mới
         resetAllAnswerFields();
         if (!apiKey) {
           document.getElementById('essayRubric').value = rawText;
@@ -696,7 +825,6 @@
           event.target.value = '';
           return;
         }
-        // Xóa sạch toàn bộ đáp án cũ trước khi nạp file PDF mới
         resetAllAnswerFields();
         statusBox.innerText = '🤖 Đang gửi file PDF mới lên AI để lọc Đáp án & Biểu điểm...';
         var b64Pdf = await fileToBase64(file);
@@ -724,7 +852,6 @@ Trả về đúng JSON:
     contentParts.unshift({ text: prompt });
     var parsed = await callGeminiAPI(apiKey, modelName, contentParts, 0.0);
 
-    // Ghi đè hoàn toàn từ file mới (phần nào file mới không có sẽ giữ trống '')
     if (parsed.multi_codes && parsed.multi_codes.trim() !== '') {
       document.getElementById('useMultiCodeChk').checked = true;
       toggleMultiCodeUI();
@@ -843,18 +970,17 @@ Trả về đúng JSON:
   function normalizeSaVal(v) { return String(v||'').trim().toLowerCase().replace(/,/g, '.').replace(/\s+/g, ''); }
   function normalizeQuestionLabel(l) { var m = String(l||'').match(/(\d+)/); return m ? ('Câu ' + m[1]) : (String(l||'Câu ?').trim()); }
 
-  // CHẤM BÀI & TỰ ĐỘNG NHẬN DIỆN: HỌ TÊN, LỚP, SBD, MÃ PHÁCH, MÃ ĐỀ
   async function runGrading() {
     saveConfig();
     var apiKey = document.getElementById('apiKey').value.trim();
-    var selectedModel = document.getElementById('aiModel').value || 'gemini-3.5-flash-lite';
+    var selectedModel = document.getElementById('aiModel').value || 'AUTO_FREE';
     var isMulti = document.getElementById('useMultiCodeChk').checked;
     var manualCode = document.getElementById('manualExamCode').value.trim().toUpperCase();
     var rubric = document.getElementById('essayRubric').value.trim();
     var targetQ = document.getElementById('targetQuestions').value.trim();
 
     if (!apiKey || pagesData.length === 0) { alert('Vui lòng dán Gemini API Key và đưa bài làm học sinh lên!'); return; }
-    var btn = document.getElementById('gradeBtn'); btn.innerText = '⏳ Đang đọc thông tin HS & chấm bằng ' + selectedModel + '...'; btn.disabled = true;
+    var btn = document.getElementById('gradeBtn'); btn.innerText = '⏳ Đang đọc thông tin HS & chấm điểm...'; btn.disabled = true;
 
     var mcqRule = (examMode === 'CIRCLE')
       ? 'CHỈ lấy chữ cái A, B, C, D có nét bút mực KHOANH TRÒN của học sinh. Tuyệt đối KHÔNG lấy chữ cái in sẵn của đề nếu không có nét khoanh (nếu câu nào học sinh không khoanh thì bỏ trống). Nếu gạch chéo (X) chữ cũ và khoanh chữ mới, lấy chữ mới.'
@@ -1119,7 +1245,6 @@ Trả về JSON:
       rosterOrder = rm.order;
     }
 
-    // Nếu bài thi cắt phách chưa có tên học sinh thì hiển thị theo Mã phách để không bị trùng
     if (!name) {
       name = blindCode ? ('Phách: ' + blindCode) : (sbd ? ('SBD: ' + sbd) : ('Chưa rõ tên #' + (classRecords.length + 1)));
     }
