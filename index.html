@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT HS By TVB CVA-HD-CM</title>
+<title>Chấm Bài KT HS By TVB CVA-HD-CM (v15)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -47,6 +47,8 @@
   .api-temp { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
   .api-saved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
   .model-detect-note { font-size: 11.5px; color: #0f52ba; margin-top: 6px; font-weight: 600; line-height: 1.4; background: #eff6ff; padding: 6px 8px; border-radius: 6px; border: 1px solid #bfdbfe; }
+  .rpd-bar { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-top: 6px; }
+  .btn-rpd-reset { background: #dcfce7; color: #15803d; border: 1px solid #86efac; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
   .struct-banner { background: #e0f2fe; border: 1px solid #7dd3fc; color: #0369a1; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-top: 8px; text-align: center; }
   .excel-status-box { background: #dcfce7; border: 2px solid #16a34a; color: #14532d; padding: 10px; border-radius: 8px; margin-top: 8px; font-size: 13px; display: none; }
@@ -114,6 +116,12 @@
         </div>
         <div id="apiStatusBanner" class="api-status api-temp">
           🔒 Mặc định: Nếu không bấm "Lưu API", Key sẽ TỰ ĐỘNG XÓA SẠCH ngay khi đóng tab hoặc thoát App.
+        </div>
+
+        <!-- BỘ ĐẾM SỐ LƯỢT REQUEST TRONG NGÀY (RPD COUNTER) -->
+        <div class="rpd-bar">
+          <span id="rpdText">📊 Hôm nay đã dùng: 0 / 1500 lượt Free (Còn 1500 lượt)</span>
+          <button type="button" class="btn-rpd-reset" onclick="resetRpdCounterManual()">Đặt lại 0</button>
         </div>
 
         <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model Free:</label>
@@ -358,13 +366,11 @@
     return isNaN(n) ? (fallback !== undefined ? fallback : 0) : n;
   }
 
-  // Khử sạch dấu xuống dòng (\r, \n) và dấu Tab (\t) để khi Copy dán vào Excel KHÔNG BAO GIỜ bị nhảy lệch dòng
   function cleanCell(str) {
     if (str === undefined || str === null) return '';
     return String(str).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  // Chống lỗi vỡ DOM HTML khi bài làm học sinh có dấu <, >, ", &
   function escapeHtml(str) {
     if (str === undefined || str === null) return '';
     return String(str)
@@ -375,8 +381,13 @@
       .replace(/'/g, '&#39;');
   }
 
-  var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH'; // 'BOTH' | 'MCQ_ONLY' | 'ESSAY_ONLY'
-  var apiPrefMode = 'BALANCED'; // 'BALANCED' (Chuẩn xác & Free) | 'QUOTA' (Siêu tiết kiệm Lite)
+  // Khử sạch khoảng trắng, ký tự xuống dòng hoặc ký tự ẩn khi dán API Key trên điện thoại
+  function sanitizeApiKey(rawKey) {
+    return String(rawKey || '').replace(/[^A-Za-z0-9_\-]/g, '').trim();
+  }
+
+  var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH';
+  var apiPrefMode = 'BALANCED';
   var pagesData = [];
   var currentMcqState = [], currentTfState = [], currentSaState = [], currentEssayState = [];
   var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
@@ -384,7 +395,76 @@
   var autoDetectTimer = null;
   var lastExportedBlobUrl = null;
 
-  // Tự động xóa sạch API Key tạm thời trên ô input khi đóng tab nếu người dùng không bấm "Lưu API"
+  // QUẢN LÝ BỘ ĐẾM LƯỢT GỌI API TRONG NGÀY (RPD COUNTER)
+  function getTodayDateString() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getRpdCount() {
+    var today = getTodayDateString();
+    var savedDate = safeGet('g_rpd_date');
+    if (savedDate !== today) {
+      safeSet('g_rpd_date', today);
+      safeSet('g_rpd_count', '0');
+      return 0;
+    }
+    return parseInt(safeGet('g_rpd_count') || '0', 10) || 0;
+  }
+
+  function incrementRpdCounter() {
+    var cur = getRpdCount() + 1;
+    safeSet('g_rpd_date', getTodayDateString());
+    safeSet('g_rpd_count', String(cur));
+    updateRpdUI();
+  }
+
+  function resetRpdCounterManual() {
+    if (!confirm('Đặt lại bộ đếm số lượt gọi API hôm nay về 0?')) return;
+    safeSet('g_rpd_date', getTodayDateString());
+    safeSet('g_rpd_count', '0');
+    updateRpdUI();
+  }
+
+  function updateRpdUI() {
+    var used = getRpdCount();
+    var maxFree = 1500;
+    var remain = Math.max(0, maxFree - used);
+    var el = document.getElementById('rpdText');
+    if (el) {
+      el.innerText = '📊 Hôm nay đã dùng: ' + used + ' / ' + maxFree + ' lượt Free (Còn ~' + remain + ' lượt)';
+    }
+  }
+
+  // ĐỌC PHẢN HỒI HTTP AN TOÀN (CHỐNG LỖI UNEXPECTED TOKEN '<', "<html>...")
+  async function safeParseResponse(res) {
+    var rawText = await res.text();
+    var trimmed = String(rawText || '').trim();
+
+    if (trimmed.indexOf('<') === 0 || trimmed.toLowerCase().indexOf('<!doctype') === 0) {
+      if (res.status === 413) {
+        throw new Error('HTTP 413: File PDF hoặc Ảnh tải lên quá nặng (Vượt giới hạn của máy chủ Google). Hãy dùng file nhẹ hơn hoặc chụp ảnh từng trang.');
+      }
+      if (res.status === 404) {
+        var err404 = new Error('HTTP 404: Mô hình không tồn tại trên đường dẫn này.');
+        err404.isModelNotFound = true;
+        throw err404;
+      }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        var err5xx = new Error('HTTP ' + res.status + ': Máy chủ Google đang quá tải tạm thời.');
+        err5xx.isRetryable = true;
+        throw err5xx;
+      }
+      throw new Error('Máy chủ trả về trang HTML thay vì JSON (Mã HTTP ' + res.status + '). Kiểm tra lại kết nối mạng, DNS/AdGuard hoặc API Key.');
+    }
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      throw new Error('Phản hồi từ máy chủ không đúng định dạng JSON (HTTP ' + res.status + ').');
+    }
+  }
+
   window.addEventListener('pagehide', function() {
     if (!safeGet('g_api')) {
       var inp = document.getElementById('apiKey');
@@ -392,7 +472,6 @@
     }
   });
 
-  // 1. QUẢN LÝ BẢO MẬT API KEY & TỰ ĐỘNG QUÉT/CHỌN MÔ HÌNH FREE CHUẨN XÁC THEO TÀI KHOẢN
   function toggleApiVisibility() {
     var inp = document.getElementById('apiKey'), btn = document.getElementById('btnEyeApi');
     if (inp.type === 'password') { inp.type = 'text'; btn.innerText = '🙈 Ẩn'; }
@@ -404,7 +483,6 @@
     document.getElementById('prefBalanced').className = (mode === 'BALANCED') ? 'mode-btn active' : 'mode-btn';
     document.getElementById('prefQuota').className = (mode === 'QUOTA') ? 'mode-btn active' : 'mode-btn';
     safeSet('g_apipref', mode);
-    // Tự động chọn lại model phù hợp nhất từ danh sách model thực tế của tài khoản
     if (availableBackendModels.length > 0) {
       applyBestModelSelection(availableBackendModels, false);
     } else {
@@ -426,7 +504,10 @@
   }
 
   function onApiInputChanged() {
-    var curKey = document.getElementById('apiKey').value.trim();
+    var rawVal = document.getElementById('apiKey').value;
+    var curKey = sanitizeApiKey(rawVal);
+    if (rawVal !== curKey) document.getElementById('apiKey').value = curKey;
+
     var savedKey = safeGet('g_api');
     var banner = document.getElementById('apiStatusBanner');
     if (!curKey) {
@@ -448,7 +529,6 @@
     }
   }
 
-  // Lọc bỏ các model không hỗ trợ đọc ảnh/PDF chấm bài hoặc không hỗ trợ JSON Schema
   function isSuitableGradingModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     if (m.indexOf('gemini-') !== 0) return false;
@@ -462,7 +542,6 @@
     return true;
   }
 
-  // Phân loại model thực tế trong tài khoản để hiển thị rõ mức Free / Độ chính xác / Hạn mức
   function classifyGeminiModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     var isLite = m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1;
@@ -490,7 +569,6 @@
     };
   }
 
-  // Chấm điểm ưu tiên để tự động chọn Model Free tốt nhất có thực trong tài khoản API
   function scoreModelForAutoSelect(modelId, prefMode) {
     var m = String(modelId || '').toLowerCase();
     var isPreview = (m.indexOf('preview') !== -1 || m.indexOf('exp') !== -1);
@@ -498,21 +576,18 @@
     var isLite = (m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1);
     var isFlash = (m.indexOf('flash') !== -1 && !isLite);
 
-    // Trích xuất số phiên bản (VD: 2.5, 2.0, 1.5, 3.5, 3.8)
     var verMatch = m.match(/gemini-(\d+(?:\.\d+)?)/);
     var ver = verMatch ? parseFloat(verMatch[1]) : 1.0;
 
     var score = 0;
     if (isPro) {
-      score = 100; // Không tự động chọn Pro cho tài khoản Free vì rất dễ hết quota
+      score = 100;
     } else if (prefMode === 'QUOTA') {
-      // Ưu tiên dòng Flash-Lite ổn định -> Flash chuẩn ổn định
       if (isLite && !isPreview) score = 900;
       else if (isFlash && !isPreview) score = 750;
       else if (isLite && isPreview) score = 600;
       else if (isFlash && isPreview) score = 500;
     } else {
-      // BALANCED (Mặc định): Ưu tiên dòng Flash chuẩn ổn định (đọc chữ viết tay/khoanh tròn chính xác nhất ở gói Free) -> Flash-Lite ổn định
       if (isFlash && !isPreview) score = 900;
       else if (isLite && !isPreview) score = 800;
       else if (isFlash && isPreview) score = 650;
@@ -520,7 +595,6 @@
     }
 
     score += Math.round(ver * 20);
-    // Ưu tiên bản chính thức ngắn gọn (VD: gemini-2.5-flash hơn gemini-2.5-flash-001)
     if (/^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(m)) score += 15;
     return score;
   }
@@ -529,7 +603,6 @@
     var sel = document.getElementById('aiModel');
     if (!sel || !modelsList || modelsList.length === 0) return;
 
-    // Sắp xếp danh sách model theo điểm ưu tiên giảm dần
     var sorted = modelsList.slice().sort(function(a, b) {
       return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
     });
@@ -549,7 +622,6 @@
     var bestModel = sorted[0];
     populateModelDropdown(modelsList, bestModel);
 
-    // Luôn đặt mặc định mức Tư duy = LOW (tắt thinking token dư thừa) để tiết kiệm 75% hạn mức Free
     document.getElementById('thinkingLevel').value = 'LOW';
     saveConfig();
 
@@ -566,9 +638,8 @@
     }
   }
 
-  // QUÉT TRỰC TIẾP TÀI KHOẢN GEMINI API VÀ CẬP NHẬT DANH SÁCH MODEL THỰC TẾ
   async function verifyAndAutoSelectModel(silent) {
-    var key = document.getElementById('apiKey').value.trim();
+    var key = sanitizeApiKey(document.getElementById('apiKey').value);
     var noteBox = document.getElementById('modelDetectNote');
     if (!key) {
       if (!silent) alert('Vui lòng dán Gemini API Key vào ô trước!');
@@ -578,7 +649,7 @@
     noteBox.innerHTML = '⏳ Đang kiểm tra tài khoản API và quét danh sách mô hình Free khả dụng...';
     try {
       var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
-      var data = await res.json();
+      var data = await safeParseResponse(res);
       if (data.error) throw new Error(data.error.message);
 
       var validModels = (data.models || []).filter(function(m) {
@@ -603,8 +674,9 @@
   }
 
   function saveApiKeyExplicit() {
-    var key = document.getElementById('apiKey').value.trim();
+    var key = sanitizeApiKey(document.getElementById('apiKey').value);
     if (!key) { alert('Vui lòng dán Gemini API Key vào ô trước khi bấm Lưu!'); return; }
+    document.getElementById('apiKey').value = key;
     safeSet('g_api', key);
     onApiInputChanged();
     alert('✅ Đã lưu API Key cố định trên thiết bị này!');
@@ -622,7 +694,6 @@
     alert('🗑️ Đã xóa sạch API Key khỏi ứng dụng và bộ nhớ trình duyệt!');
   }
 
-  // 2. QUẢN LÝ ẨN / HIỆN TỰ ĐỘNG PHẦN TRẮC NGHIỆM HOẶC TỰ LUẬN THEO HƯỚNG DẪN CHẤM
   function setExamStructure(mode) {
     examStructureMode = mode;
     document.getElementById('structBoth').className = (mode === 'BOTH') ? 'mode-btn active' : 'mode-btn';
@@ -750,6 +821,8 @@
   }
 
   window.addEventListener('DOMContentLoaded', function() {
+    updateRpdUI();
+
     if (safeGet('g_apipref')) {
       apiPrefMode = safeGet('g_apipref');
       document.getElementById('prefBalanced').className = (apiPrefMode === 'BALANCED') ? 'mode-btn active' : 'mode-btn';
@@ -759,6 +832,13 @@
       try { availableBackendModels = JSON.parse(safeGet('g_avail_models')) || []; } catch (e) { availableBackendModels = []; }
     }
     var savedM = safeGet('g_model');
+    // Tự động loại bỏ các tên model ảo từ bản cũ (như 3.5-flash-lite, 3.8-flash, 4-argon) nếu còn lưu trong bộ nhớ trình duyệt
+    var invalidLegacyModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-pro', 'gemini-4-argon'];
+    if (savedM && invalidLegacyModels.indexOf(savedM) !== -1) {
+      savedM = 'gemini-2.5-flash';
+      safeSet('g_model', savedM);
+    }
+
     if (availableBackendModels.length > 0) {
       var targetM = (savedM && availableBackendModels.indexOf(savedM) !== -1) ? savedM : availableBackendModels[0];
       populateModelDropdown(availableBackendModels, targetM);
@@ -769,7 +849,7 @@
 
     if (safeGet('g_think')) document.getElementById('thinkingLevel').value = safeGet('g_think');
     if (safeGet('g_api')) {
-      document.getElementById('apiKey').value = safeGet('g_api');
+      document.getElementById('apiKey').value = sanitizeApiKey(safeGet('g_api'));
       onApiInputChanged();
     }
 
@@ -799,13 +879,12 @@
     renderTable();
   });
 
-  // Xây dựng danh sách model dự phòng thông minh dựa trên chính tài khoản API của người dùng
   function resolveWorkingModels(uiModel) {
     var list = [];
-    if (uiModel) list.push(uiModel);
+    var invalidLegacy = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-pro', 'gemini-4-argon'];
+    if (uiModel && invalidLegacy.indexOf(uiModel) === -1) list.push(uiModel);
 
     if (availableBackendModels && availableBackendModels.length > 0) {
-      // Chỉ lấy các model Free (Flash / Lite) có thực trong tài khoản làm dự phòng khi quá tải
       var freeBackups = availableBackendModels.filter(function(m) {
         return m.toLowerCase().indexOf('pro') === -1 && m.toLowerCase().indexOf('argon') === -1;
       }).sort(function(a, b) {
@@ -815,7 +894,6 @@
         if (list.indexOf(fb) === -1) list.push(fb);
       });
     } else {
-      // Dự phòng chuẩn thực tế của Google AI Studio Free Tier
       var stdFallbacks = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
       stdFallbacks.forEach(function(fb) {
         if (list.indexOf(fb) === -1) list.push(fb);
@@ -824,7 +902,6 @@
     return list;
   }
 
-  // Hàm bóc tách JSON an toàn tuyệt đối (Chống lỗi khi AI bọc ```json hoặc có phần thought)
   function safeExtractAndParseJson(data) {
     if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
       var blockReason = (data && data.promptFeedback && data.promptFeedback.blockReason) ? data.promptFeedback.blockReason : 'Phản hồi rỗng từ AI';
@@ -832,7 +909,6 @@
     }
     var parts = data.candidates[0].content.parts;
     var rawText = '';
-    // Ưu tiên lấy part không phải là thought
     for (var i = 0; i < parts.length; i++) {
       if (!parts[i].thought && parts[i].text) {
         rawText = parts[i].text;
@@ -855,13 +931,15 @@
     }
   }
 
-  // Kiểm tra xem model có hỗ trợ tham số thinkingConfig hay không (Dòng 2.5+ và 3.x+)
   function supportsThinkingConfig(modelId) {
     var m = String(modelId || '').toLowerCase();
     return m.indexOf('gemini-2.5') !== -1 || m.indexOf('gemini-3') !== -1;
   }
 
   async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp) {
+    var cleanKey = sanitizeApiKey(apiKey);
+    if (!cleanKey) throw new Error('API Key trống hoặc không hợp lệ.');
+
     var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'LOW';
     var modelsToTry = resolveWorkingModels(uiModelValue);
     var lastErr = null;
@@ -880,12 +958,11 @@
             responseMimeType: 'application/json'
           };
           if (useThinkParam) {
-            // Nếu model là 2.5-pro thì không cho phép budget = 0, tối thiểu là 128
             var actualBudget = (curModel.indexOf('pro') !== -1 && targetBudget === 0) ? 128 : targetBudget;
             genConfig.thinkingConfig = { thinkingBudget: actualBudget };
           }
 
-          var res = await fetch('[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/)' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(apiKey), {
+          var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -894,35 +971,41 @@
             })
           });
 
-          var data = await res.json();
+          var data = await safeParseResponse(res);
           if (data.error) {
             var msg = data.error.message || '';
             var lowerMsg = msg.toLowerCase();
 
-            // Nếu model không hỗ trợ thinkingConfig, tắt cờ useThinkParam và thử lại ngay trên chính model đó
             if (useThinkParam && (lowerMsg.indexOf('thinking') !== -1 || lowerMsg.indexOf('unknown name') !== -1)) {
               useThinkParam = false;
               attempt--;
               continue;
             }
-            // Nếu lỗi sai API Key (400 / 403), dừng ngay lập tức không thử model khác
             if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
               throw new Error('API Key không hợp lệ hoặc đã bị khóa: ' + msg);
             }
-            // Nếu quá tải tạm thời (503) hoặc chạm trần RPM (429), chờ 1.2s rồi thử lại hoặc chuyển sang model Free dự phòng
             if (lowerMsg.indexOf('high demand') !== -1 || res.status === 503 || res.status === 429) {
               lastErr = new Error(msg);
               await new Promise(function(r) { setTimeout(r, 1200); });
               continue;
             }
             lastErr = new Error(msg);
-            break; // Sang model dự phòng tiếp theo nếu lỗi 404 (model không tồn tại)
+            break;
           }
 
-          return safeExtractAndParseJson(data);
+          var parsedResult = safeExtractAndParseJson(data);
+          incrementRpdCounter();
+          return parsedResult;
         } catch (err) {
           lastErr = err;
-          if (err.message && err.message.indexOf('API Key không hợp lệ') !== -1) {
+          if (err.isModelNotFound) {
+            break; // Chuyển ngay sang model dự phòng tiếp theo nếu model hiện tại báo 404
+          }
+          if (err.isRetryable) {
+            await new Promise(function(r) { setTimeout(r, 1200); });
+            continue;
+          }
+          if (err.message && (err.message.indexOf('API Key không hợp lệ') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
             throw err;
           }
         }
@@ -1113,7 +1196,7 @@
     var statusBox = document.getElementById('fileStatusBox');
     statusBox.style.display = 'block';
     statusBox.innerText = '⏳ Đang xóa đáp án cũ & phân tích cấu trúc file "' + file.name + '"...';
-    var apiKey = document.getElementById('apiKey').value.trim();
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
     var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
     var fName = file.name.toLowerCase();
 
@@ -1137,6 +1220,9 @@
           statusBox.style.display = 'none';
           event.target.value = '';
           return;
+        }
+        if (file.size > 14 * 1024 * 1024) {
+          throw new Error('File PDF nặng quá 14MB (' + (file.size / 1024 / 1024).toFixed(1) + 'MB), vượt giới hạn gửi trực tiếp của API. Vui lòng dùng file Word (.docx) hoặc nén nhỏ PDF.');
         }
         resetAllAnswerFields();
         statusBox.innerText = '🤖 Đang gửi file PDF lên AI để nhận diện Trắc nghiệm / Tự luận...';
@@ -1206,7 +1292,6 @@ Trả về đúng JSON:
       r.onload = function(e) {
         var img = new Image();
         img.onload = function() {
-          // Không phóng to ảnh nhỏ để tránh tốn token ảnh đầu vào
           var canvas = document.createElement('canvas'), maxDim = 1280;
           var w = img.width, h = img.height;
           if (w > maxDim || h > maxDim) {
@@ -1235,6 +1320,9 @@ Trả về đúng JSON:
   async function addStudentPdf(event) {
     var file = event.target.files[0]; if (!file) return;
     try {
+      if (file.size > 14 * 1024 * 1024) {
+        throw new Error('File PDF bài làm nặng quá 14MB. Vui lòng nén nhỏ hoặc chụp ảnh từng trang.');
+      }
       pagesData.push({ type: 'pdf', mime: 'application/pdf', base64: await fileToBase64(file), dataUrl: '', name: file.name });
       var cleanPdfName = file.name.replace(/\.pdf$/i, '');
       if (!document.getElementById('mergedImgName').value) document.getElementById('mergedImgName').value = cleanPdfName;
@@ -1341,7 +1429,6 @@ Trả về đúng JSON:
   function normalizeSaVal(v) { return String(v||'').trim().toLowerCase().replace(/,/g, '.').replace(/\s+/g, ''); }
   function normalizeQuestionLabel(l) { var m = String(l||'').match(/(\d+)/); return m ? ('Câu ' + m[1]) : (String(l||'Câu ?').trim()); }
 
-  // Chuẩn hóa khóa trả về từ AI (VD: "Câu 1" -> "1", "1A" -> "1a") để không bao giờ bị lệch key
   function normalizeAiChoiceMap(rawObj, isTf) {
     var out = {};
     if (!rawObj || typeof rawObj !== 'object') return out;
@@ -1360,10 +1447,9 @@ Trả về đúng JSON:
     return out;
   }
 
-  // 3. CHẤM BÀI THEO ĐÚNG CẤU TRÚC ĐỀ (CHỈ TN / CHỈ TL / CẢ 2)
   async function runGrading() {
     saveConfig();
-    var apiKey = document.getElementById('apiKey').value.trim();
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
     var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
     var isMulti = document.getElementById('useMultiCodeChk').checked;
     var manualCode = document.getElementById('manualExamCode').value.trim().toUpperCase();
@@ -1645,7 +1731,6 @@ Trả về đúng cấu trúc JSON:
   function updateEssayScore(i, v) { currentEssayState[i].score = parseNum(v, 0); refreshCurrentView(); }
   function updateEssayQName(i, v) { currentEssayState[i].question = normalizeQuestionLabel(v); refreshCurrentView(); }
 
-  // 4. LƯU BÀI: NẾU CHỈ CÓ TRẮC NGHIỆM THÌ BỎ TRỐNG TỰ LUẬN, NẾU CHỈ CÓ TỰ LUẬN THÌ BỎ TRỐNG TRẮC NGHIỆM
   function saveStudentRecord() {
     var doMcq = (examStructureMode !== 'ESSAY_ONLY');
     var doEssay = (examStructureMode !== 'MCQ_ONLY');
@@ -1968,7 +2053,6 @@ Trả về đúng cấu trúc JSON:
     classRecords = []; safeRemove('g_records'); renderTable();
   }
 
-  // 5. XUẤT FILE EXCEL (.XLSX) KÈM HỘP DẪN ĐƯỜNG MỞ FILE TRỰC TIẾP TRÊN MÀN HÌNH
   async function exportExcelAPK() {
     var sorted = getSortedRecords(); if (sorted.length === 0) { alert('Danh sách trống!'); return; }
     var qCols = getAllEssayCols();
@@ -2031,7 +2115,6 @@ Trả về đúng cấu trúc JSON:
     document.body.removeChild(link);
   }
 
-  // 6. COPY BẢNG ĐIỂM DÁN VÀO EXCEL (KHỬ SẠCH LỖI LỆCH DÒNG / LỆCH CỘT)
   function copyForExcel(copyMode) {
     var sorted = getSortedRecords();
     if (sorted.length === 0) { alert('Danh sách trống!'); return; }
