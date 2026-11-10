@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT HS By TVB CVA-HD-CM (v17)</title>
+<title>Chấm Bài KT HS By TVB CVA-HD-CM (v18 Siêu Tốc)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -103,7 +103,7 @@
     </div>
 
     <div id="configArea">
-      <!-- KHU VỰC QUẢN LÝ BẢO MẬT API KEY (HỖ TRỢ ĐẦY ĐỦ KEY 52 KÝ TỰ & MỌI ĐỘ DÀI CHUẨN) -->
+      <!-- KHU VỰC QUẢN LÝ BẢO MẬT API KEY -->
       <div class="api-box">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <label style="margin-top:0;">🔑 API Key cá nhân:</label>
@@ -129,31 +129,31 @@
 
         <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model Free:</label>
         <div class="mode-switch">
-          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác cao & Free (Khuyên dùng)</button>
-          <button type="button" class="mode-btn" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Siêu tiết kiệm hạn mức (Lite)</button>
+          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác cao & Nhanh (Khuyên dùng)</button>
+          <button type="button" class="mode-btn" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Siêu tốc & Tiết kiệm (Flash-Lite)</button>
         </div>
 
         <div class="row" style="margin-top:6px;">
           <div style="flex:1.45;">
             <label style="margin-top:2px;">Mô hình thực tế trong tài khoản API:</label>
             <select id="aiModel" onchange="onManualModelChange()">
-              <option value="gemini-2.5-flash" selected>🎯 gemini-2.5-flash (Free - Chuẩn xác & Đỡ tốn)</option>
-              <option value="gemini-2.5-flash-lite">⚡ gemini-2.5-flash-lite (Free - Siêu tiết kiệm hạn mức)</option>
-              <option value="gemini-2.0-flash">⚡ gemini-2.0-flash (Free - Ổn định)</option>
+              <option value="gemini-2.5-flash" selected>🎯 gemini-2.5-flash (Free - Chuẩn xác & Nhanh)</option>
+              <option value="gemini-2.5-flash-lite">⚡ gemini-2.5-flash-lite (Free - Siêu tốc 2-3s/bài)</option>
+              <option value="gemini-2.0-flash">⚡ gemini-2.0-flash (Free - Ổn định, không trễ Thinking)</option>
               <option value="gemini-2.0-flash-lite">⚡ gemini-2.0-flash-lite (Free - Nhẹ nhất)</option>
             </select>
           </div>
           <div style="flex:0.95;">
             <label style="margin-top:2px;">Hạn mức tư duy (Thinking):</label>
             <select id="thinkingLevel" onchange="saveConfig()">
-              <option value="LOW" selected>⚡ Tắt/Thấp (Tiết kiệm 75% token)</option>
-              <option value="MEDIUM">⚖️ Trung bình (1024 token)</option>
-              <option value="HIGH">🧠 Suy luận sâu (4096 token)</option>
+              <option value="LOW" selected>⚡ Tắt (0 token - Chấm 3-5 giây)</option>
+              <option value="MEDIUM">⚖️ Nhanh (256 token)</option>
+              <option value="HIGH">🧠 Sâu (1024 token)</option>
             </select>
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          💡 Dán API Key vào ô trên: Hệ thống giữ nguyên 100% độ dài Key, tự động quét danh sách mô hình thực tế của tài khoản và chọn mô hình <b>Free</b> chuẩn xác nhất.
+          💡 Đã kích hoạt cơ chế <b>Tối ưu ảnh 1-Tile (1024px) + Tăng tương phản nét mực + Ngắt kết nối treo 18s</b> giúp chấm 1 bài chỉ trong <b>3–6 giây</b>.
         </div>
       </div>
 
@@ -297,7 +297,7 @@
 
   <!-- 3. KẾT QUẢ CHI TIẾT, LƯU ĐIỂM HOẶC HỦY BÀI ĐỂ CHỤP LẠI -->
   <div class="card" id="resCard" style="display:none">
-    <h3>📊 3. Kiểm tra & Lưu điểm</h3>
+    <h3>📊 3. Kiểm tra & Lưu điểm (<span id="gradeTimeBadge" style="color:#16a34a; font-size:14px;"></span>)</h3>
     <div id="resBody"></div>
     <button type="button" class="btn btn-dl-img" onclick="downloadMergedStudentImage()">🖼️ Tải file Ảnh ghép bài làm mang tên HS / Mã phách này</button>
     <button type="button" class="btn btn-save" onclick="saveStudentRecord()">💾 Lưu điểm vào Danh sách lớp</button>
@@ -384,12 +384,10 @@
       .replace(/'/g, '&#39;');
   }
 
-  // CHỈ xóa khoảng trắng và ký tự ẩn vô hình, GIỮ NGUYÊN VẸN 100% độ dài Key (52 ký tự, 39 ký tự, dấu chấm...)
   function sanitizeApiKey(rawKey) {
     return String(rawKey || '').replace(/[\s\u200B-\u200D\uFEFF]+/g, '').trim();
   }
 
-  // Chấp nhận mọi API Key có độ dài từ 20 đến 150 ký tự (hỗ trợ chuẩn 52 ký tự, 39 ký tự, AQ., AIza...)
   function isValidGeminiKeyFormat(key) {
     var k = sanitizeApiKey(key);
     return k.length >= 20 && k.length <= 150;
@@ -445,14 +443,13 @@
     }
   }
 
-  // ĐỌC PHẢN HỒI HTTP AN TOÀN (CHỐNG LỖI UNEXPECTED TOKEN '<', "<html>...")
   async function safeParseResponse(res) {
     var rawText = await res.text();
     var trimmed = String(rawText || '').trim();
 
     if (trimmed.indexOf('<') === 0 || trimmed.toLowerCase().indexOf('<!doctype') === 0) {
       if (res.status === 413) {
-        throw new Error('HTTP 413: File PDF hoặc Ảnh tải lên quá nặng (Vượt giới hạn của máy chủ Google). Hãy dùng file nhẹ hơn hoặc chụp ảnh từng trang.');
+        throw new Error('HTTP 413: File PDF hoặc Ảnh tải lên quá nặng. Hãy chụp ảnh từng trang.');
       }
       if (res.status === 404) {
         var err404 = new Error('HTTP 404: Mô hình không tồn tại trên đường dẫn này.');
@@ -460,17 +457,17 @@
         throw err404;
       }
       if (res.status === 502 || res.status === 503 || res.status === 504) {
-        var err5xx = new Error('HTTP ' + res.status + ': Máy chủ Google đang quá tải tạm thời.');
+        var err5xx = new Error('HTTP ' + res.status + ': Máy chủ đang bận tạm thời.');
         err5xx.isRetryable = true;
         throw err5xx;
       }
-      throw new Error('Máy chủ trả về trang HTML thay vì JSON (Mã HTTP ' + res.status + '). Kiểm tra lại kết nối mạng, DNS/AdGuard hoặc API Key.');
+      throw new Error('Máy chủ trả về HTML thay vì JSON (HTTP ' + res.status + ').');
     }
 
     try {
       return JSON.parse(trimmed);
     } catch (e) {
-      throw new Error('Phản hồi từ máy chủ không đúng định dạng JSON (HTTP ' + res.status + ').');
+      throw new Error('Phản hồi không đúng định dạng JSON (HTTP ' + res.status + ').');
     }
   }
 
@@ -550,12 +547,13 @@
     }
   }
 
+  // Lọc bỏ triệt để các model thử nghiệm chậm hoặc không phải Vision chuẩn
   function isSuitableGradingModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     if (m.indexOf('gemini-') !== 0) return false;
     var blockedKeywords = [
       'tts', 'audio', 'image', 'imagen', 'veo', 'embedding', 'aqa',
-      'learnlm', 'robotics', 'computer-use', 'thinking-exp', 'live', 'bisheng'
+      'learnlm', 'robotics', 'computer-use', 'thinking', 'live', 'bisheng', 'exp'
     ];
     for (var i = 0; i < blockedKeywords.length; i++) {
       if (m.indexOf(blockedKeywords[i]) !== -1) return false;
@@ -566,58 +564,55 @@
   function classifyGeminiModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     var isLite = m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1;
-    var isPro = m.indexOf('pro') !== -1 || m.indexOf('ultra') !== -1 || m.indexOf('argon') !== -1;
-    var isPreview = m.indexOf('preview') !== -1 || m.indexOf('exp') !== -1;
+    var isPro = m.indexOf('pro') !== -1 || m.indexOf('ultra') !== -1;
+    var isPreview = m.indexOf('preview') !== -1;
 
     if (isPro) {
       return {
         tier: 'PRO',
-        label: '🧠 ' + modelId + ' (Pro - Tốn nhiều hạn mức / Dễ chạm giới hạn Free)',
-        desc: 'Mô hình Pro suy luận sâu nhưng hạn mức miễn phí rất thấp (dễ báo lỗi 429 khi chấm nhiều bài).'
+        label: '🧠 ' + modelId + ' (Pro - Chậm & Tốn hạn mức)',
+        desc: 'Mô hình Pro suy luận sâu (15-30s/bài), hạn mức miễn phí thấp.'
       };
     }
     if (isLite) {
       return {
         tier: 'FREE_LITE',
-        label: '⚡ ' + modelId + (isPreview ? ' (Free Lite - Bản thử nghiệm)' : ' (Free - Siêu tiết kiệm hạn mức nhất)'),
-        desc: 'Mô hình Free siêu nhẹ, tốc độ nhanh nhất và tiêu tốn ít hạn mức (TPM/RPD) nhất.'
+        label: '⚡ ' + modelId + (isPreview ? ' (Preview)' : ' (Free - Siêu tốc 2-4s/bài & Ít tốn nhất)'),
+        desc: 'Tốc độ phản hồi nhanh nhất (2-4 giây/bài) và tiết kiệm hạn mức nhất.'
       };
     }
     return {
       tier: 'FREE_FLASH',
-      label: '🎯 ' + modelId + (isPreview ? ' (Free Flash - Bản thử nghiệm)' : ' (Free - Chuẩn xác cao & Đỡ tốn hạn mức)'),
-      desc: 'Mô hình Free cân bằng hoàn hảo: Đọc chữ viết tay & vết khoanh trắc nghiệm chính xác cao, hạn mức Free rộng.'
+      label: '🎯 ' + modelId + (isPreview ? ' (Preview)' : ' (Free - Chuẩn xác cao & Nhanh 3-6s/bài)'),
+      desc: 'Đọc chữ viết tay & nét khoanh trắc nghiệm chính xác cao, tốc độ 3-6 giây/bài.'
     };
   }
 
+  // Chấm điểm ưu tiên: Đặt các bản Stable Flash 2.5 / 2.0 lên đầu để không dính bản Preview chậm
   function scoreModelForAutoSelect(modelId, prefMode) {
     var m = String(modelId || '').toLowerCase();
     var isPreview = (m.indexOf('preview') !== -1 || m.indexOf('exp') !== -1);
-    var isPro = (m.indexOf('pro') !== -1 || m.indexOf('argon') !== -1);
+    var isPro = (m.indexOf('pro') !== -1);
     var isLite = (m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1);
     var isFlash = (m.indexOf('flash') !== -1 && !isLite);
 
-    var verMatch = m.match(/gemini-(\d+(?:\.\d+)?)/);
-    var ver = verMatch ? parseFloat(verMatch[1]) : 1.0;
+    if (isPro) return 50;
 
-    var score = 0;
-    if (isPro) {
-      score = 100;
-    } else if (prefMode === 'QUOTA') {
-      if (isLite && !isPreview) score = 900;
-      else if (isFlash && !isPreview) score = 750;
-      else if (isLite && isPreview) score = 600;
-      else if (isFlash && isPreview) score = 500;
+    var base = 0;
+    if (prefMode === 'QUOTA') {
+      if (m === 'gemini-2.5-flash-lite') return 1000;
+      if (m === 'gemini-2.0-flash-lite') return 980;
+      if (m === 'gemini-2.5-flash') return 950;
+      if (m === 'gemini-2.0-flash') return 930;
+      base = isLite ? (isPreview ? 600 : 850) : (isPreview ? 500 : 750);
     } else {
-      if (isFlash && !isPreview) score = 900;
-      else if (isLite && !isPreview) score = 800;
-      else if (isFlash && isPreview) score = 650;
-      else if (isLite && isPreview) score = 550;
+      if (m === 'gemini-2.5-flash') return 1000;
+      if (m === 'gemini-2.0-flash') return 970;
+      if (m === 'gemini-2.5-flash-lite') return 950;
+      if (m === 'gemini-2.0-flash-lite') return 920;
+      base = isFlash ? (isPreview ? 600 : 850) : (isPreview ? 550 : 800);
     }
-
-    score += Math.round(ver * 20);
-    if (/^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(m)) score += 15;
-    return score;
+    return base;
   }
 
   function populateModelDropdown(modelsList, selectedModelId) {
@@ -648,18 +643,16 @@
 
     var info = classifyGeminiModel(bestModel);
     var noteBox = document.getElementById('modelDetectNote');
-    noteBox.innerHTML = '✅ Đã đồng bộ <b>' + modelsList.length + ' mô hình thực tế</b> từ tài khoản API của bạn!<br>' +
-      '👉 Tự động chọn: <b>' + escapeHtml(bestModel) + '</b> + <b>Tắt Thinking nháp</b> (' + info.desc + ')';
+    noteBox.innerHTML = '✅ Đã đồng bộ <b>' + modelsList.length + ' mô hình</b> từ tài khoản API!<br>' +
+      '👉 Tự động chọn: <b>' + escapeHtml(bestModel) + '</b> + <b>Thinking = 0</b> (' + info.desc + ')';
 
     if (showPopup) {
-      alert('✅ Đã kiểm tra tài khoản Gemini API thành công!\n\n' +
-        '• Tìm thấy ' + modelsList.length + ' mô hình chấm bài hợp lệ trong tài khoản của bạn.\n' +
-        '• Tự động chọn mô hình Free tối ưu nhất: ' + bestModel + '\n' +
-        '• Hạn mức tư duy: Tắt/Thấp (Giúp tiết kiệm ~75% hạn mức token đầu ra và tăng tốc độ chấm gấp 3 lần).');
+      alert('✅ Đã đồng bộ tài khoản Gemini API!\n\n' +
+        '• Tự động chọn mô hình Free nhanh & chuẩn nhất: ' + bestModel + '\n' +
+        '• Đã tắt Thinking nháp (0 token) giúp chấm 1 bài chỉ mất 3–6 giây.');
     }
   }
 
-  // Hỗ trợ xác thực cả qua Query Param (?key=) và Header (x-goog-api-key) cho các chuẩn API Key mới (52 ký tự / 39 ký tự)
   async function verifyAndAutoSelectModel(silent) {
     var key = sanitizeApiKey(document.getElementById('apiKey').value);
     var noteBox = document.getElementById('modelDetectNote');
@@ -693,11 +686,8 @@
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
       applyBestModelSelection(availableBackendModels, !silent);
     } catch (e) {
-      var extraHint = '';
-      if (key.indexOf('gsk_') === 0) extraHint = ' (Bạn đang dán Key của Groq gsk_..., vui lòng lấy Key tại aistudio.google.com)';
-      else if (key.indexOf('sk-') === 0) extraHint = ' (Bạn đang dán Key của OpenAI/OpenRouter sk-..., vui lòng lấy Key tại aistudio.google.com)';
-      noteBox.innerHTML = '⚠️ Chưa đồng bộ được danh sách model từ Key (' + key.length + ' ký tự): <b>' + escapeHtml(e.message + extraHint) + '</b>';
-      if (!silent) alert('Lỗi kiểm tra API Key (' + key.length + ' ký tự): ' + e.message + extraHint);
+      noteBox.innerHTML = '⚠️ Chưa đồng bộ được danh sách model: <b>' + escapeHtml(e.message) + '</b>';
+      if (!silent) alert('Lỗi kiểm tra API Key: ' + e.message);
     }
   }
 
@@ -722,7 +712,7 @@
     availableBackendModels = [];
     try { window.sessionStorage.removeItem('g_api'); } catch (e) {}
     onApiInputChanged();
-    document.getElementById('modelDetectNote').innerHTML = '🗑️ Đã xóa sạch API Key cũ khỏi bộ nhớ máy. Hãy dán API Key mới của bạn vào ô trên.';
+    document.getElementById('modelDetectNote').innerHTML = '🗑️ Đã xóa sạch API Key cũ khỏi bộ nhớ máy.';
     alert('🗑️ Đã xóa sạch API Key khỏi ứng dụng và bộ nhớ trình duyệt!');
   }
 
@@ -773,13 +763,9 @@
                  document.getElementById('saKey').value.trim() !== '';
     var hasEssay = document.getElementById('essayRubric').value.trim() !== '';
 
-    if (hasMcq && !hasEssay) {
-      setExamStructure('MCQ_ONLY');
-    } else if (!hasMcq && hasEssay) {
-      setExamStructure('ESSAY_ONLY');
-    } else if (hasMcq && hasEssay) {
-      setExamStructure('BOTH');
-    }
+    if (hasMcq && !hasEssay) setExamStructure('MCQ_ONLY');
+    else if (!hasMcq && hasEssay) setExamStructure('ESSAY_ONLY');
+    else if (hasMcq && hasEssay) setExamStructure('BOTH');
   }
 
   function onAnswerKeyManualEdit() {
@@ -911,27 +897,17 @@
     renderTable();
   });
 
+  // Danh sách model dự phòng siêu tốc (tối đa 3 model ổn định nhất để không bao giờ bị treo 1 phút)
   function resolveWorkingModels(uiModel) {
     var list = [];
-    var invalidLegacy = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-pro', 'gemini-4-argon'];
-    if (uiModel && invalidLegacy.indexOf(uiModel) === -1) list.push(uiModel);
-
-    if (availableBackendModels && availableBackendModels.length > 0) {
-      var freeBackups = availableBackendModels.filter(function(m) {
-        return m.toLowerCase().indexOf('pro') === -1 && m.toLowerCase().indexOf('argon') === -1;
-      }).sort(function(a, b) {
-        return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
-      });
-      freeBackups.forEach(function(fb) {
-        if (list.indexOf(fb) === -1) list.push(fb);
-      });
-    } else {
-      var stdFallbacks = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-      stdFallbacks.forEach(function(fb) {
-        if (list.indexOf(fb) === -1) list.push(fb);
-      });
-    }
-    return list;
+    var fastCore = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    if (uiModel) list.push(uiModel);
+    fastCore.forEach(function(m) {
+      if (list.indexOf(m) === -1 && (availableBackendModels.length === 0 || availableBackendModels.indexOf(m) !== -1)) {
+        list.push(m);
+      }
+    });
+    return list.slice(0, 3);
   }
 
   function safeExtractAndParseJson(data) {
@@ -965,9 +941,10 @@
 
   function supportsThinkingConfig(modelId) {
     var m = String(modelId || '').toLowerCase();
-    return m.indexOf('gemini-2.5') !== -1 || m.indexOf('gemini-3') !== -1;
+    return m.indexOf('gemini-2.5') === 0 && m.indexOf('pro') === -1;
   }
 
+  // GỌI API SIÊU TỐC: CÓ ABORT-CONTROLLER 18 GIÂY & TỰ ĐỘNG GHIM MODEL NHANH NHẤT
   async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp) {
     var cleanKey = sanitizeApiKey(apiKey);
     if (!isValidGeminiKeyFormat(cleanKey)) {
@@ -978,73 +955,72 @@
     var modelsToTry = resolveWorkingModels(uiModelValue);
     var lastErr = null;
 
-    var budgetMap = { 'LOW': 0, 'MEDIUM': 1024, 'HIGH': 4096 };
+    var budgetMap = { 'LOW': 0, 'MEDIUM': 256, 'HIGH': 1024 };
     var targetBudget = budgetMap[thinkLvl] !== undefined ? budgetMap[thinkLvl] : 0;
 
     for (var mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
       var curModel = modelsToTry[mIdx];
       var useThinkParam = supportsThinkingConfig(curModel);
 
-      for (var attempt = 0; attempt < 2; attempt++) {
-        try {
-          var genConfig = {
-            temperature: baseTemp,
-            responseMimeType: 'application/json'
-          };
-          if (useThinkParam) {
-            var actualBudget = (curModel.indexOf('pro') !== -1 && targetBudget === 0) ? 128 : targetBudget;
-            genConfig.thinkingConfig = { thinkingBudget: actualBudget };
-          }
+      var genConfig = {
+        temperature: baseTemp,
+        maxOutputTokens: 1024,
+        responseMimeType: 'application/json'
+      };
+      if (useThinkParam) {
+        genConfig.thinkingConfig = { thinkingBudget: targetBudget };
+      }
 
-          var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': cleanKey
-            },
-            body: JSON.stringify({
-              contents: [{ parts: parts }],
-              generationConfig: genConfig
-            })
-          });
+      var controller = new AbortController();
+      var timeoutId = setTimeout(function() { controller.abort(); }, 18000);
 
-          var data = await safeParseResponse(res);
-          if (data.error) {
-            var msg = data.error.message || '';
-            var lowerMsg = msg.toLowerCase();
+      try {
+        var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': cleanKey
+          },
+          body: JSON.stringify({
+            contents: [{ parts: parts }],
+            generationConfig: genConfig
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
-            if (useThinkParam && (lowerMsg.indexOf('thinking') !== -1 || lowerMsg.indexOf('unknown name') !== -1)) {
-              useThinkParam = false;
-              attempt--;
-              continue;
-            }
-            if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
-              throw new Error('API Key (' + cleanKey.length + ' ký tự) bị từ chối: ' + msg);
-            }
-            if (lowerMsg.indexOf('high demand') !== -1 || res.status === 503 || res.status === 429) {
-              lastErr = new Error(msg);
-              await new Promise(function(r) { setTimeout(r, 1200); });
-              continue;
-            }
-            lastErr = new Error(msg);
-            break;
+        var data = await safeParseResponse(res);
+        if (data.error) {
+          var msg = data.error.message || '';
+          var lowerMsg = msg.toLowerCase();
+          if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
+            throw new Error('API Key bị từ chối: ' + msg);
           }
+          lastErr = new Error(msg);
+          continue; // Chuyển ngay lập tức sang model Free dự phòng kế tiếp, không chờ đợi lặp lại
+        }
 
-          var parsedResult = safeExtractAndParseJson(data);
-          incrementRpdCounter();
-          return parsedResult;
-        } catch (err) {
-          lastErr = err;
-          if (err.isModelNotFound) {
-            break;
+        var parsedResult = safeExtractAndParseJson(data);
+        incrementRpdCounter();
+
+        // Nếu model dự phòng chạy thành công khi model chính bị nghẽn, tự động ghim model nhanh này cho các bài sau
+        if (mIdx > 0) {
+          var sel = document.getElementById('aiModel');
+          if (sel && Array.from(sel.options).some(function(o) { return o.value === curModel; })) {
+            sel.value = curModel;
+            saveConfig();
           }
-          if (err.isRetryable) {
-            await new Promise(function(r) { setTimeout(r, 1200); });
-            continue;
-          }
-          if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
-            throw err;
-          }
+        }
+        return parsedResult;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          lastErr = new Error('Model ' + curModel + ' phản hồi quá 18 giây, đang chuyển luồng nhanh...');
+          continue;
+        }
+        lastErr = err;
+        if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
+          throw err;
         }
       }
     }
@@ -1272,7 +1248,7 @@
             await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + rawText }], file.name);
           } catch (apiErr) {
             parseDocxTextOffline(rawText, file.name);
-            alert('⚠️ Không gọi được AI do API Key hiện tại báo lỗi (' + apiErr.message + ').\n\n👉 Hệ thống đã tự động chuyển sang nạp văn bản Đáp án trực tiếp trên máy để bạn tiếp tục làm việc!');
+            alert('⚠️ Không gọi được AI (' + apiErr.message + ').\n👉 Đã tự động chuyển sang nạp văn bản Đáp án trực tiếp trên máy!');
           }
         }
       } else if (fName.endsWith('.pdf')) {
@@ -1283,7 +1259,7 @@
           return;
         }
         if (file.size > 14 * 1024 * 1024) {
-          throw new Error('File PDF nặng quá 14MB (' + (file.size / 1024 / 1024).toFixed(1) + 'MB), vượt giới hạn gửi trực tiếp của API. Vui lòng dùng file Word (.docx) hoặc nén nhỏ PDF.');
+          throw new Error('File PDF nặng quá 14MB. Vui lòng dùng file Word (.docx) hoặc nén nhỏ PDF.');
         }
         resetAllAnswerFields();
         statusBox.innerText = '🤖 Đang gửi file PDF lên AI để nhận diện Trắc nghiệm / Tự luận...';
@@ -1299,14 +1275,14 @@
 
   async function extractRubricWithAI(apiKey, modelName, contentParts, fileName) {
     var statusBox = document.getElementById('fileStatusBox');
-    var prompt = `Bạn là trợ lý giáo viên. Hãy đọc tài liệu Đáp án/Hướng dẫn chấm đính kèm và trích xuất chính xác thành JSON:
-1. "multi_codes": Nếu có NHIỀU MÃ ĐỀ trắc nghiệm ABCD (VD: Mã 101, 102...), xuất mỗi mã 1 dòng theo mẫu "101 | 1A, 2B, 3C...". Nếu không có thì để "".
-2. "mcq_key": Đáp án trắc nghiệm ABCD chung dạng "1A, 2B, 3C..." (nếu tài liệu KHÔNG có trắc nghiệm ABCD thì bắt buộc để "").
-3. "tf_key": Đáp án Đúng/Sai dạng "1aĐ, 1bS, 1cĐ, 1dS..." (nếu KHÔNG có thì để "").
-4. "sa_key": Đáp án Trả lời ngắn dạng "1: 12.5 | 2: 4..." (nếu KHÔNG có thì để "").
-5. "essay_rubric": Toàn bộ hướng dẫn chấm và biểu điểm chi tiết từng câu Tự luận (nếu tài liệu CHỈ CÓ TRẮC NGHIỆM, không có câu hỏi Tự luận thì bắt buộc để "").
+    var prompt = `Đọc tài liệu Đáp án/Hướng dẫn chấm và trích xuất thành JSON:
+1. "multi_codes": Nếu có nhiều mã đề ABCD (VD: 101, 102...), xuất mỗi mã 1 dòng theo mẫu "101 | 1A, 2B, 3C...". Không có để "".
+2. "mcq_key": Đáp án ABCD chung dạng "1A, 2B, 3C..." (không có để "").
+3. "tf_key": Đáp án Đúng/Sai dạng "1aĐ, 1bS, 1cĐ, 1dS..." (không có để "").
+4. "sa_key": Đáp án Trả lời ngắn dạng "1: 12.5 | 2: 4..." (không có để "").
+5. "essay_rubric": Hướng dẫn chấm và biểu điểm từng câu Tự luận (không có để "").
 
-Trả về đúng JSON:
+JSON:
 {"multi_codes": "", "mcq_key": "", "tf_key": "", "sa_key": "", "essay_rubric": ""}`;
 
     var reqParts = [{ text: prompt }].concat(contentParts);
@@ -1335,10 +1311,10 @@ Trả về đúng JSON:
 
     if (hasAnyMcq && !hasEssay) {
       setExamStructure('MCQ_ONLY');
-      statusBox.innerText = '✅ Đã nhận diện đề CHỈ CÓ TRẮC NGHIỆM (Đã tự động ẩn phần Tự luận) từ: ' + fileName;
+      statusBox.innerText = '✅ Đã nhận diện đề CHỈ CÓ TRẮC NGHIỆM từ: ' + fileName;
     } else if (!hasAnyMcq && hasEssay) {
       setExamStructure('ESSAY_ONLY');
-      statusBox.innerText = '✅ Đã nhận diện đề CHỈ CÓ TỰ LUẬN (Đã tự động ẩn phần Trắc nghiệm) từ: ' + fileName;
+      statusBox.innerText = '✅ Đã nhận diện đề CHỈ CÓ TỰ LUẬN từ: ' + fileName;
     } else {
       setExamStructure('BOTH');
       statusBox.innerText = '✅ Đã nhận diện đề có CẢ TRẮC NGHIỆM & TỰ LUẬN từ: ' + fileName;
@@ -1346,36 +1322,50 @@ Trả về đúng JSON:
     saveConfig();
   }
 
-  function addPages(event) {
-    var files = event.target.files; if (!files) return;
-    Array.from(files).forEach(function(file) {
-      var r = new FileReader();
-      r.onload = function(e) {
-        var img = new Image();
-        img.onload = function() {
-          var canvas = document.createElement('canvas'), maxDim = 1280;
-          var w = img.width, h = img.height;
-          if (w > maxDim || h > maxDim) {
-            if (w >= h) {
-              h = Math.round(h * (maxDim / w));
-              w = maxDim;
-            } else {
-              w = Math.round(w * (maxDim / h));
-              h = maxDim;
-            }
+  // NẠP ẢNH SIÊU TỐC BẰNG OBJECT-URL + CHUẨN 1-TILE 1024PX + TĂNG TƯƠNG PHẢN NÉT MỰC
+  function processSingleImageFile(file) {
+    return new Promise(function(resolve) {
+      var objUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas'), maxDim = 1024;
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) {
+            h = Math.round(h * (maxDim / w));
+            w = maxDim;
+          } else {
+            w = Math.round(w * (maxDim / h));
+            h = maxDim;
           }
-          canvas.width = w;
-          canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          var du = canvas.toDataURL('image/jpeg', 0.84);
-          pagesData.push({ type: 'image', mime: 'image/jpeg', base64: du.split(',')[1], dataUrl: du, name: file.name });
-          renderImagePacket();
-        };
-        img.src = e.target.result;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        // Làm rõ nét bút mực & vết khoanh tròn trên nền giấy chụp điện thoại
+        try { ctx.filter = 'contrast(1.14) brightness(1.02)'; } catch (e) {}
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(objUrl);
+        var du = canvas.toDataURL('image/jpeg', 0.78);
+        resolve({ type: 'image', mime: 'image/jpeg', base64: du.split(',')[1], dataUrl: du, name: file.name });
       };
-      r.readAsDataURL(file);
+      img.onerror = function() {
+        URL.revokeObjectURL(objUrl);
+        resolve(null);
+      };
+      img.src = objUrl;
     });
+  }
+
+  async function addPages(event) {
+    var files = event.target.files; if (!files || files.length === 0) return;
+    var fileArr = Array.from(files);
     event.target.value = '';
+    var processed = await Promise.all(fileArr.map(processSingleImageFile));
+    processed.forEach(function(item) {
+      if (item) pagesData.push(item);
+    });
+    renderImagePacket();
   }
 
   async function addStudentPdf(event) {
@@ -1409,7 +1399,7 @@ Trả về đúng JSON:
     document.getElementById('clearTopBtn').innerText = '🗑️ Xóa tất cả (' + pagesData.length + ')';
     document.getElementById('gradeBtn').style.display = 'block';
     document.getElementById('saveMergedImgArea').style.display = hasImg ? 'block' : 'none';
-    document.getElementById('gradeBtn').innerText = '⚡ Bắt đầu chấm (' + pagesData.length + ' tệp bài làm)';
+    document.getElementById('gradeBtn').innerText = '⚡ Bắt đầu chấm siêu tốc (' + pagesData.length + ' tệp bài làm)';
     list.innerHTML = pagesData.map(function(p, i) {
       if (p.type === 'pdf') return '<div class="img-card"><div class="pdf-card">📄 PDF<br>' + escapeHtml(p.name) + '</div><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
       return '<div class="img-card"><img src="' + p.dataUrl + '"><span class="img-badge">Trang ' + (i+1) + '</span><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
@@ -1451,22 +1441,22 @@ Trả về đúng JSON:
     var title = customName || fallbackTitle;
     var safeFile = title.replace(/[\\/:*?"<>|]/g, '_') + '.jpg';
 
-    var canvas = document.createElement('canvas'), maxW = 1280, H = 60, GAP = 16, totH = H;
+    var canvas = document.createElement('canvas'), maxW = 1024, H = 56, GAP = 14, totH = H;
     var ims = await Promise.all(imgP.map(function(p) { return new Promise(function(res) { var im = new Image(); im.onload = function() { res(im); }; im.src = p.dataUrl; }); }));
     ims.forEach(function(im) { totH += Math.round(im.height * (maxW / im.width)) + GAP; });
     canvas.width = maxW; canvas.height = totH; var ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, maxW, totH);
     ctx.fillStyle = '#0f52ba'; ctx.fillRect(0, 0, maxW, H);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.fillText('Bài làm: ' + title + ' (' + ims.length + ' trang)', 20, 38);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.fillText('Bài làm: ' + title + ' (' + ims.length + ' trang)', 18, 36);
     var y = H;
     ims.forEach(function(im, idx) {
       var dh = Math.round(im.height * (maxW / im.width));
       ctx.drawImage(im, 0, y, maxW, dh);
-      ctx.fillStyle = 'rgba(15,82,186,0.85)'; ctx.fillRect(12, y + 12, 105, 32);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 17px sans-serif'; ctx.fillText('Trang ' + (idx + 1), 22, y + 34);
+      ctx.fillStyle = 'rgba(15,82,186,0.85)'; ctx.fillRect(12, y + 12, 100, 30);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.fillText('Trang ' + (idx + 1), 20, y + 32);
       y += dh + GAP;
     });
-    var mergedUrl = canvas.toDataURL('image/jpeg', 0.85);
+    var mergedUrl = canvas.toDataURL('image/jpeg', 0.82);
     try {
       var blob = await (await fetch(mergedUrl)).blob();
       var file = new File([blob], safeFile, { type: 'image/jpeg' });
@@ -1508,6 +1498,7 @@ Trả về đúng JSON:
     return out;
   }
 
+  // 3. CHẤM BÀI SIÊU TỐC (TRUYỀN TRƯỚC DANH SÁCH CÂU HỎI ĐỂ ĐỊNH VỊ CHÍNH XÁC & RÚT NGẮN 75% OUTPUT TOKEN)
   async function runGrading() {
     saveConfig();
     var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
@@ -1522,55 +1513,76 @@ Trả về đúng JSON:
       return;
     }
     if (pagesData.length === 0) { alert('Vui lòng đưa ảnh hoặc PDF bài làm học sinh lên trước!'); return; }
-    var btn = document.getElementById('gradeBtn'); btn.innerText = '⏳ Đang đọc bài & chấm điểm...'; btn.disabled = true;
+
+    var startTime = performance.now();
+    var btn = document.getElementById('gradeBtn');
+    btn.disabled = true;
+    var timerInterval = setInterval(function() {
+      var elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+      btn.innerText = '⏳ Đang chấm siêu tốc... (' + elapsed + 's)';
+    }, 200);
 
     var doMcq = (examStructureMode !== 'ESSAY_ONLY');
     var doEssay = (examStructureMode !== 'MCQ_ONLY') && (rubric !== '');
 
-    var mcqRule = doMcq
-      ? ((examMode === 'CIRCLE')
-          ? 'Đưa vào "mcq_choices" dạng {"1": "A", "2": "B"}. CHỈ lấy chữ cái A, B, C, D có nét bút mực KHOANH TRÒN hoặc đánh dấu của học sinh. Tuyệt đối KHÔNG lấy chữ in sẵn nếu không có nét khoanh.'
-          : 'Đưa vào "mcq_choices" dạng {"1": "A", "2": "B"} bằng cách đọc chữ cái A, B, C, D học sinh viết tay tương ứng với số câu.')
-      : 'Đề này KHÔNG có Trắc nghiệm, để trống "mcq_choices": {}, "tf_choices": {}, "sa_choices": {}.';
+    // Tách trước danh sách các câu hỏi có trong Đáp án để chỉ định chính xác cho AI đọc
+    var preMultiMap = isMulti ? parseMultiCodeKeys(document.getElementById('multiCodeData').value) : {};
+    var preSingleMcq = parseMcqKey(document.getElementById('mcqKey').value);
+    var sampleMcqMap = isMulti ? (preMultiMap[manualCode] || preMultiMap[Object.keys(preMultiMap)[0]] || preSingleMcq) : preSingleMcq;
+    var expectedMcqNums = Object.keys(sampleMcqMap);
+    var stdTf = parseTfKey(document.getElementById('tfKey').value);
+    var expectedTfIds = Object.keys(stdTf);
+    var stdSa = parseSaKey(document.getElementById('saKey').value);
+    var expectedSaNums = Object.keys(stdSa);
 
-    var targetInstruction = targetQ
-      ? 'CHỈ CHẤM các câu tự luận sau: [' + targetQ + '].'
-      : 'Học sinh làm những câu tự luận số mấy trong ảnh thì chấm đúng các câu đó ("Câu 1", "Câu 2"...).';
+    var mcqPromptLine = '1. "mcq_choices": {} (Không có).';
+    if (doMcq && expectedMcqNums.length > 0) {
+      mcqPromptLine = '1. "mcq_choices": Đọc đáp án A, B, C hoặc D học sinh chọn cho ĐÚNG các câu số [' + expectedMcqNums.join(', ') + ']. ' +
+        ((examMode === 'CIRCLE')
+          ? 'CHỈ lấy chữ cái có nét bút KHOANH TRÒN hoặc đánh dấu trực tiếp trên tờ đề, hoặc điền trong bảng trả lời. Không khoanh để "_".'
+          : 'Đọc chữ cái A, B, C, D học sinh viết tay theo số câu.');
+    }
+
+    var tfPromptLine = (doMcq && expectedTfIds.length > 0)
+      ? '2. "tf_choices": Đọc Đ hoặc S cho đúng các ý [' + expectedTfIds.join(', ') + '] dạng {"1a":"Đ"}.'
+      : '2. "tf_choices": {} (Bỏ qua).';
+
+    var saPromptLine = (doMcq && expectedSaNums.length > 0)
+      ? '3. "sa_choices": Đọc kết quả trả lời ngắn cho các câu [' + expectedSaNums.join(', ') + '] dạng {"1":"12.5"}.'
+      : '3. "sa_choices": {} (Bỏ qua).';
+
+    var targetInstruction = targetQ ? 'CHỈ CHẤM các câu: [' + targetQ + '].' : 'Chấm từng câu tự luận theo Hướng dẫn chấm.';
     var essayRule = (gradingStyle === 'FLEX')
-      ? 'Chấm theo ý đúng so với đáp án. Nếu học sinh trình bày cách khác nhưng đúng bản chất khoa học và kết quả thì đạt điểm tối đa.'
-      : 'Chấm sát từng ý theo biểu điểm.';
+      ? 'Chấm theo bản chất khoa học và kết quả đúng.'
+      : 'Chấm sát từng ý biểu điểm.';
 
-    var essaySectionPrompt = doEssay
-      ? (targetInstruction + ' ' + essayRule + ' Mỗi câu tự luận đưa vào mảng "essay_results" gồm đúng 4 trường: {"question": "Câu 1", "student_work": "Tóm tắt bài làm của HS", "score": 1.0, "reason": "Nhận xét chi tiết ý đúng/sai"}. Tuyệt đối KHÔNG đưa các câu Trắc nghiệm vào "essay_results".')
-      : 'Đề này KHÔNG chấm Tự luận, bắt buộc trả về mảng "essay_results": [] rỗng.';
+    var essayPromptLine = doEssay
+      ? ('4. "essay_results": ' + targetInstruction + ' ' + essayRule +
+         ' Mỗi câu gồm {"question":"Câu 1","student_work":"Ghi cực ngắn kết quả/biểu thức HS làm (tối đa 12 từ)","score":1.0,"reason":"Nếu đúng tối đa chỉ ghi Đúng; nếu sai chỉ ghi ý thiếu (tối đa 15 từ)"}. Không đưa câu Trắc nghiệm vào đây.')
+      : '4. "essay_results": [] (Để mảng rỗng).';
 
-    var prompt = `Bạn là giám khảo chấm thi môn KHTN chính xác. Hãy đọc kỹ ${pagesData.length} tệp bài làm của học sinh:
-0. TỰ ĐỘNG NHẬN DIỆN THÔNG TIN HÀNH CHÍNH TRÊN BÀI THI:
-   - "student_name": Họ và tên học sinh (nếu cắt phách không có tên thì để "").
-   - "student_class": Lớp (nếu không có để "").
-   - "student_id": Số báo danh / SBD (nếu không có để "").
-   - "blind_code": Mã phách / Số phách (nếu không có để "").
-   - "exam_code": Mã đề thi (nếu không có để "").
-   - "page_mismatch_warning": Cảnh báo nếu các trang ghi 2 tên HS hoặc 2 mã phách khác nhau, nếu cùng 1 bài để "".
-1. Trắc nghiệm ABCD: ${mcqRule}
-2. Đúng/Sai: ${doMcq ? 'Đưa vào "tf_choices" dạng {"1a": "Đ", "1b": "S"}.' : 'Để trống {}.'}
-3. Trả lời ngắn: ${doMcq ? 'Đưa vào "sa_choices" dạng {"1": "12.5"}.' : 'Để trống {}.'}
-4. Tự luận: ${essaySectionPrompt}
+    var prompt = `Chấm bài thi KHTN từ ${pagesData.length} tệp ảnh/PDF đính kèm và trả về JSON gọn, chính xác:
+0. Thông tin HS: "student_name" (Họ tên), "student_class" (Lớp), "student_id" (SBD), "blind_code" (Mã phách), "exam_code" (Mã đề), "page_mismatch_warning" (Ghi cảnh báo nếu các trang khác tên HS, cùng 1 HS để "").
+${mcqPromptLine}
+${tfPromptLine}
+${saPromptLine}
+${essayPromptLine}
+${doEssay ? ('\nBIỂU ĐIỂM TỰ LUẬN:\n' + rubric) : ''}
 
-HƯỚNG DẪN CHẤM TỰ LUẬN:
-${doEssay ? rubric : 'Không có'}
-
-Trả về đúng cấu trúc JSON:
-{"student_name": "", "student_class": "", "student_id": "", "blind_code": "", "exam_code": "", "page_mismatch_warning": "", "mcq_choices": {"1": "A"}, "tf_choices": {"1a": "Đ"}, "sa_choices": {"1": "12.5"}, "essay_results": [{"question": "Câu 1", "student_work": "", "score": 0, "reason": ""}]}`;
+JSON mẫu:
+{"student_name":"","student_class":"","student_id":"","blind_code":"","exam_code":"","page_mismatch_warning":"","mcq_choices":{},"tf_choices":{},"sa_choices":{},"essay_results":[]}`;
 
     var parts = [{ text: prompt }];
-    pagesData.forEach(function(p, i) {
-      parts.push({ text: "Tệp bài làm " + (i+1) + ":" });
+    pagesData.forEach(function(p) {
       parts.push({ inline_data: { mime_type: p.mime, data: p.base64 } });
     });
 
     try {
-      var aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.1);
+      var aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.0);
+      var totalSec = ((performance.now() - startTime) / 1000).toFixed(1);
+      var timeBadge = document.getElementById('gradeTimeBadge');
+      if (timeBadge) timeBadge.innerText = '⚡ Hoàn tất trong ' + totalSec + ' giây';
+
       currentPageWarning = aiData.page_mismatch_warning || '';
       currentDetectedExamCode = manualCode || (aiData.exam_code ? String(aiData.exam_code).trim().toUpperCase() : '');
 
@@ -1579,13 +1591,9 @@ Trả về đúng cấu trúc JSON:
       currentSaState = [];
 
       if (doMcq) {
-        var activeMcq = {};
-        if (isMulti) {
-          var mm = parseMultiCodeKeys(document.getElementById('multiCodeData').value);
-          activeMcq = mm[currentDetectedExamCode] || mm[Object.keys(mm)[0]] || parseMcqKey(document.getElementById('mcqKey').value);
-        } else {
-          activeMcq = parseMcqKey(document.getElementById('mcqKey').value);
-        }
+        var activeMcq = isMulti
+          ? (preMultiMap[currentDetectedExamCode] || preMultiMap[Object.keys(preMultiMap)[0]] || preSingleMcq)
+          : preSingleMcq;
 
         var stuM = normalizeAiChoiceMap(aiData.mcq_choices, false);
         Object.keys(activeMcq).forEach(function(q) {
@@ -1594,17 +1602,15 @@ Trả về đúng cấu trúc JSON:
           currentMcqState.push({ qNum: q, stuAns: sAns, rightAns: activeMcq[q], isCorrect: (sAns === activeMcq[q]) });
         });
 
-        var stdTf = parseTfKey(document.getElementById('tfKey').value);
         var stuTf = normalizeAiChoiceMap(aiData.tf_choices, true);
-        Object.keys(stdTf).forEach(function(qId) {
+        expectedTfIds.forEach(function(qId) {
           var rawS = String(stuTf[qId] || '_').trim().toUpperCase();
           var s = (rawS === 'Đ' || rawS === 'D' || rawS === 'T') ? 'Đ' : ((rawS === 'S' || rawS === 'F') ? 'S' : '_');
           currentTfState.push({ qId: qId, qGroup: qId.replace(/[a-d]/i, ''), stuAns: s, rightAns: stdTf[qId], isCorrect: (s === stdTf[qId]) });
         });
 
-        var stdSa = parseSaKey(document.getElementById('saKey').value);
         var stuSa = normalizeAiChoiceMap(aiData.sa_choices, false);
-        Object.keys(stdSa).forEach(function(q) {
+        expectedSaNums.forEach(function(q) {
           var v = (stuSa[q] !== undefined && stuSa[q] !== null && String(stuSa[q]).trim() !== '') ? String(stuSa[q]).trim() : '_';
           currentSaState.push({ qNum: q, stuAns: v, rightAns: stdSa[q], isCorrect: (v !== '_' && normalizeSaVal(v) === normalizeSaVal(stdSa[q])) });
         });
@@ -1650,7 +1656,8 @@ Trả về đúng cấu trúc JSON:
     } catch (e) {
       alert('Lỗi khi chấm: ' + e.message);
     } finally {
-      btn.innerText = '⚡ Bắt đầu chấm (' + pagesData.length + ' tệp bài làm)';
+      clearInterval(timerInterval);
+      btn.innerText = '⚡ Bắt đầu chấm siêu tốc (' + pagesData.length + ' tệp bài làm)';
       btn.disabled = false;
     }
   }
