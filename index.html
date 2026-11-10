@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT HS By TVB CVA-HD-CM (v15)</title>
+<title>Chấm Bài KT HS By TVB CVA-HD-CM (v17)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -13,6 +13,8 @@
   h3 { margin: 0; color: #0f52ba; font-size: 16px; }
   label { font-weight: 600; display: block; margin-top: 10px; font-size: 13px; color: #475569; }
   textarea, input, select { width: 100%; padding: 9px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+  .masked-key { -webkit-text-security: disc; text-security: disc; font-family: monospace; }
+  .plain-key { -webkit-text-security: none; text-security: none; font-family: monospace; }
   .row { display: flex; gap: 8px; }
   .row > div { flex: 1; }
   .toggle-btn { background: #e2e8f0; color: #334155; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; }
@@ -46,6 +48,7 @@
   .api-status { font-size: 12px; margin-top: 6px; font-weight: 600; padding: 5px 8px; border-radius: 5px; }
   .api-temp { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
   .api-saved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .api-invalid { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
   .model-detect-note { font-size: 11.5px; color: #0f52ba; margin-top: 6px; font-weight: 600; line-height: 1.4; background: #eff6ff; padding: 6px 8px; border-radius: 6px; border: 1px solid #bfdbfe; }
   .rpd-bar { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-top: 6px; }
   .btn-rpd-reset { background: #dcfce7; color: #15803d; border: 1px solid #86efac; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
@@ -100,13 +103,13 @@
     </div>
 
     <div id="configArea">
-      <!-- KHU VỰC QUẢN LÝ BẢO MẬT API KEY & TỰ ĐỘNG ĐỒNG BỘ MODEL THEO TÀI KHOẢN -->
+      <!-- KHU VỰC QUẢN LÝ BẢO MẬT API KEY (HỖ TRỢ ĐẦY ĐỦ KEY 52 KÝ TỰ & MỌI ĐỘ DÀI CHUẨN) -->
       <div class="api-box">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <label style="margin-top:0;">🔑 Gemini API Key cá nhân:</label>
+          <label style="margin-top:0;">🔑 API Key cá nhân:</label>
           <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:12px; color:#0f52ba; font-weight:bold; text-decoration:none;">👉 Lấy API Key miễn phí</a>
         </div>
-        <input type="password" id="apiKey" placeholder="Dán API Key vào đây (Tự động nhận diện model Free chuẩn nhất)..." oninput="onApiInputChanged()" autocomplete="off">
+        <input type="text" id="apiKey" class="masked-key" placeholder="Dán nguyên vẹn API Key (52 ký tự / 39 ký tự...) vào đây..." oninput="onApiInputChanged()" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true">
 
         <div class="api-btn-row">
           <button type="button" class="btn-api-eye" id="btnEyeApi" onclick="toggleApiVisibility()">👁️ Hiện</button>
@@ -150,7 +153,7 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          💡 Dán API Key vào ô trên: Hệ thống sẽ tự động quét danh sách mô hình thực tế của tài khoản và chọn mô hình <b>Free</b> chuẩn xác, đỡ tốn hạn mức nhất.
+          💡 Dán API Key vào ô trên: Hệ thống giữ nguyên 100% độ dài Key, tự động quét danh sách mô hình thực tế của tài khoản và chọn mô hình <b>Free</b> chuẩn xác nhất.
         </div>
       </div>
 
@@ -381,9 +384,15 @@
       .replace(/'/g, '&#39;');
   }
 
-  // Khử sạch khoảng trắng, ký tự xuống dòng hoặc ký tự ẩn khi dán API Key trên điện thoại
+  // CHỈ xóa khoảng trắng và ký tự ẩn vô hình, GIỮ NGUYÊN VẸN 100% độ dài Key (52 ký tự, 39 ký tự, dấu chấm...)
   function sanitizeApiKey(rawKey) {
-    return String(rawKey || '').replace(/[^A-Za-z0-9_\-]/g, '').trim();
+    return String(rawKey || '').replace(/[\s\u200B-\u200D\uFEFF]+/g, '').trim();
+  }
+
+  // Chấp nhận mọi API Key có độ dài từ 20 đến 150 ký tự (hỗ trợ chuẩn 52 ký tự, 39 ký tự, AQ., AIza...)
+  function isValidGeminiKeyFormat(key) {
+    var k = sanitizeApiKey(key);
+    return k.length >= 20 && k.length <= 150;
   }
 
   var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH';
@@ -474,8 +483,15 @@
 
   function toggleApiVisibility() {
     var inp = document.getElementById('apiKey'), btn = document.getElementById('btnEyeApi');
-    if (inp.type === 'password') { inp.type = 'text'; btn.innerText = '🙈 Ẩn'; }
-    else { inp.type = 'password'; btn.innerText = '👁️ Hiện'; }
+    if (inp.classList.contains('masked-key')) {
+      inp.classList.remove('masked-key');
+      inp.classList.add('plain-key');
+      btn.innerText = '🙈 Ẩn';
+    } else {
+      inp.classList.remove('plain-key');
+      inp.classList.add('masked-key');
+      btn.innerText = '👁️ Hiện';
+    }
   }
 
   function setApiPrefMode(mode) {
@@ -510,22 +526,27 @@
 
     var savedKey = safeGet('g_api');
     var banner = document.getElementById('apiStatusBanner');
+    var isValidFmt = isValidGeminiKeyFormat(curKey);
+
     if (!curKey) {
       banner.className = 'api-status api-temp';
       banner.innerText = '🔒 Chưa nhập API Key. Nếu chỉ dán vào mà không bấm "Lưu API", Key sẽ tự xóa khi thoát.';
+    } else if (!isValidFmt) {
+      banner.className = 'api-status api-invalid';
+      banner.innerText = '⚠️ Key đang nhập (' + curKey.length + ' ký tự) quá ngắn. Hãy dán đầy đủ chuỗi API Key của bạn!';
     } else if (savedKey && curKey === savedKey) {
       banner.className = 'api-status api-saved';
-      banner.innerText = '📌 API Key này đang được lưu trên máy của bạn. Bấm "Xóa API" nếu muốn gỡ bỏ.';
+      banner.innerText = '📌 API Key (' + curKey.length + ' ký tự) đang được lưu trên máy của bạn. Bấm "Xóa API" nếu muốn gỡ bỏ.';
     } else {
       banner.className = 'api-status api-temp';
-      banner.innerText = '🔒 Đang dùng tạm thời: Key này sẽ TỰ ĐỘNG XÓA SẠCH khi đóng tab/thoát App (Bấm "Lưu API" nếu muốn giữ lại).';
+      banner.innerText = '✅ Đã nhận đủ ' + curKey.length + ' ký tự Key (Đang dùng tạm thời — Bấm "Lưu API" nếu muốn giữ lại).';
     }
 
     if (autoDetectTimer) clearTimeout(autoDetectTimer);
-    if (curKey.length >= 30) {
+    if (isValidFmt) {
       autoDetectTimer = setTimeout(function() {
         verifyAndAutoSelectModel(true);
-      }, 500);
+      }, 550);
     }
   }
 
@@ -638,17 +659,21 @@
     }
   }
 
+  // Hỗ trợ xác thực cả qua Query Param (?key=) và Header (x-goog-api-key) cho các chuẩn API Key mới (52 ký tự / 39 ký tự)
   async function verifyAndAutoSelectModel(silent) {
     var key = sanitizeApiKey(document.getElementById('apiKey').value);
     var noteBox = document.getElementById('modelDetectNote');
     if (!key) {
-      if (!silent) alert('Vui lòng dán Gemini API Key vào ô trước!');
+      if (!silent) alert('Vui lòng dán API Key vào ô trước!');
       return;
     }
 
-    noteBox.innerHTML = '⏳ Đang kiểm tra tài khoản API và quét danh sách mô hình Free khả dụng...';
+    noteBox.innerHTML = '⏳ Đang kiểm tra API Key (' + key.length + ' ký tự) và quét danh sách mô hình Free...';
     try {
-      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
+      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key), {
+        method: 'GET',
+        headers: { 'x-goog-api-key': key }
+      });
       var data = await safeParseResponse(res);
       if (data.error) throw new Error(data.error.message);
 
@@ -668,29 +693,36 @@
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
       applyBestModelSelection(availableBackendModels, !silent);
     } catch (e) {
-      noteBox.innerHTML = '⚠️ Không thể đồng bộ API Key: <b>' + escapeHtml(e.message) + '</b>';
-      if (!silent) alert('Lỗi kiểm tra API Key: ' + e.message);
+      var extraHint = '';
+      if (key.indexOf('gsk_') === 0) extraHint = ' (Bạn đang dán Key của Groq gsk_..., vui lòng lấy Key tại aistudio.google.com)';
+      else if (key.indexOf('sk-') === 0) extraHint = ' (Bạn đang dán Key của OpenAI/OpenRouter sk-..., vui lòng lấy Key tại aistudio.google.com)';
+      noteBox.innerHTML = '⚠️ Chưa đồng bộ được danh sách model từ Key (' + key.length + ' ký tự): <b>' + escapeHtml(e.message + extraHint) + '</b>';
+      if (!silent) alert('Lỗi kiểm tra API Key (' + key.length + ' ký tự): ' + e.message + extraHint);
     }
   }
 
   function saveApiKeyExplicit() {
     var key = sanitizeApiKey(document.getElementById('apiKey').value);
-    if (!key) { alert('Vui lòng dán Gemini API Key vào ô trước khi bấm Lưu!'); return; }
+    if (!key) { alert('Vui lòng dán API Key vào ô trước khi bấm Lưu!'); return; }
+    if (!isValidGeminiKeyFormat(key)) {
+      alert('⚠️ Chuỗi bạn nhập (' + key.length + ' ký tự) quá ngắn! Vui lòng kiểm tra lại.');
+      return;
+    }
     document.getElementById('apiKey').value = key;
     safeSet('g_api', key);
     onApiInputChanged();
-    alert('✅ Đã lưu API Key cố định trên thiết bị này!');
+    alert('✅ Đã lưu nguyên vẹn API Key (' + key.length + ' ký tự) cố định trên thiết bị này!');
   }
 
   function deleteApiKeyExplicit() {
     var inp = document.getElementById('apiKey');
-    if (!inp.value && !safeGet('g_api')) { alert('Ô API Key hiện đã trống!'); return; }
     inp.value = '';
     safeRemove('g_api');
     safeRemove('g_avail_models');
     availableBackendModels = [];
     try { window.sessionStorage.removeItem('g_api'); } catch (e) {}
     onApiInputChanged();
+    document.getElementById('modelDetectNote').innerHTML = '🗑️ Đã xóa sạch API Key cũ khỏi bộ nhớ máy. Hãy dán API Key mới của bạn vào ô trên.';
     alert('🗑️ Đã xóa sạch API Key khỏi ứng dụng và bộ nhớ trình duyệt!');
   }
 
@@ -832,7 +864,6 @@
       try { availableBackendModels = JSON.parse(safeGet('g_avail_models')) || []; } catch (e) { availableBackendModels = []; }
     }
     var savedM = safeGet('g_model');
-    // Tự động loại bỏ các tên model ảo từ bản cũ (như 3.5-flash-lite, 3.8-flash, 4-argon) nếu còn lưu trong bộ nhớ trình duyệt
     var invalidLegacyModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-pro', 'gemini-4-argon'];
     if (savedM && invalidLegacyModels.indexOf(savedM) !== -1) {
       savedM = 'gemini-2.5-flash';
@@ -849,7 +880,8 @@
 
     if (safeGet('g_think')) document.getElementById('thinkingLevel').value = safeGet('g_think');
     if (safeGet('g_api')) {
-      document.getElementById('apiKey').value = sanitizeApiKey(safeGet('g_api'));
+      var storedKey = sanitizeApiKey(safeGet('g_api'));
+      document.getElementById('apiKey').value = storedKey;
       onApiInputChanged();
     }
 
@@ -938,7 +970,9 @@
 
   async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp) {
     var cleanKey = sanitizeApiKey(apiKey);
-    if (!cleanKey) throw new Error('API Key trống hoặc không hợp lệ.');
+    if (!isValidGeminiKeyFormat(cleanKey)) {
+      throw new Error('Vui lòng dán đầy đủ API Key trước khi thực hiện.');
+    }
 
     var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'LOW';
     var modelsToTry = resolveWorkingModels(uiModelValue);
@@ -964,7 +998,10 @@
 
           var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': cleanKey
+            },
             body: JSON.stringify({
               contents: [{ parts: parts }],
               generationConfig: genConfig
@@ -982,7 +1019,7 @@
               continue;
             }
             if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
-              throw new Error('API Key không hợp lệ hoặc đã bị khóa: ' + msg);
+              throw new Error('API Key (' + cleanKey.length + ' ký tự) bị từ chối: ' + msg);
             }
             if (lowerMsg.indexOf('high demand') !== -1 || res.status === 503 || res.status === 429) {
               lastErr = new Error(msg);
@@ -999,13 +1036,13 @@
         } catch (err) {
           lastErr = err;
           if (err.isModelNotFound) {
-            break; // Chuyển ngay sang model dự phòng tiếp theo nếu model hiện tại báo 404
+            break;
           }
           if (err.isRetryable) {
             await new Promise(function(r) { setTimeout(r, 1200); });
             continue;
           }
-          if (err.message && (err.message.indexOf('API Key không hợp lệ') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
+          if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
             throw err;
           }
         }
@@ -1191,12 +1228,34 @@
     });
   }
 
+  function parseDocxTextOffline(rawText, fileName) {
+    var statusBox = document.getElementById('fileStatusBox');
+    var mcqMatches = rawText.match(/\b(\d{1,2})\s*[\.\-\:]\s*([A-D])\b/g) || [];
+    if (mcqMatches.length >= 4) {
+      document.getElementById('mcqKey').value = mcqMatches.map(function(x) {
+        return x.replace(/[\.\-\:\s]+/g, '');
+      }).join(', ');
+    }
+    var tfMatches = rawText.match(/\b(\d{1,2})\s*([a-dA-D])\s*[\.\-\:\=]?\s*([ĐđDdSs])\b/g) || [];
+    if (tfMatches.length >= 2) {
+      document.getElementById('tfKey').value = tfMatches.map(function(x) {
+        return x.replace(/[\.\-\:\=\s]+/g, '');
+      }).join(', ');
+    }
+    document.getElementById('essayRubric').value = rawText;
+    autoDetectStructureFromInputs();
+    saveConfig();
+    statusBox.style.display = 'block';
+    statusBox.innerText = '✅ Đã nạp nội dung từ file "' + fileName + '" (Chế độ cục bộ trên máy, không tốn API)!';
+  }
+
   async function handleAnswerFile(event) {
     var file = event.target.files[0]; if (!file) return;
     var statusBox = document.getElementById('fileStatusBox');
     statusBox.style.display = 'block';
     statusBox.innerText = '⏳ Đang xóa đáp án cũ & phân tích cấu trúc file "' + file.name + '"...';
     var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
+    var isValidKey = isValidGeminiKeyFormat(apiKey);
     var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
     var fName = file.name.toLowerCase();
 
@@ -1205,18 +1264,20 @@
         var res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
         var rawText = res.value.trim();
         resetAllAnswerFields();
-        if (!apiKey) {
-          document.getElementById('essayRubric').value = rawText;
-          autoDetectStructureFromInputs();
-          saveConfig();
-          statusBox.innerText = '✅ Đã nạp văn bản từ file Word (Nhập API Key để AI tự động tách TN / TL)!';
+        if (!isValidKey) {
+          parseDocxTextOffline(rawText, file.name);
         } else {
           statusBox.innerText = '🤖 Đang dùng AI nhận diện Trắc nghiệm / Tự luận từ file Word...';
-          await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + rawText }], file.name);
+          try {
+            await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + rawText }], file.name);
+          } catch (apiErr) {
+            parseDocxTextOffline(rawText, file.name);
+            alert('⚠️ Không gọi được AI do API Key hiện tại báo lỗi (' + apiErr.message + ').\n\n👉 Hệ thống đã tự động chuyển sang nạp văn bản Đáp án trực tiếp trên máy để bạn tiếp tục làm việc!');
+          }
         }
       } else if (fName.endsWith('.pdf')) {
-        if (!apiKey) {
-          alert('Vui lòng dán Gemini API Key ở trên trước để AI đọc file PDF!');
+        if (!isValidKey) {
+          alert('Vui lòng dán đầy đủ API Key ở mục 1 để AI đọc file PDF!');
           statusBox.style.display = 'none';
           event.target.value = '';
           return;
@@ -1456,7 +1517,11 @@ Trả về đúng JSON:
     var rubric = document.getElementById('essayRubric').value.trim();
     var targetQ = document.getElementById('targetQuestions').value.trim();
 
-    if (!apiKey || pagesData.length === 0) { alert('Vui lòng dán Gemini API Key và đưa bài làm học sinh lên!'); return; }
+    if (!isValidGeminiKeyFormat(apiKey)) {
+      alert('⚠️ Vui lòng dán đầy đủ API Key ở mục 1 trước khi chấm!');
+      return;
+    }
+    if (pagesData.length === 0) { alert('Vui lòng đưa ảnh hoặc PDF bài làm học sinh lên trước!'); return; }
     var btn = document.getElementById('gradeBtn'); btn.innerText = '⏳ Đang đọc bài & chấm điểm...'; btn.disabled = true;
 
     var doMcq = (examStructureMode !== 'ESSAY_ONLY');
