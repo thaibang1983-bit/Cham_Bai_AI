@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT HS By TVB CVA-HD-CM (v18 Siêu Tốc)</title>
+<title>Chấm Bài KT HS By TVB CVA-HD-CM (v19 Chuẩn 3.5 Siêu Tốc)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -109,7 +109,7 @@
           <label style="margin-top:0;">🔑 API Key cá nhân:</label>
           <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:12px; color:#0f52ba; font-weight:bold; text-decoration:none;">👉 Lấy API Key miễn phí</a>
         </div>
-        <input type="text" id="apiKey" class="masked-key" placeholder="Dán nguyên vẹn API Key (52 ký tự / 39 ký tự...) vào đây..." oninput="onApiInputChanged()" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true">
+        <input type="text" id="apiKey" class="masked-key" placeholder="Dán nguyên vẹn API Key (AQ_... / AIza...) vào đây..." oninput="onApiInputChanged()" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true">
 
         <div class="api-btn-row">
           <button type="button" class="btn-api-eye" id="btnEyeApi" onclick="toggleApiVisibility()">👁️ Hiện</button>
@@ -129,31 +129,31 @@
 
         <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model Free:</label>
         <div class="mode-switch">
-          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác cao & Nhanh (Khuyên dùng)</button>
-          <button type="button" class="mode-btn" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Siêu tốc & Tiết kiệm (Flash-Lite)</button>
+          <button type="button" class="mode-btn active" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Siêu tốc & Ít tốn nhất (3.5 Flash-Lite)</button>
+          <button type="button" class="mode-btn" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Cân bằng (Flash chuẩn)</button>
         </div>
 
         <div class="row" style="margin-top:6px;">
           <div style="flex:1.45;">
             <label style="margin-top:2px;">Mô hình thực tế trong tài khoản API:</label>
             <select id="aiModel" onchange="onManualModelChange()">
-              <option value="gemini-2.5-flash" selected>🎯 gemini-2.5-flash (Free - Chuẩn xác & Nhanh)</option>
-              <option value="gemini-2.5-flash-lite">⚡ gemini-2.5-flash-lite (Free - Siêu tốc 2-3s/bài)</option>
-              <option value="gemini-2.0-flash">⚡ gemini-2.0-flash (Free - Ổn định, không trễ Thinking)</option>
-              <option value="gemini-2.0-flash-lite">⚡ gemini-2.0-flash-lite (Free - Nhẹ nhất)</option>
+              <option value="gemini-3.5-flash-lite" selected>⚡ gemini-3.5-flash-lite (Free Mới Nhất - Siêu tốc 2-4s/bài)</option>
+              <option value="gemini-3.5-flash">🎯 gemini-3.5-flash (Free - Chuẩn xác cao)</option>
+              <option value="gemini-3.8-flash">🔥 gemini-3.8-flash (Free - Cân bằng)</option>
+              <option value="gemini-2.5-flash">🎯 gemini-2.5-flash (Dành cho Key thế hệ cũ)</option>
             </select>
           </div>
           <div style="flex:0.95;">
             <label style="margin-top:2px;">Hạn mức tư duy (Thinking):</label>
             <select id="thinkingLevel" onchange="saveConfig()">
-              <option value="LOW" selected>⚡ Tắt (0 token - Chấm 3-5 giây)</option>
+              <option value="LOW" selected>⚡ Tắt (0 token - Chấm 2-5 giây)</option>
               <option value="MEDIUM">⚖️ Nhanh (256 token)</option>
               <option value="HIGH">🧠 Sâu (1024 token)</option>
             </select>
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          💡 Đã kích hoạt cơ chế <b>Tối ưu ảnh 1-Tile (1024px) + Tăng tương phản nét mực + Ngắt kết nối treo 18s</b> giúp chấm 1 bài chỉ trong <b>3–6 giây</b>.
+          ✅ Mặc định chọn ưu tiên: <b>gemini-3.5-flash-lite (Tắt Thinking = 0 token)</b> — Tương thích 100% tài khoản mới, tự động khóa các model 2.5/2.0 đã ngừng hỗ trợ.
         </div>
       </div>
 
@@ -394,13 +394,29 @@
   }
 
   var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH';
-  var apiPrefMode = 'BALANCED';
+  var apiPrefMode = 'QUOTA'; // Mặc định ưu tiên 3.5 Flash-Lite siêu tốc & tiết kiệm nhất
   var pagesData = [];
   var currentMcqState = [], currentTfState = [], currentSaState = [], currentEssayState = [];
   var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
   var availableBackendModels = [];
+  var deadModelsMap = {}; // Lưu các model bị Google ngừng cấp cho tài khoản mới (VD: 2.5-flash-lite)
   var autoDetectTimer = null;
   var lastExportedBlobUrl = null;
+
+  function loadDeadModels() {
+    try {
+      var raw = safeGet('g_dead_models');
+      if (raw) deadModelsMap = JSON.parse(raw) || {};
+    } catch (e) { deadModelsMap = {}; }
+  }
+
+  function markModelAsDead(modelId) {
+    if (!modelId) return;
+    deadModelsMap[modelId] = true;
+    safeSet('g_dead_models', JSON.stringify(deadModelsMap));
+    availableBackendModels = availableBackendModels.filter(function(m) { return m !== modelId; });
+    safeSet('g_avail_models', JSON.stringify(availableBackendModels));
+  }
 
   // QUẢN LÝ BỘ ĐẾM LƯỢT GỌI API TRONG NGÀY (RPD COUNTER)
   function getTodayDateString() {
@@ -499,7 +515,7 @@
     if (availableBackendModels.length > 0) {
       applyBestModelSelection(availableBackendModels, false);
     } else {
-      var defModel = (mode === 'QUOTA') ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+      var defModel = (mode === 'QUOTA') ? 'gemini-3.5-flash-lite' : 'gemini-3.5-flash';
       var sel = document.getElementById('aiModel');
       if (sel && Array.from(sel.options).some(function(o) { return o.value === defModel; })) {
         sel.value = defModel;
@@ -543,14 +559,14 @@
     if (isValidFmt) {
       autoDetectTimer = setTimeout(function() {
         verifyAndAutoSelectModel(true);
-      }, 550);
+      }, 500);
     }
   }
 
-  // Lọc bỏ triệt để các model thử nghiệm chậm hoặc không phải Vision chuẩn
   function isSuitableGradingModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     if (m.indexOf('gemini-') !== 0) return false;
+    if (deadModelsMap[modelId]) return false;
     var blockedKeywords = [
       'tts', 'audio', 'image', 'imagen', 'veo', 'embedding', 'aqa',
       'learnlm', 'robotics', 'computer-use', 'thinking', 'live', 'bisheng', 'exp'
@@ -564,14 +580,14 @@
   function classifyGeminiModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     var isLite = m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1;
-    var isPro = m.indexOf('pro') !== -1 || m.indexOf('ultra') !== -1;
+    var isPro = m.indexOf('pro') !== -1 || m.indexOf('ultra') !== -1 || m.indexOf('argon') !== -1;
     var isPreview = m.indexOf('preview') !== -1;
 
     if (isPro) {
       return {
         tier: 'PRO',
-        label: '🧠 ' + modelId + ' (Pro - Chậm & Tốn hạn mức)',
-        desc: 'Mô hình Pro suy luận sâu (15-30s/bài), hạn mức miễn phí thấp.'
+        label: '🧠 ' + modelId + ' (Pro - Suy luận sâu / Tốn hạn mức)',
+        desc: 'Mô hình Pro suy luận sâu, hạn mức miễn phí thấp.'
       };
     }
     if (isLite) {
@@ -588,68 +604,80 @@
     };
   }
 
-  // Chấm điểm ưu tiên: Đặt các bản Stable Flash 2.5 / 2.0 lên đầu để không dính bản Preview chậm
+  // CHẤM ĐIỂM TỰ ĐỘNG THEO PHIÊN BẢN MỚI NHẤT (ƯU TIÊN GEMINI 3.5 / 3.8 TRƯỚC, LOẠI BỎ ƯU TIÊN CỨNG 2.5 CŨ)
   function scoreModelForAutoSelect(modelId, prefMode) {
     var m = String(modelId || '').toLowerCase();
+    if (deadModelsMap[modelId]) return -9999;
+
     var isPreview = (m.indexOf('preview') !== -1 || m.indexOf('exp') !== -1);
-    var isPro = (m.indexOf('pro') !== -1);
+    var isPro = (m.indexOf('pro') !== -1 || m.indexOf('argon') !== -1 || m.indexOf('ultra') !== -1);
     var isLite = (m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1);
     var isFlash = (m.indexOf('flash') !== -1 && !isLite);
 
-    if (isPro) return 50;
+    var verMatch = m.match(/gemini-(\d+(?:\.\d+)?)/);
+    var ver = verMatch ? parseFloat(verMatch[1]) : 1.0;
 
-    var base = 0;
+    if (isPro) return Math.round(ver * 20);
+
+    // Điểm nền theo thế hệ phiên bản: 3.5 -> 3500 điểm, 2.5 -> 2500 điểm (Đảm bảo 3.x luôn đứng trên 2.x)
+    var score = Math.round(ver * 1000);
+
     if (prefMode === 'QUOTA') {
-      if (m === 'gemini-2.5-flash-lite') return 1000;
-      if (m === 'gemini-2.0-flash-lite') return 980;
-      if (m === 'gemini-2.5-flash') return 950;
-      if (m === 'gemini-2.0-flash') return 930;
-      base = isLite ? (isPreview ? 600 : 850) : (isPreview ? 500 : 750);
+      if (isLite) score += 300;
+      else if (isFlash) score += 150;
     } else {
-      if (m === 'gemini-2.5-flash') return 1000;
-      if (m === 'gemini-2.0-flash') return 970;
-      if (m === 'gemini-2.5-flash-lite') return 950;
-      if (m === 'gemini-2.0-flash-lite') return 920;
-      base = isFlash ? (isPreview ? 600 : 850) : (isPreview ? 550 : 800);
+      if (isFlash) score += 300;
+      else if (isLite) score += 200;
     }
-    return base;
+
+    if (!isPreview) score += 80;
+    if (/^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(m)) score += 40;
+    return score;
   }
 
   function populateModelDropdown(modelsList, selectedModelId) {
     var sel = document.getElementById('aiModel');
     if (!sel || !modelsList || modelsList.length === 0) return;
 
-    var sorted = modelsList.slice().sort(function(a, b) {
+    var cleanList = modelsList.filter(function(m) { return !deadModelsMap[m]; });
+    if (cleanList.length === 0) cleanList = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+
+    var sorted = cleanList.slice().sort(function(a, b) {
       return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
     });
 
+    var targetSel = (selectedModelId && sorted.indexOf(selectedModelId) !== -1) ? selectedModelId : sorted[0];
+
     sel.innerHTML = sorted.map(function(mId) {
       var info = classifyGeminiModel(mId);
-      var isSel = (mId === selectedModelId) ? ' selected' : '';
+      var isSel = (mId === targetSel) ? ' selected' : '';
       return '<option value="' + escapeHtml(mId) + '"' + isSel + '>' + escapeHtml(info.label) + '</option>';
     }).join('');
   }
 
   function applyBestModelSelection(modelsList, showPopup) {
     if (!modelsList || modelsList.length === 0) return;
-    var sorted = modelsList.slice().sort(function(a, b) {
+    var cleanList = modelsList.filter(function(m) { return !deadModelsMap[m]; });
+    if (cleanList.length === 0) cleanList = ['gemini-3.5-flash-lite', 'gemini-3.5-flash'];
+
+    var sorted = cleanList.slice().sort(function(a, b) {
       return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
     });
     var bestModel = sorted[0];
-    populateModelDropdown(modelsList, bestModel);
+    populateModelDropdown(cleanList, bestModel);
 
     document.getElementById('thinkingLevel').value = 'LOW';
     saveConfig();
 
     var info = classifyGeminiModel(bestModel);
     var noteBox = document.getElementById('modelDetectNote');
-    noteBox.innerHTML = '✅ Đã đồng bộ <b>' + modelsList.length + ' mô hình</b> từ tài khoản API!<br>' +
-      '👉 Tự động chọn: <b>' + escapeHtml(bestModel) + '</b> + <b>Thinking = 0</b> (' + info.desc + ')';
+    noteBox.innerHTML = '✅ Đã đồng bộ <b>' + cleanList.length + ' mô hình khả dụng</b> từ tài khoản API!<br>' +
+      '👉 Tự động chọn: <b>' + escapeHtml(bestModel) + '</b> + <b>Tắt Thinking (0 token)</b> (' + info.desc + ')';
 
     if (showPopup) {
       alert('✅ Đã đồng bộ tài khoản Gemini API!\n\n' +
-        '• Tự động chọn mô hình Free nhanh & chuẩn nhất: ' + bestModel + '\n' +
-        '• Đã tắt Thinking nháp (0 token) giúp chấm 1 bài chỉ mất 3–6 giây.');
+        '• Tự động chọn mô hình Free mới & nhanh nhất: ' + bestModel + '\n' +
+        '• Đã tắt Thinking nháp (0 token) giúp chấm 1 bài chỉ mất 2–5 giây.');
     }
   }
 
@@ -670,7 +698,7 @@
       var data = await safeParseResponse(res);
       if (data.error) throw new Error(data.error.message);
 
-      var validModels = (data.models || []).filter(function(m) {
+      var rawModels = (data.models || []).filter(function(m) {
         var methods = m.supportedGenerationMethods || [];
         var id = (m.name || '').replace('models/', '');
         return methods.indexOf('generateContent') !== -1 && isSuitableGradingModel(id);
@@ -678,11 +706,19 @@
         return m.name.replace('models/', '');
       });
 
-      if (validModels.length === 0) {
-        throw new Error('Tài khoản API này không có mô hình Gemini Vision nào khả dụng.');
+      // Nếu tài khoản đã có dòng Gemini 3.x (như gemini-3.5-flash-lite), tự động loại bỏ các dòng 2.0 / 2.5 cũ đã bị Google ngừng cấp cho tài khoản mới
+      var hasGen3 = rawModels.some(function(m) { return m.indexOf('gemini-3') === 0; });
+      if (hasGen3) {
+        rawModels = rawModels.filter(function(m) {
+          return m.indexOf('gemini-2.0') !== 0 && m.indexOf('gemini-2.5') !== 0 && m.indexOf('gemini-1.') !== 0;
+        });
       }
 
-      availableBackendModels = validModels;
+      if (rawModels.length === 0) {
+        rawModels = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+      }
+
+      availableBackendModels = rawModels;
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
       applyBestModelSelection(availableBackendModels, !silent);
     } catch (e) {
@@ -709,7 +745,9 @@
     inp.value = '';
     safeRemove('g_api');
     safeRemove('g_avail_models');
+    safeRemove('g_dead_models');
     availableBackendModels = [];
+    deadModelsMap = {};
     try { window.sessionStorage.removeItem('g_api'); } catch (e) {}
     onApiInputChanged();
     document.getElementById('modelDetectNote').innerHTML = '🗑️ Đã xóa sạch API Key cũ khỏi bộ nhớ máy.';
@@ -839,6 +877,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', function() {
+    loadDeadModels();
     updateRpdUI();
 
     if (safeGet('g_apipref')) {
@@ -849,15 +888,26 @@
     if (safeGet('g_avail_models')) {
       try { availableBackendModels = JSON.parse(safeGet('g_avail_models')) || []; } catch (e) { availableBackendModels = []; }
     }
+
+    // Nếu danh sách lưu từ bản cũ có cả model 3.x và 2.x, lọc bỏ 2.x để không bao giờ gọi nhầm
+    var hasGen3Saved = availableBackendModels.some(function(m) { return m.indexOf('gemini-3') === 0; });
+    if (hasGen3Saved) {
+      availableBackendModels = availableBackendModels.filter(function(m) {
+        return m.indexOf('gemini-2.0') !== 0 && m.indexOf('gemini-2.5') !== 0 && !deadModelsMap[m];
+      });
+    }
+
     var savedM = safeGet('g_model');
-    var invalidLegacyModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.1-pro', 'gemini-4-argon'];
-    if (savedM && invalidLegacyModels.indexOf(savedM) !== -1) {
-      savedM = 'gemini-2.5-flash';
+    if (savedM && (deadModelsMap[savedM] || (hasGen3Saved && savedM.indexOf('gemini-2.') === 0))) {
+      savedM = 'gemini-3.5-flash-lite';
       safeSet('g_model', savedM);
     }
 
     if (availableBackendModels.length > 0) {
-      var targetM = (savedM && availableBackendModels.indexOf(savedM) !== -1) ? savedM : availableBackendModels[0];
+      var sortedInit = availableBackendModels.slice().sort(function(a, b) {
+        return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
+      });
+      var targetM = (savedM && availableBackendModels.indexOf(savedM) !== -1) ? savedM : sortedInit[0];
       populateModelDropdown(availableBackendModels, targetM);
     } else if (savedM) {
       var sel = document.getElementById('aiModel');
@@ -897,17 +947,26 @@
     renderTable();
   });
 
-  // Danh sách model dự phòng siêu tốc (tối đa 3 model ổn định nhất để không bao giờ bị treo 1 phút)
+  // Xây dựng danh sách model chạy thực tế: Ưu tiên tuyệt đối Gemini 3.5 Flash-Lite & các model 3.x trong tài khoản
   function resolveWorkingModels(uiModel) {
     var list = [];
-    var fastCore = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-    if (uiModel) list.push(uiModel);
-    fastCore.forEach(function(m) {
-      if (list.indexOf(m) === -1 && (availableBackendModels.length === 0 || availableBackendModels.indexOf(m) !== -1)) {
-        list.push(m);
-      }
+    if (uiModel && !deadModelsMap[uiModel]) list.push(uiModel);
+
+    var priorityModels = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+    if (availableBackendModels && availableBackendModels.length > 0) {
+      var sortedAvail = availableBackendModels.filter(function(m) {
+        return !deadModelsMap[m] && m.toLowerCase().indexOf('pro') === -1;
+      }).sort(function(a, b) {
+        return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
+      });
+      sortedAvail.forEach(function(m) {
+        if (list.indexOf(m) === -1) list.push(m);
+      });
+    }
+    priorityModels.forEach(function(pm) {
+      if (!deadModelsMap[pm] && list.indexOf(pm) === -1) list.push(pm);
     });
-    return list.slice(0, 3);
+    return list.slice(0, 4);
   }
 
   function safeExtractAndParseJson(data) {
@@ -939,12 +998,13 @@
     }
   }
 
+  // Hỗ trợ tắt Thinking (0 token) cho cả dòng Gemini 3.x (3.5-flash-lite, 3.8-flash...) và 2.5
   function supportsThinkingConfig(modelId) {
     var m = String(modelId || '').toLowerCase();
-    return m.indexOf('gemini-2.5') === 0 && m.indexOf('pro') === -1;
+    return (m.indexOf('gemini-3') === 0 || m.indexOf('gemini-2.5') === 0) && m.indexOf('pro') === -1;
   }
 
-  // GỌI API SIÊU TỐC: CÓ ABORT-CONTROLLER 18 GIÂY & TỰ ĐỘNG GHIM MODEL NHANH NHẤT
+  // GỌI API SIÊU TỐC: TỰ ĐỘNG BẮT MODEL THAY THẾ TỪ THÔNG BÁO GOOGLE (VD: gemini-3.5-flash-lite) & KHÓA MODEL CŨ
   async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp) {
     var cleanKey = sanitizeApiKey(apiKey);
     if (!isValidGeminiKeyFormat(cleanKey)) {
@@ -960,67 +1020,100 @@
 
     for (var mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
       var curModel = modelsToTry[mIdx];
+      if (deadModelsMap[curModel]) continue;
+
       var useThinkParam = supportsThinkingConfig(curModel);
 
-      var genConfig = {
-        temperature: baseTemp,
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json'
-      };
-      if (useThinkParam) {
-        genConfig.thinkingConfig = { thinkingBudget: targetBudget };
-      }
-
-      var controller = new AbortController();
-      var timeoutId = setTimeout(function() { controller.abort(); }, 18000);
-
-      try {
-        var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': cleanKey
-          },
-          body: JSON.stringify({
-            contents: [{ parts: parts }],
-            generationConfig: genConfig
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        var data = await safeParseResponse(res);
-        if (data.error) {
-          var msg = data.error.message || '';
-          var lowerMsg = msg.toLowerCase();
-          if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
-            throw new Error('API Key bị từ chối: ' + msg);
-          }
-          lastErr = new Error(msg);
-          continue; // Chuyển ngay lập tức sang model Free dự phòng kế tiếp, không chờ đợi lặp lại
+      for (var attempt = 0; attempt < 2; attempt++) {
+        var genConfig = {
+          temperature: baseTemp,
+          maxOutputTokens: 4096,
+          responseMimeType: 'application/json'
+        };
+        if (useThinkParam) {
+          genConfig.thinkingConfig = { thinkingBudget: targetBudget };
         }
 
-        var parsedResult = safeExtractAndParseJson(data);
-        incrementRpdCounter();
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
 
-        // Nếu model dự phòng chạy thành công khi model chính bị nghẽn, tự động ghim model nhanh này cho các bài sau
-        if (mIdx > 0) {
+        try {
+          var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': cleanKey
+            },
+            body: JSON.stringify({
+              contents: [{ parts: parts }],
+              generationConfig: genConfig
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          var data = await safeParseResponse(res);
+          if (data.error) {
+            var msg = data.error.message || '';
+            var lowerMsg = msg.toLowerCase();
+
+            // 1. Nếu model không hỗ trợ tham số thinkingConfig, tự động gỡ bỏ tham số này và gọi lại ngay
+            if (useThinkParam && (lowerMsg.indexOf('thinking') !== -1 || lowerMsg.indexOf('unknown name') !== -1 || lowerMsg.indexOf('invalid argument') !== -1)) {
+              useThinkParam = false;
+              continue;
+            }
+
+            // 2. Nếu Google báo model cũ không còn khả dụng ("no longer available... update your code to use models/gemini-3.5-flash-lite")
+            if (lowerMsg.indexOf('no longer available') !== -1 || lowerMsg.indexOf('deprecated') !== -1 || res.status === 404) {
+              markModelAsDead(curModel);
+              var suggestedMatch = msg.match(/models\/([a-zA-Z0-9\.\-\_]+)/);
+              if (suggestedMatch && suggestedMatch[1]) {
+                var suggestedModel = suggestedMatch[1];
+                if (modelsToTry.indexOf(suggestedModel) === -1) {
+                  modelsToTry.splice(mIdx + 1, 0, suggestedModel);
+                }
+                if (availableBackendModels.indexOf(suggestedModel) === -1) {
+                  availableBackendModels.unshift(suggestedModel);
+                }
+              }
+              lastErr = new Error(msg);
+              break; // Chuyển ngay lập tức sang model 3.5-flash-lite
+            }
+
+            if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
+              throw new Error('API Key bị từ chối: ' + msg);
+            }
+
+            lastErr = new Error(msg);
+            break;
+          }
+
+          var parsedResult = safeExtractAndParseJson(data);
+          incrementRpdCounter();
+
+          // Tự động cập nhật Dropdown và ghim cố định model vừa chạy thành công
+          populateModelDropdown(availableBackendModels, curModel);
           var sel = document.getElementById('aiModel');
-          if (sel && Array.from(sel.options).some(function(o) { return o.value === curModel; })) {
-            sel.value = curModel;
-            saveConfig();
+          if (sel) sel.value = curModel;
+          saveConfig();
+
+          return parsedResult;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (err.isModelNotFound) {
+            markModelAsDead(curModel);
+            lastErr = err;
+            break;
           }
-        }
-        return parsedResult;
-      } catch (err) {
-        clearTimeout(timeoutId);
-        if (err.name === 'AbortError') {
-          lastErr = new Error('Model ' + curModel + ' phản hồi quá 18 giây, đang chuyển luồng nhanh...');
-          continue;
-        }
-        lastErr = err;
-        if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
-          throw err;
+          if (err.name === 'AbortError') {
+            lastErr = new Error('Model ' + curModel + ' phản hồi quá 20 giây, đang chuyển luồng nhanh...');
+            break;
+          }
+          lastErr = err;
+          if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
+            throw err;
+          }
+          break;
         }
       }
     }
@@ -1222,17 +1315,17 @@
     autoDetectStructureFromInputs();
     saveConfig();
     statusBox.style.display = 'block';
-    statusBox.innerText = '✅ Đã nạp nội dung từ file "' + fileName + '" (Chế độ cục bộ trên máy, không tốn API)!';
+    statusBox.innerText = '✅ Đã nạp nội dung từ file "' + fileName + '"!';
   }
 
   async function handleAnswerFile(event) {
     var file = event.target.files[0]; if (!file) return;
     var statusBox = document.getElementById('fileStatusBox');
     statusBox.style.display = 'block';
-    statusBox.innerText = '⏳ Đang xóa đáp án cũ & phân tích cấu trúc file "' + file.name + '"...';
+    statusBox.innerText = '⏳ Đang phân tích cấu trúc file "' + file.name + '"...';
     var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
     var isValidKey = isValidGeminiKeyFormat(apiKey);
-    var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
+    var selectedModel = document.getElementById('aiModel').value || 'gemini-3.5-flash-lite';
     var fName = file.name.toLowerCase();
 
     try {
@@ -1248,7 +1341,6 @@
             await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + rawText }], file.name);
           } catch (apiErr) {
             parseDocxTextOffline(rawText, file.name);
-            alert('⚠️ Không gọi được AI (' + apiErr.message + ').\n👉 Đã tự động chuyển sang nạp văn bản Đáp án trực tiếp trên máy!');
           }
         }
       } else if (fName.endsWith('.pdf')) {
@@ -1262,7 +1354,7 @@
           throw new Error('File PDF nặng quá 14MB. Vui lòng dùng file Word (.docx) hoặc nén nhỏ PDF.');
         }
         resetAllAnswerFields();
-        statusBox.innerText = '🤖 Đang gửi file PDF lên AI để nhận diện Trắc nghiệm / Tự luận...';
+        statusBox.innerText = '🤖 Đang gửi file PDF lên AI (gemini-3.5-flash-lite) để nhận diện TN / TL...';
         var b64Pdf = await fileToBase64(file);
         await extractRubricWithAI(apiKey, selectedModel, [{ inline_data: { mime_type: "application/pdf", data: b64Pdf } }], file.name);
       }
@@ -1342,7 +1434,6 @@ JSON:
         canvas.width = w;
         canvas.height = h;
         var ctx = canvas.getContext('2d');
-        // Làm rõ nét bút mực & vết khoanh tròn trên nền giấy chụp điện thoại
         try { ctx.filter = 'contrast(1.14) brightness(1.02)'; } catch (e) {}
         ctx.drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(objUrl);
@@ -1498,11 +1589,11 @@ JSON:
     return out;
   }
 
-  // 3. CHẤM BÀI SIÊU TỐC (TRUYỀN TRƯỚC DANH SÁCH CÂU HỎI ĐỂ ĐỊNH VỊ CHÍNH XÁC & RÚT NGẮN 75% OUTPUT TOKEN)
+  // 3. CHẤM BÀI SIÊU TỐC VỚI GEMINI 3.5 FLASH-LITE
   async function runGrading() {
     saveConfig();
     var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
-    var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
+    var selectedModel = document.getElementById('aiModel').value || 'gemini-3.5-flash-lite';
     var isMulti = document.getElementById('useMultiCodeChk').checked;
     var manualCode = document.getElementById('manualExamCode').value.trim().toUpperCase();
     var rubric = document.getElementById('essayRubric').value.trim();
@@ -1525,7 +1616,6 @@ JSON:
     var doMcq = (examStructureMode !== 'ESSAY_ONLY');
     var doEssay = (examStructureMode !== 'MCQ_ONLY') && (rubric !== '');
 
-    // Tách trước danh sách các câu hỏi có trong Đáp án để chỉ định chính xác cho AI đọc
     var preMultiMap = isMulti ? parseMultiCodeKeys(document.getElementById('multiCodeData').value) : {};
     var preSingleMcq = parseMcqKey(document.getElementById('mcqKey').value);
     var sampleMcqMap = isMulti ? (preMultiMap[manualCode] || preMultiMap[Object.keys(preMultiMap)[0]] || preSingleMcq) : preSingleMcq;
@@ -1558,7 +1648,7 @@ JSON:
 
     var essayPromptLine = doEssay
       ? ('4. "essay_results": ' + targetInstruction + ' ' + essayRule +
-         ' Mỗi câu gồm {"question":"Câu 1","student_work":"Ghi cực ngắn kết quả/biểu thức HS làm (tối đa 12 từ)","score":1.0,"reason":"Nếu đúng tối đa chỉ ghi Đúng; nếu sai chỉ ghi ý thiếu (tối đa 15 từ)"}. Không đưa câu Trắc nghiệm vào đây.')
+         ' Mỗi câu gồm {"question":"Câu 1","student_work":"Ghi ngắn gọn kết quả/biểu thức HS làm (tối đa 12 từ)","score":1.0,"reason":"Nếu đúng tối đa chỉ ghi Đúng; nếu sai chỉ ghi ý thiếu (tối đa 15 từ)"}. Không đưa câu Trắc nghiệm vào đây.')
       : '4. "essay_results": [] (Để mảng rỗng).';
 
     var prompt = `Chấm bài thi KHTN từ ${pagesData.length} tệp ảnh/PDF đính kèm và trả về JSON gọn, chính xác:
