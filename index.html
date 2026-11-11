@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT HS By TVB CVA-HD-CM (v22 Siêu Tốc)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v23)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <style>
@@ -131,7 +131,7 @@
 
         <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model Free:</label>
         <div class="mode-switch">
-          <button type="button" class="mode-btn active" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Siêu tốc & Ít tốn nhất (Flash-Lite)</button>
+          <button type="button" class="mode-btn active" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Siêu tốc & Ít tốn nhất (3.5 Flash-Lite)</button>
           <button type="button" class="mode-btn" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Cân bằng (Flash chuẩn)</button>
         </div>
 
@@ -139,7 +139,7 @@
           <div style="flex:1.45;">
             <label style="margin-top:2px;">Mô hình thực tế trong tài khoản API:</label>
             <select id="aiModel" onchange="onManualModelChange()">
-              <option value="gemini-3.5-flash-lite" selected>⚡ gemini-3.5-flash-lite (Free Mới Nhất - Siêu tốc 2-4s/bài)</option>
+              <option value="gemini-3.5-flash-lite" selected>⚡ gemini-3.5-flash-lite (Free Mới Nhất - Siêu tốc 3-5s)</option>
               <option value="gemini-2.5-flash">🎯 gemini-2.5-flash (Free - Chuẩn xác cao)</option>
               <option value="gemini-2.0-flash">⚡ gemini-2.0-flash (Free - Ổn định)</option>
             </select>
@@ -147,14 +147,14 @@
           <div style="flex:0.95;">
             <label style="margin-top:2px;">Hạn mức tư duy (Thinking):</label>
             <select id="thinkingLevel" onchange="saveConfig()">
-              <option value="LOW" selected>⚡ Tắt hẳn (0 token - Chấm 2-4s)</option>
+              <option value="LOW" selected>⚡ Tắt hẳn (0 token - Chấm 3-5s)</option>
               <option value="MEDIUM">⚖️ Nhanh (256 token)</option>
               <option value="HIGH">🧠 Sâu (1024 token)</option>
             </select>
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v22 Siêu Tốc:</b> Đã bật <code>thinkingBudget: 0</code> cho cả dòng <b>Flash-Lite</b> + Tự động nhận diện câu trên bài làm HS + Tự ẩn mọi phần không có trong Hướng dẫn chấm.
+          ⚡ <b>Bản v23 Siêu Tốc:</b> Giao thức <b>Chuỗi Nén 1 Dòng</b> (chấm 10 câu TL nhanh bằng 1 câu) + Ảnh <b>WebP 30KB</b> + Chống gửi lặp 2 lần giúp hoàn tất bài chấm trong <b>3–5 giây</b>.
         </div>
       </div>
 
@@ -175,10 +175,9 @@
         📌 Chế độ hiện tại: Tự động nhận diện theo phần có đáp án
       </div>
 
-      <!-- NÚT MỞ LẠI CÁC PHẦN ĐANG ẨN KHI GIÁO VIÊN MUỐN NHẬP THÊM THỦ CÔNG -->
       <button type="button" class="btn-show-hidden" id="btnShowHiddenSections" onclick="showAllAnswerSectionsManual()">👁️ Hiện tất cả các phần đang ẩn (I, II, III, IV) để nhập thủ công</button>
 
-      <!-- KHỐI CẤU HÌNH TRẮC NGHIỆM (TÁCH RIÊNG TỪNG PHẦN ĐỂ TỰ ĐỘNG ẨN/HIỆN ĐỘC LẬP) -->
+      <!-- KHỐI CẤU HÌNH TRẮC NGHIỆM -->
       <div id="allMcqConfigWrap">
         <div class="sec-box" id="secMultiCodeWrap" style="background:#fefce8; border-color:#fde047;">
           <div class="sec-title" style="color:#854d0e;">
@@ -253,13 +252,13 @@
   <div class="card" id="sec2Card">
     <h3>📷 2. Đưa bài làm Học sinh lên chấm</h3>
     <div class="hint" style="color:#0f52ba; font-style:normal; font-weight:600; margin-bottom:6px;">
-      ✨ AI tự động nhận diện trên ảnh bài làm: <b>Có Trắc nghiệm chấm Trắc nghiệm, có Tự luận chấm đúng các câu Tự luận HS viết trên giấy</b> (2–4 giây/bài).
+      ✨ AI tự động nhận diện trên ảnh bài làm: <b>Có Trắc nghiệm chấm Trắc nghiệm, có Tự luận chấm đúng các câu Tự luận HS viết trên giấy</b> (3–5 giây/bài).
     </div>
 
     <div class="row">
       <div style="flex: 1.5;" id="targetQuestionsBox">
         <label>Giới hạn câu Tự luận (Tùy chọn):</label>
-        <input type="text" id="targetQuestions" placeholder="Để trống = Tự nhận diện mọi câu HS làm trên ảnh" onchange="saveConfig()">
+        <input type="text" id="targetQuestions" placeholder="Để trống = Tự nhận diện mọi câu HS làm" onchange="saveConfig()">
       </div>
       <div style="flex: 1.5;" id="manualExamCodeBox">
         <label>Mã đề thi (Tùy chọn ghi đè):</label>
@@ -374,7 +373,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v22_ultrafast';
+  var SCHEMA_CACHE_VERSION = 'v23_compact_stream';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -433,11 +432,12 @@
         safeRemove('g_avail_models');
         safeRemove('g_dead_models');
         safeRemove('g_nothink_models');
-        // Xóa đáp án mẫu mặc định cũ "1A, 2B, 3C, 4D, 5A, 6B, 7C, 8D" nếu còn lưu từ bản cũ
+        // Ép mặc định về chế độ QUOTA (ưu tiên 3.5-flash-lite siêu tốc) để xóa cấu hình BALANCED cũ
+        safeSet('g_apipref', 'QUOTA');
+        safeSet('g_model', 'gemini-3.5-flash-lite');
         if (safeGet('g_mcq') === '1A, 2B, 3C, 4D, 5A, 6B, 7C, 8D') {
           safeSet('g_mcq', '');
         }
-        safeSet('g_model', 'gemini-3.5-flash-lite');
         safeSet('g_schema_ver', SCHEMA_CACHE_VERSION);
       }
       var rawDead = safeGet('g_dead_models');
@@ -638,14 +638,14 @@
     if (isLite) {
       return {
         tier: 'FREE_LITE',
-        label: '⚡ ' + modelId + (isPreview ? ' (Preview)' : ' (Free - Siêu tốc 2-4s/bài & Ít tốn nhất)'),
-        desc: 'Tốc độ phản hồi nhanh nhất (2-4 giây/bài) và tiết kiệm hạn mức nhất.'
+        label: '⚡ ' + modelId + (isPreview ? ' (Preview)' : ' (Free - Siêu tốc 3-5s/bài & Ít tốn nhất)'),
+        desc: 'Tốc độ phản hồi nhanh nhất (3-5 giây/bài) và tiết kiệm hạn mức nhất.'
       };
     }
     return {
       tier: 'FREE_FLASH',
-      label: '🎯 ' + modelId + (isPreview ? ' (Preview)' : ' (Free - Chuẩn xác cao & Nhanh 3-5s/bài)'),
-      desc: 'Đọc chữ viết tay & nét khoanh trắc nghiệm chính xác cao, tốc độ 3-5 giây/bài.'
+      label: '🎯 ' + modelId + (isPreview ? ' (Preview)' : ' (Free - Chuẩn xác cao & Nhanh 3-6s/bài)'),
+      desc: 'Đọc chữ viết tay & nét khoanh trắc nghiệm chính xác cao, tốc độ 3-6 giây/bài.'
     };
   }
 
@@ -719,10 +719,10 @@
 
     var info = classifyGeminiModel(bestModel);
     var noteBox = document.getElementById('modelDetectNote');
-    noteBox.innerHTML = '✅ Đã chọn mô hình tốc độ cao: <b>' + escapeHtml(bestModel) + '</b> + <b>thinkingBudget = 0</b> — ' + info.desc;
+    noteBox.innerHTML = '✅ Đã chọn mô hình tốc độ cao: <b>' + escapeHtml(bestModel) + '</b> + <b>Giao thức Chuỗi Nén 1 Dòng</b> — ' + info.desc;
 
     if (showPopup) {
-      alert('✅ Đã đồng bộ tài khoản Gemini API!\n\n• Tự động chọn mô hình Free nhanh nhất: ' + bestModel + '\n• Đã ép tắt Thinking ngầm (0 token) giúp chấm Tự luận & Trắc nghiệm chỉ mất 2–4 giây/bài.');
+      alert('✅ Đã đồng bộ tài khoản Gemini API!\n\n• Tự động chọn mô hình Free nhanh nhất: ' + bestModel + '\n• Chế độ Chuỗi Nén 1 Dòng giúp chấm 17 câu TN + 10 câu TL chỉ trong 3–5 giây.');
     }
   }
 
@@ -750,6 +750,14 @@
       }).map(function(m) {
         return m.name.replace('models/', '');
       });
+
+      // Nếu tài khoản đã có dòng Gemini 3.x thì tự động lọc bỏ toàn bộ dòng 2.x/1.x cũ để tránh gọi nhầm model bị khóa
+      var hasGen3 = rawModels.some(function(m) { return m.indexOf('gemini-3') === 0; });
+      if (hasGen3) {
+        rawModels = rawModels.filter(function(m) {
+          return m.indexOf('gemini-2.') !== 0 && m.indexOf('gemini-1.') !== 0;
+        });
+      }
 
       if (rawModels.indexOf('gemini-3.5-flash-lite') === -1 && !deadModelsMap['gemini-3.5-flash-lite']) {
         rawModels.unshift('gemini-3.5-flash-lite');
@@ -821,7 +829,6 @@
       return;
     }
 
-    // Chỉ hiện đúng những phần CÓ trong Hướng dẫn chấm, ẩn hoàn toàn các phần không có
     var showMulti = isMulti && hasMultiData;
     var showAbcd = hasMcqSingle || showMulti;
     var showTf = hasTf;
@@ -1032,7 +1039,6 @@
     renderTable();
   });
 
-  // Chỉ sử dụng các model thực sự tồn tại trong tài khoản API để không tốn thời gian thử sai 404
   function resolveWorkingModels(uiModel) {
     var list = [];
     if (uiModel && !deadModelsMap[uiModel]) list.push(uiModel);
@@ -1084,11 +1090,12 @@
     }
   }
 
-  // BẬT THINKING-BUDGET = 0 CHO MỌI MODEL GEMINI 3.x & 2.5 (KỂ CẢ FLASH-LITE) ĐỂ TRIỆT TIÊU TRỄ 1 PHÚT
+  // CHỈ gửi thinkingConfig cho dòng 2.5-flash (Dòng Lite không cần gửi để tránh lỗi HTTP 400 làm upload lại ảnh lần 2)
   function supportsThinkingConfig(modelId) {
     var m = String(modelId || '').toLowerCase();
     if (noThinkModelsMap[modelId]) return false;
-    return (m.indexOf('gemini-3') === 0 || m.indexOf('gemini-2.5') === 0) && m.indexOf('pro') === -1;
+    if (m.indexOf('lite') !== -1) return false;
+    return m.indexOf('gemini-2.5') === 0 && m.indexOf('pro') === -1;
   }
 
   async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut) {
@@ -1113,15 +1120,16 @@
       for (var attempt = 0; attempt < 2; attempt++) {
         var genConfig = {
           temperature: baseTemp,
-          maxOutputTokens: maxTokensOut || 400,
+          maxOutputTokens: maxTokensOut || 1024,
           responseMimeType: 'application/json'
         };
         if (useThinkParam) {
           genConfig.thinkingConfig = { thinkingBudget: targetBudget };
         }
 
+        // Đặt Timeout 25 giây để không bao giờ ngắt nhầm khi sóng 4G yếu (tránh lỗi 15s + 15s = 30s)
         var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+        var timeoutId = setTimeout(function() { controller.abort(); }, 25000);
 
         try {
           var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
@@ -1190,7 +1198,7 @@
             break;
           }
           if (err.name === 'AbortError') {
-            lastErr = new Error('Model ' + curModel + ' phản hồi quá 15 giây, đang chuyển luồng nhanh...');
+            lastErr = new Error('Kết nối mạng chậm quá 25 giây, đang chuyển luồng...');
             break;
           }
           lastErr = err;
@@ -1370,7 +1378,7 @@
       var objUrl = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function() {
-        var canvas = document.createElement('canvas'), maxDim = 1024;
+        var canvas = document.createElement('canvas'), maxDim = 960;
         var w = img.width, h = img.height;
         if (w > maxDim || h > maxDim) {
           if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
@@ -1381,8 +1389,10 @@
         try { ctx.filter = 'contrast(1.18) brightness(1.02)'; } catch (e) {}
         ctx.drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(objUrl);
-        var du = canvas.toDataURL('image/jpeg', 0.80);
-        resolve({ mime: 'image/jpeg', base64: du.split(',')[1] });
+        var du = canvas.toDataURL('image/webp', 0.75);
+        var mimeType = (du.indexOf('data:image/webp') === 0) ? 'image/webp' : 'image/jpeg';
+        if (mimeType === 'image/jpeg') du = canvas.toDataURL('image/jpeg', 0.78);
+        resolve({ mime: mimeType, base64: du.split(',')[1] });
       };
       img.onerror = function() { URL.revokeObjectURL(objUrl); resolve(null); };
       img.src = objUrl;
@@ -1400,7 +1410,7 @@ Mỗi học sinh trong mảng "students" gồm:
 Trả về đúng cấu trúc JSON:
 {"students": [{"sbd": "", "blindCode": "", "fullName": "Nguyễn Văn A", "className": "8A1"}]}`;
 
-    var reqParts = [{ text: prompt }].concat(contentParts);
+    var reqParts = contentParts.concat([{ text: prompt }]);
     var parsed = await callGeminiAPI(apiKey, modelName, reqParts, 0.0, 4096);
     var list = parsed.students || parsed.roster || (Array.isArray(parsed) ? parsed : []);
     var out = [];
@@ -1696,7 +1706,6 @@ Trả về đúng cấu trúc JSON:
     event.target.value = '';
   }
 
-  // Trích xuất Hướng dẫn chấm: Tự động tóm gọn biểu điểm Tự luận thành Checklist ngắn gọn & Ẩn mọi phần trống
   async function extractRubricWithAI(apiKey, modelName, contentParts, fileName) {
     var statusBox = document.getElementById('fileStatusBox');
     var prompt = `Đọc tài liệu Đáp án/Hướng dẫn chấm và trích xuất thành JSON:
@@ -1709,7 +1718,7 @@ Trả về đúng cấu trúc JSON:
 JSON:
 {"multi_codes": "", "mcq_key": "", "tf_key": "", "sa_key": "", "essay_rubric": ""}`;
 
-    var reqParts = [{ text: prompt }].concat(contentParts);
+    var reqParts = contentParts.concat([{ text: prompt }]);
     var parsed = await callGeminiAPI(apiKey, modelName, reqParts, 0.0, 2048);
 
     var hasMulti = parsed.multi_codes && String(parsed.multi_codes).trim() !== '';
@@ -1732,7 +1741,6 @@ JSON:
     document.getElementById('saKey').value = hasSa ? String(parsed.sa_key).trim() : '';
     document.getElementById('essayRubric').value = hasEssay ? String(parsed.essay_rubric).trim() : '';
 
-    // Tự động nhận diện cấu trúc và ẨN TẤT CẢ các khung không có dữ liệu
     autoDetectStructureFromInputs(true);
     saveConfig();
 
@@ -1745,13 +1753,13 @@ JSON:
     statusBox.innerText = '✅ Đã nạp "' + fileName + '" — Hiển thị: [' + (activeParts.join(' + ') || 'Trống') + '] & Đã ẩn các phần không liên quan!';
   }
 
-  // NẠP ẢNH BÀI LÀM SIÊU TỐC: CHUẨN 720PX (NÉN NHẸ ~45KB/TRANG, 1-TILE GEMINI VISION)
+  // NẠP ẢNH BÀI LÀM SIÊU TỐC: CHUẨN WEBP 680PX (~25-35KB/TRANG, TẢI LÊN 4G CHỈ MẤT ~1 GIÂY)
   function processSingleImageFile(file) {
     return new Promise(function(resolve) {
       var objUrl = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function() {
-        var canvas = document.createElement('canvas'), maxDim = 720;
+        var canvas = document.createElement('canvas'), maxDim = 680;
         var w = img.width, h = img.height;
         if (w > maxDim || h > maxDim) {
           if (w >= h) {
@@ -1765,11 +1773,15 @@ JSON:
         canvas.width = w;
         canvas.height = h;
         var ctx = canvas.getContext('2d');
-        try { ctx.filter = 'contrast(1.16) brightness(1.02)'; } catch (e) {}
+        try { ctx.filter = 'contrast(1.18) brightness(1.02)'; } catch (e) {}
         ctx.drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(objUrl);
-        var du = canvas.toDataURL('image/jpeg', 0.70);
-        resolve({ type: 'image', mime: 'image/jpeg', base64: du.split(',')[1], dataUrl: du, name: file.name });
+        var du = canvas.toDataURL('image/webp', 0.68);
+        var mimeType = (du.indexOf('data:image/webp') === 0) ? 'image/webp' : 'image/jpeg';
+        if (mimeType === 'image/jpeg') {
+          du = canvas.toDataURL('image/jpeg', 0.68);
+        }
+        resolve({ type: 'image', mime: mimeType, base64: du.split(',')[1], dataUrl: du, name: file.name });
       };
       img.onerror = function() {
         URL.revokeObjectURL(objUrl);
@@ -1901,7 +1913,6 @@ JSON:
   function parseSaKey(str) { var m = {}; if (!str) return m; str.split(/[\|\;\n]+/).forEach(function(p) { var x = p.match(/(?:Câu\s*)?(\d+)\s*[\:\=\-\.]\s*(.+)/i); if (x) m[x[1].trim()] = x[2].trim(); }); return m; }
   function normalizeSaVal(v) { return String(v||'').trim().toLowerCase().replace(/,/g, '.').replace(/\s+/g, ''); }
 
-  // Chuẩn hóa nhãn câu tự luận linh hoạt theo đúng tên câu trên bài học sinh (VD: "Câu 1", "Câu 2a", "Bài 3")
   function normalizeQuestionLabel(l) {
     var raw = cleanCell(l);
     if (!raw) return 'Câu ?';
@@ -1910,26 +1921,83 @@ JSON:
     return raw;
   }
 
-  function normalizeAiChoiceMap(rawObj, isTf) {
+  // Giải mã linh hoạt cả Chuỗi Nén ("1A 2B 3C") lẫn Object ({"1":"A"}) từ AI
+  function normalizeAiChoiceMap(rawVal, isTf) {
     var out = {};
-    if (!rawObj || typeof rawObj !== 'object') return out;
-    Object.keys(rawObj).forEach(function(k) {
-      var cleanK = String(k).trim();
+    if (!rawVal) return out;
+    if (typeof rawVal === 'string') {
       if (isTf) {
-        var mTf = cleanK.match(/(\d+)\s*([a-dA-D])/);
-        if (mTf) out[mTf[1] + mTf[2].toLowerCase()] = rawObj[k];
-        else out[cleanK.toLowerCase()] = rawObj[k];
-      } else {
-        var mNum = cleanK.match(/(\d+)/);
-        if (mNum) out[mNum[1]] = rawObj[k];
-        else out[cleanK] = rawObj[k];
+        return parseTfKey(rawVal);
       }
-    });
+      // Nếu là chuỗi trả lời ngắn có dấu : hoặc |
+      if (rawVal.indexOf(':') !== -1 || rawVal.indexOf('|') !== -1) {
+        var saParsed = parseSaKey(rawVal);
+        if (Object.keys(saParsed).length > 0) return saParsed;
+      }
+      return parseMcqKey(rawVal);
+    }
+    if (typeof rawVal === 'object') {
+      Object.keys(rawVal).forEach(function(k) {
+        var cleanK = String(k).trim();
+        if (isTf) {
+          var mTf = cleanK.match(/(\d+)\s*([a-dA-D])/);
+          if (mTf) out[mTf[1] + mTf[2].toLowerCase()] = rawVal[k];
+          else out[cleanK.toLowerCase()] = rawVal[k];
+        } else {
+          var mNum = cleanK.match(/(\d+)/);
+          if (mNum) out[mNum[1]] = rawVal[k];
+          else out[cleanK] = rawVal[k];
+        }
+      });
+    }
     return out;
   }
 
+  // Giải mã chuỗi điểm Tự luận nén ("Câu 1:1.5|Câu 2:2.0") hoặc Object/Array
+  function parseCompactEssayScores(rawEs) {
+    var arr = [];
+    if (!rawEs) return arr;
+    if (typeof rawEs === 'string') {
+      rawEs.split(/[\|\;\n]+/).forEach(function(part) {
+        var p = part.trim();
+        if (!p) return;
+        var m = p.match(/^([^:\=]+?)[\:\=]\s*([\d\.,]+)/);
+        if (m) {
+          arr.push({
+            question: normalizeQuestionLabel(m[1]),
+            score: parseNum(m[2], 0)
+          });
+        }
+      });
+      return arr;
+    }
+    if (Array.isArray(rawEs)) {
+      rawEs.forEach(function(item, idx) {
+        if (!item) return;
+        var qLabel = item.question || item.cau || item.q || ('Câu ' + (idx + 1));
+        var sScore = item.score !== undefined ? item.score : (item.diem !== undefined ? item.diem : 0);
+        arr.push({
+          question: normalizeQuestionLabel(qLabel),
+          score: parseNum(sScore, 0)
+        });
+      });
+      return arr;
+    }
+    if (typeof rawEs === 'object') {
+      Object.keys(rawEs).forEach(function(k) {
+        var val = rawEs[k];
+        var sc = (val !== null && typeof val === 'object') ? (val.score !== undefined ? val.score : val.diem) : val;
+        arr.push({
+          question: normalizeQuestionLabel(k),
+          score: parseNum(sc, 0)
+        });
+      });
+    }
+    return arr;
+  }
+
   // ============================================================================
-  // 3. CHẤM BÀI SIÊU TỐC (2-4 GIÂY): TỰ NHẬN DIỆN CÂU TRÊN BÀI LÀM CỦA HỌC SINH
+  // 3. CHẤM BÀI SIÊU TỐC (GIAO THỨC CHUỖI NÉN 1 DÒNG: 17 CÂU TN + 10 CÂU TL CHỈ ~45 TOKENS)
   // ============================================================================
   async function runGrading() {
     saveConfig();
@@ -1971,115 +2039,90 @@ JSON:
       btn.innerText = '⏳ Đang chấm siêu tốc... (' + elapsed + 's)';
     }, 150);
 
-    // CHỈ ĐƯA VÀO PROMPT NHỮNG PHẦN THỰC SỰ CÓ ĐÁP ÁN ĐỂ AI CHẤM TRONG 2-3 GIÂY
+    // ĐẶT ẢNH LÊN TRƯỚC PROMPT THEO CHUẨN TỐI ƯU GEMINI VISION ĐỂ GIẢM TTFT
+    var parts = [];
+    pagesData.forEach(function(p) {
+      parts.push({ inline_data: { mime_type: p.mime, data: p.base64 } });
+    });
+
     var promptLines = [
-      'Đọc bài làm học sinh trong ảnh/PDF và trả về JSON cực gọn (TUYỆT ĐỐI KHÔNG giải thích, KHÔNG nhận xét):',
-      '- "student_name": Họ tên HS (không có để "").',
-      '- "student_class": Lớp (không có để "").',
-      '- "student_id": SBD (không có để "").',
-      '- "blind_code": Mã phách (không có để "").'
+      'Chấm bài làm học sinh trong ảnh và trả về đúng 1 dòng JSON cực gọn (KHÔNG giải thích):',
+      '- "name": Họ tên HS (trống để "")',
+      '- "cls": Lớp',
+      '- "sbd": SBD',
+      '- "phach": Mã phách'
     ];
 
-    var jsonSchemaExample = {
-      student_name: "",
-      student_class: "",
-      student_id: "",
-      blind_code: "",
-      page_mismatch_warning: ""
-    };
+    var jsonSchemaExample = { name: "", cls: "", sbd: "", phach: "" };
 
     if (pagesData.length > 1) {
-      promptLines.push('- "page_mismatch_warning": Cảnh báo nếu các trang ghi 2 tên HS khác nhau, cùng 1 HS để "".');
+      promptLines.push('- "warn": Cảnh báo nếu các trang khác tên HS, cùng 1 HS để ""');
+      jsonSchemaExample.warn = "";
     }
 
     if (configHasMcq) {
-      promptLines.push('- "exam_code": Mã đề (không có để "").');
-      jsonSchemaExample.exam_code = "";
+      promptLines.push('- "code": Mã đề');
+      jsonSchemaExample.code = "";
 
       if (expectedMcqNums.length > 0) {
-        promptLines.push('- "mcq_choices": Nếu trên ảnh CÓ bài làm trắc nghiệm ABCD, đọc chữ A,B,C,D HS chọn cho các câu [' + expectedMcqNums.join(',') + '] (' +
-          ((examMode === 'CIRCLE') ? 'chỉ lấy chữ có nét khoanh/đánh dấu hoặc điền vào ô đáp án' : 'đọc chữ viết tay') + '). Nếu ảnh KHÔNG có phần trắc nghiệm ABCD thì để {}.');
-        jsonSchemaExample.mcq_choices = {};
+        promptLines.push('- "mcq": Nếu trên ảnh CÓ làm trắc nghiệm ABCD, ghi chuỗi liền các câu [' + expectedMcqNums.join(',') + '] theo mẫu "1A 2B 3C..." (' +
+          ((examMode === 'CIRCLE') ? 'chỉ lấy chữ có nét khoanh/đánh dấu hoặc điền ô đáp án' : 'đọc chữ viết tay') + '). Nếu ảnh KHÔNG có phần trắc nghiệm ABCD để ""');
+        jsonSchemaExample.mcq = "";
       }
       if (expectedTfIds.length > 0) {
-        promptLines.push('- "tf_choices": Nếu trên ảnh CÓ phần Đúng/Sai, đọc Đ/S cho các ý [' + expectedTfIds.join(',') + ']. Không có để {}.');
-        jsonSchemaExample.tf_choices = {};
+        promptLines.push('- "tf": Chuỗi Đ/S cho các ý [' + expectedTfIds.join(',') + '] mẫu "1aĐ 1bS". Không có để ""');
+        jsonSchemaExample.tf = "";
       }
       if (expectedSaNums.length > 0) {
-        promptLines.push('- "sa_choices": Nếu trên ảnh CÓ phần Trả lời ngắn, đọc kết quả các câu [' + expectedSaNums.join(',') + ']. Không có để {}.');
-        jsonSchemaExample.sa_choices = {};
+        promptLines.push('- "sa": Chuỗi trả lời ngắn cho các câu [' + expectedSaNums.join(',') + '] mẫu "1:12.5|2:4". Không có để ""');
+        jsonSchemaExample.sa = "";
       }
     }
 
     if (configHasEssay) {
       var targetInstruction = targetQ
-        ? 'CHỈ chấm các câu tự luận [' + targetQ + '] nếu HS có làm trên ảnh.'
-        : 'TỰ NHẬN DIỆN các câu tự luận học sinh thực tế có viết bài làm trên ảnh (HS viết câu số mấy/ý mấy trên giấy thì chấm đúng câu đó).';
-      var essayRule = (gradingStyle === 'FLEX')
-        ? 'Chấm linh hoạt theo bản chất đúng và kết quả đúng.'
-        : 'Chấm sát biểu điểm.';
-      promptLines.push('- "essay_scores": ' + targetInstruction + ' ' + essayRule + ' Trả về object gồm khóa là tên câu nhận diện từ bài làm của HS và giá trị là số điểm đạt được. Nếu ảnh chỉ có Trắc nghiệm (không có bài làm Tự luận) thì để {}. TUYỆT ĐỐI KHÔNG xuất lời nhận xét.');
-      promptLines.push('\nBIỂU ĐIỂM TỰ LUẬN:\n' + rubric);
-      jsonSchemaExample.essay_scores = {};
+        ? 'chỉ chấm [' + targetQ + ']'
+        : 'TỰ NHẬN DIỆN mọi câu tự luận HS có viết bài làm trên ảnh';
+      var essayRule = (gradingStyle === 'FLEX') ? 'đúng bản chất/kết quả đạt tối đa' : 'sát biểu điểm';
+      promptLines.push('- "essay": Đối chiếu Biểu điểm (' + targetInstruction + ', ' + essayRule + '), xuất chuỗi điểm ngăn cách bởi dấu "|" theo mẫu "TênCâu:Điểm|TênCâu:Điểm". Nếu ảnh chỉ có Trắc nghiệm (không có bài Tự luận) để "".');
+      promptLines.push('\nBIỂU ĐIỂM:\n' + rubric);
+      jsonSchemaExample.essay = "";
     }
 
-    promptLines.push('\nTrả về đúng JSON:\n' + JSON.stringify(jsonSchemaExample));
-
-    var parts = [{ text: promptLines.join('\n') }];
-    pagesData.forEach(function(p) {
-      parts.push({ inline_data: { mime_type: p.mime, data: p.base64 } });
-    });
+    promptLines.push('\nJSON:\n' + JSON.stringify(jsonSchemaExample));
+    parts.push({ text: promptLines.join('\n') });
 
     try {
-      var aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.0, 320);
+      var aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.0, 512);
       var totalSec = ((performance.now() - startTime) / 1000).toFixed(1);
       var timeBadge = document.getElementById('gradeTimeBadge');
       if (timeBadge) timeBadge.innerText = '⚡ Hoàn tất trong ' + totalSec + ' giây';
 
-      currentPageWarning = aiData.page_mismatch_warning || '';
-      currentDetectedExamCode = manualCode || (aiData.exam_code ? String(aiData.exam_code).trim().toUpperCase() : '');
+      currentPageWarning = aiData.warn || aiData.page_mismatch_warning || '';
+      var rawCode = aiData.code !== undefined ? aiData.code : aiData.exam_code;
+      currentDetectedExamCode = manualCode || (rawCode ? String(rawCode).trim().toUpperCase() : '');
 
       currentMcqState = [];
       currentTfState = [];
       currentSaState = [];
       currentEssayState = [];
 
-      var stuM = normalizeAiChoiceMap(aiData.mcq_choices, false);
-      var stuTf = normalizeAiChoiceMap(aiData.tf_choices, true);
-      var stuSa = normalizeAiChoiceMap(aiData.sa_choices, false);
+      var stuM = normalizeAiChoiceMap(aiData.mcq !== undefined ? aiData.mcq : aiData.mcq_choices, false);
+      var stuTf = normalizeAiChoiceMap(aiData.tf !== undefined ? aiData.tf : aiData.tf_choices, true);
+      var stuSa = normalizeAiChoiceMap(aiData.sa !== undefined ? aiData.sa : aiData.sa_choices, false);
 
-      // Kiểm tra thực tế trên ảnh bài làm của HS có làm câu Trắc nghiệm nào không
       var detectedAnyMcqOnPaper = Object.keys(stuM).length > 0 || Object.keys(stuTf).length > 0 || Object.keys(stuSa).length > 0;
 
-      // Kiểm tra thực tế trên ảnh bài làm của HS có câu Tự luận nào không
-      var rawEs = aiData.essay_scores || aiData.essay_results || {};
       if (configHasEssay) {
-        if (Array.isArray(rawEs)) {
-          rawEs.forEach(function(item, idx) {
-            var qLabel = item.question || item.cau || item.q || ('Câu ' + (idx + 1));
-            var sScore = item.score !== undefined ? item.score : (item.diem !== undefined ? item.diem : 0);
-            currentEssayState.push({
-              question: normalizeQuestionLabel(qLabel),
-              score: parseNum(sScore, 0)
-            });
-          });
-        } else if (typeof rawEs === 'object' && rawEs !== null) {
-          Object.keys(rawEs).forEach(function(k) {
-            var val = rawEs[k];
-            var sc = (val !== null && typeof val === 'object') ? (val.score !== undefined ? val.score : val.diem) : val;
-            currentEssayState.push({
-              question: normalizeQuestionLabel(k),
-              score: parseNum(sc, 0)
-            });
-          });
-        }
+        var rawEs = aiData.essay !== undefined ? aiData.essay : (aiData.essay_scores || aiData.essay_results);
+        currentEssayState = parseCompactEssayScores(rawEs);
         currentEssayState.sort(function(a, b) {
           return (parseInt(a.question.replace(/\D/g, '')) || 0) - (parseInt(b.question.replace(/\D/g, '')) || 0);
         });
       }
       var detectedAnyEssayOnPaper = currentEssayState.length > 0;
 
-      // Tự động quyết định hiển thị kết quả: Nếu bài chụp lên chỉ có Tự luận thì ẩn Trắc nghiệm; nếu chỉ có Trắc nghiệm thì ẩn Tự luận
+      // Tự động ẩn phần không có trên bài làm thực tế của học sinh
       currentStuHasMcq = configHasMcq && (detectedAnyMcqOnPaper || !detectedAnyEssayOnPaper);
       currentStuHasEssay = configHasEssay && (detectedAnyEssayOnPaper || !detectedAnyMcqOnPaper);
 
@@ -2106,10 +2149,10 @@ JSON:
         });
       }
 
-      var name = cleanCell(aiData.student_name || '');
-      var cls = cleanCell(aiData.student_class || '');
-      var sbd = cleanCell(aiData.student_id || '');
-      var blindCode = cleanCell(aiData.blind_code || '');
+      var name = cleanCell(aiData.name !== undefined ? aiData.name : (aiData.student_name || ''));
+      var cls = cleanCell(aiData.cls !== undefined ? aiData.cls : (aiData.student_class || ''));
+      var sbd = cleanCell(aiData.sbd !== undefined ? aiData.sbd : (aiData.student_id || ''));
+      var blindCode = cleanCell(aiData.phach !== undefined ? aiData.phach : (aiData.blind_code || ''));
 
       var rm = matchStudentInMasterRoster(name, sbd, blindCode);
       if (rm) {
