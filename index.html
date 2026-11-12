@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v25.1)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v26)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -156,7 +156,7 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v25.1:</b> Đọc file <b>PDF & Word (.docx) Hướng dẫn chấm 100% Offline</b> + Lọc sạch lời giải chi tiết Trắc nghiệm khỏi khung Tự luận + Tự động chọn đúng gói API.
+          ⚡ <b>Bản v25:</b> Đọc file <b>PDF & Word (.docx) Hướng dẫn chấm 100% Offline (0 tốn lượt API)</b> + Tự động né các model giới hạn 20 lượt/ngày & tự chuyển luồng khi máy chủ bận.
         </div>
       </div>
 
@@ -248,7 +248,7 @@
       <div id="allEssayConfigWrap">
         <div class="sec-box" id="secEssayWrap">
           <div class="sec-title">
-            <span>IV. Hướng dẫn chấm Tự luận (Chỉ nhận diện phần Tự luận)</span>
+            <span>IV. Hướng dẫn chấm Tự luận (Theo HDC & Bài làm HS)</span>
             <span class="count-pill" id="essayCountPill">Tự động</span>
           </div>
           <textarea id="essayRubric" rows="4" oninput="updateKeyCountPills()" onchange="onAnswerKeyManualEdit()" placeholder="Nhập biểu điểm tự luận. VD: Câu 18 (1.5đ): ... hoặc Câu 1 (2.0đ): ..."></textarea>
@@ -387,7 +387,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v25_1_strict_essay_filter';
+  var SCHEMA_CACHE_VERSION = 'v25_quota_pdf_fixed';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -431,15 +431,16 @@
   var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
   var availableBackendModels = [];
 
+  // Chỉ chặn các model thế hệ 1.5 đã ngừng hoạt động; mở khóa toàn bộ 2.5-flash-lite, 2.0-flash-lite, 2.5-flash, 2.0-flash
   var deadModelsMap = {
     'gemini-1.5-flash': true,
     'gemini-1.5-flash-8b': true,
     'gemini-1.5-pro': true
   };
-  var quotaExhaustedMap = {};
-  var tempBusyModelsMap = {};
+  var quotaExhaustedMap = {}; // Lưu các model bị hết hạn mức RPD trong ngày (VD: gemini-3.8-flash limit 20)
+  var tempBusyModelsMap = {}; // Lưu các model đang bị 503 High Demand trong phiên làm việc
   var noThinkModelsMap = {};
-  var gradingCacheMap = {};
+  var gradingCacheMap = {};   // Bộ nhớ đệm kết quả chấm giúp 0 tốn lượt API nếu bấm chấm lại cùng 1 bài
   var detectedAccountTier = 'FREE';
   var autoDetectTimer = null;
   var lastExportedBlobUrl = null;
@@ -461,12 +462,6 @@
         safeSet('g_model', 'gemini-2.5-flash');
         if (safeGet('g_mcq') === '1A, 2B, 3C, 4D, 5A, 6B, 7C, 8D') {
           safeSet('g_mcq', '');
-        }
-        // Làm sạch biểu điểm tự luận đã lưu nếu trước đó bị lẫn giải thích trắc nghiệm
-        var oldRubric = safeGet('g_rubric');
-        if (oldRubric) {
-          var cleanedOld = cleanAndFilterEssayRubric(oldRubric);
-          safeSet('g_rubric', cleanedOld);
         }
         safeSet('g_schema_ver', SCHEMA_CACHE_VERSION);
       }
@@ -513,7 +508,7 @@
   function isModelTempBusy(modelId) {
     var ts = tempBusyModelsMap[modelId];
     if (!ts) return false;
-    if (Date.now() - ts > 120000) {
+    if (Date.now() - ts > 120000) { // Sau 2 phút tự mở khóa thử lại
       delete tempBusyModelsMap[modelId];
       return false;
     }
@@ -675,6 +670,7 @@
     }
   }
 
+  // Chặn triệt để các model codename thử nghiệm (gemini-4-carbon, argon, v.v.) và các model không phục vụ chấm bài
   function isSuitableGradingModel(modelId) {
     var m = String(modelId || '').toLowerCase();
     if (m.indexOf('gemini-') !== 0) return false;
@@ -688,12 +684,14 @@
     for (var i = 0; i < blockedKeywords.length; i++) {
       if (m.indexOf(blockedKeywords[i]) !== -1) return false;
     }
+    // Chỉ nhận các model thuộc nhánh flash hoặc pro chính thức
     if (m.indexOf('flash') === -1 && m.indexOf('pro') === -1) return false;
     return true;
   }
 
   function isLowFreeQuotaModel(modelId) {
     var m = String(modelId || '').toLowerCase();
+    // Các model nhánh 3.8, 4.x hoặc preview/pro thường bị giới hạn 20-50 lượt/ngày trên Free Tier
     if (m.indexOf('3.8') !== -1 || m.indexOf('gemini-4') === 0 || m.indexOf('preview') !== -1 || m.indexOf('pro') !== -1) {
       return true;
     }
@@ -738,7 +736,8 @@
     };
   }
 
-  function scoreModelForAutoSelect(modelId, prefMode) {
+  // Bảng chấm điểm ưu tiên chuẩn xác theo gói tài khoản thực tế (Tuyệt đối không để gemini-3.8-flash hay 4-carbon đè lên 2.5-flash/2.0-flash)
+function scoreModelForAutoSelect(modelId, prefMode) {
     var m = String(modelId || '').toLowerCase();
     if (deadModelsMap[modelId]) return -99999;
     if (quotaExhaustedMap[modelId]) return -50000;
@@ -756,16 +755,10 @@
     }
 
     var highQuotaPriority = {
-      'gemini-2.5-flash-lite': (prefMode === 'QUOTA') ? 9500 : 8800,
-      'gemini-2.5-flash':      (prefMode === 'QUOTA') ? 9200 : 9600,
-      'gemini-2.0-flash':      (prefMode === 'QUOTA') ? 9000 : 8900,
-      'gemini-2.0-flash-lite': (prefMode === 'QUOTA') ? 8950 : 8500,
-      'gemini-3.5-flash-lite': (prefMode === 'QUOTA') ? 9300 : 8700,
-      'gemini-3.5-flash':      (prefMode === 'QUOTA') ? 8600 : 9100,
-      'gemini-3.0-flash-lite': (prefMode === 'QUOTA') ? 8800 : 8400,
-      'gemini-3.0-flash':      (prefMode === 'QUOTA') ? 8500 : 8850,
-      'gemini-3-flash-lite':   (prefMode === 'QUOTA') ? 8750 : 8350,
-      'gemini-3-flash':        (prefMode === 'QUOTA') ? 8450 : 8800
+      'gemini-2.5-flash-lite': (prefMode === 'QUOTA') ? 9600 : 8900,
+      'gemini-2.5-flash':      (prefMode === 'QUOTA') ? 9300 : 9600,
+      'gemini-2.0-flash':      (prefMode === 'QUOTA') ? 9100 : 9000,
+      'gemini-2.0-flash-lite': (prefMode === 'QUOTA') ? 9000 : 8600
     };
 
     if (highQuotaPriority[m] !== undefined) {
@@ -841,6 +834,7 @@
     }
   }
 
+  // Quét danh sách model thực tế trong tài khoản + Ping kiểm tra sống 100% để tránh chọn nhầm model đang nghẽn (503) hoặc hết quota (429)
   async function verifyAndAutoSelectModel(silent) {
     var key = sanitizeApiKey(document.getElementById('apiKey').value);
     var noteBox = document.getElementById('modelDetectNote');
@@ -873,6 +867,7 @@
       availableBackendModels = rawModels;
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
 
+      // Sắp xếp danh sách ứng viên và thực hiện Ping kiểm tra nhanh (1 token) trên ứng viên số 1
       var sortedCandidates = availableBackendModels.slice().sort(function(a, b) {
         return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
       });
@@ -962,7 +957,7 @@
   }
 
   // ============================================================================
-  // ĐẾM SỐ CÂU TRẮC NGHIỆM & TỰ LUẬN TRỰC TIẾP TRÊN GIAO DIỆN
+  // ĐẾM SỐ CÂU TRẮC NGHIỆM & TỰ LUẬN TRỰC TIẾP TRÊN GIAO DIỆN ĐỂ KIỂM SOÁT CHÍNH XÁC
   // ============================================================================
   function extractEssayQuestionListFromRubric(rubricText) {
     if (!rubricText || !rubricText.trim()) return [];
@@ -1255,6 +1250,7 @@
     renderTable();
   });
 
+  // Trả về chuỗi lên tới 6 model dự phòng sạch, tự động loại trừ các model đã hết quota hôm nay hoặc đang nghẽn
   function resolveWorkingModels(uiModel) {
     var list = [];
     if (uiModel && !deadModelsMap[uiModel] && !quotaExhaustedMap[uiModel] && !isModelTempBusy(uiModel)) {
@@ -1277,6 +1273,7 @@
     });
 
     if (list.length === 0) {
+      // Nếu tất cả đều bị đánh dấu tạm thời, mở khóa thử lại dòng 2.5-flash / 2.0-flash
       list = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
     }
     return list.slice(0, 6);
@@ -1318,7 +1315,7 @@
     return m.indexOf('gemini-2.5') === 0 && m.indexOf('pro') === -1;
   }
 
-  async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut) {
+async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut) {
     var cleanKey = sanitizeApiKey(apiKey);
     if (!isValidGeminiKeyFormat(cleanKey)) {
       throw new Error('Vui lòng dán đầy đủ API Key ở mục 1 trước khi thực hiện.');
@@ -1340,7 +1337,7 @@
       for (var attempt = 0; attempt < 2; attempt++) {
         var genConfig = {
           temperature: baseTemp,
-          maxOutputTokens: maxTokensOut || 1024,
+          maxOutputTokens: Math.max(maxTokensOut || 4096, 2048),
           responseMimeType: 'application/json'
         };
         if (useThinkParam) {
@@ -1540,6 +1537,7 @@
         var x = item.transform ? item.transform[4] : 0;
         var y = item.transform ? item.transform[5] : 0;
 
+        // Gom các phần tử có cùng tọa độ Y (sai số <= 4.5pt) vào cùng 1 hàng ngang
         var foundBucket = null;
         for (var b = 0; b < lineBuckets.length; b++) {
           if (Math.abs(lineBuckets[b].y - y) <= 4.5) {
@@ -1554,9 +1552,11 @@
         foundBucket.cells.push({ x: x, text: str.trim(), width: item.width || (str.length * 4) });
       });
 
+      // Sắp xếp từ trên xuống dưới (Y giảm dần trong hệ tọa độ PDF)
       lineBuckets.sort(function(a, b) { return b.y - a.y; });
 
       lineBuckets.forEach(function(bucket) {
+        // Sắp xếp từ trái sang phải (X tăng dần)
         bucket.cells.sort(function(a, b) { return a.x - b.x; });
         var mergedCells = [];
         for (var i = 0; i < bucket.cells.length; i++) {
@@ -1566,6 +1566,7 @@
           } else {
             var prev = mergedCells[mergedCells.length - 1];
             var gap = cur.x - prev.xEnd;
+            // Nếu khoảng cách ngang nhỏ hơn 12pt thì ghép thành cùng 1 ô chữ, ngược lại tách thành cột bảng mới
             if (gap < 12) {
               prev.text = (prev.text + ' ' + cur.text).replace(/\s+/g, ' ').trim();
               prev.xEnd = Math.max(prev.xEnd, cur.x + cur.width);
@@ -1957,7 +1958,7 @@ Trả về đúng cấu trúc JSON:
   }
 
   // ============================================================================
-  // BỘ NHẬN DIỆN CHÍNH XÁC BIÊN GIỚI TỰ LUẬN & LOẠI BỎ LỜI GIẢI CHI TIẾT TRẮC NGHIỆM
+  // BỘ GIẢI MÃ BẢNG ĐÁP ÁN WORD (.DOCX) & PDF THÔNG MINH CỤC BỘ (0 TỐN HẠN MỨC API)
   // ============================================================================
   function extractQuestionNumFromCell(cellStr) {
     var s = cleanCell(cellStr);
@@ -1971,151 +1972,52 @@ Trả về đúng cấu trúc JSON:
     return m ? m[1] : null;
   }
 
-  // Nhận diện tiêu đề bắt đầu phần Tự luận (Không bắt nhầm tiêu đề chung có cả chữ "Trắc nghiệm và Tự luận")
-  function isEssaySectionHeader(txt) {
-    var s = cleanCell(txt).replace(/^\s*[\|\-\•\*\+]+\s*/, '').trim();
-    if (!s || s.length > 140) return false;
-    if (/trắc\s*nghiệm/i.test(s)) return false;
-    if (/^(?:phần|mục)\s*[IIV2-9A-Z]+[\.\:\-\)\s]*(?:hướng\s*dẫn\s*chấm\s*)?(?:phần\s*)?tự\s*luận\b/i.test(s)) return true;
-    if (/^(?:[IIV2-9]+|[B-D])[\.\:\-\)\s]+(?:hướng\s*dẫn\s*chấm\s*)?(?:phần\s*)?tự\s*luận\b/i.test(s)) return true;
-    if (/^(?:phần\s*)?tự\s*luận\s*(?:[\(\:\-\–].*)?$/i.test(s)) return true;
-    if (/^(?:hướng\s*dẫn\s*chấm|đáp\s*án(?:\s*và\s*biểu\s*điểm)?|biểu\s*điểm|thang\s*điểm)\s*(?:phần\s*)?tự\s*luận\b/i.test(s)) return true;
-    return false;
-  }
-
-  // Nhận diện tiêu đề phần Trắc nghiệm hoặc tiêu đề phần Giải thích chi tiết Trắc nghiệm (để ngắt cờ Tự luận ngay lập tức)
-  function isMcqOrExplanationHeader(txt) {
-    var s = cleanCell(txt).replace(/^\s*[\|\-\•\*\+]+\s*/, '').trim();
-    if (!s || s.length > 160) return false;
-    if (!(/tự\s*luận/i.test(s))) {
-      if (/^(?:phần|mục)?\s*(?:[I1A][\.\:\-\)\s]+)?(?:đáp\s*án\s*)?(?:phần\s*)?trắc\s*nghiệm\b/i.test(s)) return true;
-      if (/trắc\s*nghiệm\s*(?:nhiều\s*lựa\s*chọn|khách\s*quan|đúng\s*[\/\-]?\s*sai|trả\s*lời\s*ngắn)/i.test(s)) return true;
-      if (/(?:lời\s*giải|hướng\s*dẫn\s*giải|giải\s*thích)\s*(?:chi\s*tiết\s*)?(?:phần\s*)?trắc\s*nghiệm/i.test(s)) return true;
-    }
-    return false;
-  }
-
-  // Kiểm tra 1 dòng hoặc 1 khối câu hỏi có phải là đề/lời giải chi tiết của Trắc nghiệm hay không
-  function isMcqExplanationBlockOrLine(text) {
-    var s = String(text || '').trim();
-    if (!s) return true;
-
-    // 1. Chứa mẫu kết luận chọn đáp án A, B, C, D điển hình của giải thích trắc nghiệm
-    // VD: "Chọn A", "=> Chọn B", "Đáp án: C", "Đáp án đúng là D", "Chọn đáp án A"
-    if (/(?:^|[\s\.\,\;\:\(\-\>➔▶•\|])(?:chọn(?:\s*đáp\s*án|\s*phương\s*án)?|đáp\s*án(?:\s*đúng)?(?:\s*là)?)\s*[\:\=]?\s*[A-D](?=$|[\s\.\,\;\)\|\!])/i.test(s)) {
-      return true;
-    }
-
-    // 2. Mở đầu bằng "Câu X. A" hoặc "Câu X: B - Giải thích..."
-    if (/^(?:câu|question)\s*\d{1,3}\s*[\.\:\-\)]\s*[A-D](?:$|[\.\:\-\)\s\|])/i.test(s)) {
-      return true;
-    }
-
-    // 3. Chứa các phương án lựa chọn A. ... B. ... C. ... D. ... của câu hỏi trắc nghiệm
-    if (/\bA\s*[\.\)]\s+\S+[\s\S]*?\bB\s*[\.\)]\s+\S+[\s\S]*?\bC\s*[\.\)]\s+\S+/i.test(s)) {
-      return true;
-    }
-
-    // 4. Giải thích chi tiết Trắc nghiệm Đúng/Sai (a) Đúng vì... b) Sai vì...) mà không có điểm số tự luận
-    var hasPointMarker = /\b\d+(?:[\.,]\d+)?\s*(?:đ|điểm)\b/i.test(s);
-    if (!hasPointMarker && /(?:^|\s)[a-d]\s*[\)\.]\s*(?:đúng|sai)\b/i.test(s)) {
-      return true;
-    }
-
-    // 5. Dòng chỉ chứa các cặp đáp án trắc nghiệm (1A, 2B, 3C...)
-    if (/^(?:(?:câu\s*)?\d{1,3}\s*[\.\-\:\)]?\s*[A-D]\s*[\|\,\;\s]*)+$/i.test(s)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  // Lọc sạch toàn bộ văn bản biểu điểm Tự luận: Loại bỏ mọi câu/dòng giải thích chi tiết trắc nghiệm bị trộn lẫn
-  function cleanAndFilterEssayRubric(rawEssayText) {
-    if (!rawEssayText || !String(rawEssayText).trim()) return '';
-    var lines = String(rawEssayText).split(/\r?\n/);
-    var blocks = [];
-    var currentBlock = [];
-
-    lines.forEach(function(line) {
-      var trimmed = cleanCell(line);
-      if (!trimmed) return;
-      if (isMcqOrExplanationHeader(trimmed)) return;
-      if (/^(?:lời\s*giải|hướng\s*dẫn\s*giải)\s*(?:chi\s*tiết)?\s*[\:\.]?$/i.test(trimmed)) return;
-
-      // Tách block mỗi khi gặp đầu câu mới: "Câu X" hoặc "Bài X"
-      if (/^(?:câu|bài)\s*\d+/i.test(trimmed)) {
-        if (currentBlock.length > 0) blocks.push(currentBlock.join('\n'));
-        currentBlock = [trimmed];
-      } else {
-        currentBlock.push(trimmed);
-      }
-    });
-    if (currentBlock.length > 0) blocks.push(currentBlock.join('\n'));
-
-    var validBlocks = blocks.filter(function(block) {
-      if (isMcqExplanationBlockOrLine(block)) return false;
-      // Loại bỏ các dòng lẻ trong block nếu dòng đó là kết luận chọn A/B/C/D
-      var subLines = block.split('\n').filter(function(l) {
-        return !isMcqExplanationBlockOrLine(l);
-      });
-      return subLines.length > 0;
-    }).map(function(block) {
-      return block.split('\n').filter(function(l) {
-        return !isMcqExplanationBlockOrLine(l);
-      }).join('\n');
-    });
-
-    return validBlocks.join('\n').trim();
-  }
-
-  // Kiểm tra xem 1 bảng (khi chưa có tiêu đề II. TỰ LUẬN phía trên) có phải là Bảng biểu điểm Tự luận thực sự không
-  function isGenuineEssayRubricTable(rows) {
-    if (!rows || rows.length < 2) return false;
-    var headerText = rows.slice(0, 2).map(function(r) { return r.join(' | '); }).join(' | ');
-    var hasScoreCol = /\b(?:điểm|thang\s*điểm|biểu\s*điểm)\b/i.test(headerText);
-    var hasContentCol = /\b(?:nội\s*dung|hướng\s*dẫn\s*chấm|đáp\s*án|câu|bài)\b/i.test(headerText);
-    if (!hasScoreCol || !hasContentCol) return false;
-
-    var fullTableStr = rows.map(function(r) { return r.join(' | '); }).join('\n');
-    if (isMcqExplanationBlockOrLine(fullTableStr)) return false;
-    return true;
-  }
-
   // Phân tích mảng dòng/cột (dùng chung cho cả bảng PDF và bảng Word)
-  function parseTableRowsSmart(rows, mcqMap, tfMap, saMap, essayLines, initialInEssay) {
-    var inEssaySection = !!initialInEssay;
+  function parseTableRowsSmart(rows, mcqMap, tfMap, saMap, essayLines) {
+    var inEssaySection = false;
+    var inSaSection = false;
 
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       if (!row || row.length === 0) continue;
       var rowJoined = row.join(' | ').trim();
 
-      // Kiểm tra tiêu đề chuyển phần trên từng hàng hoặc từng ô trong hàng
-      var switchedSection = false;
-      for (var cIdx = 0; cIdx < row.length; cIdx++) {
-        if (isEssaySectionHeader(row[cIdx])) {
-          inEssaySection = true;
-          switchedSection = true;
-          break;
-        }
-        if (isMcqOrExplanationHeader(row[cIdx])) {
-          inEssaySection = false;
-          switchedSection = true;
-          break;
-        }
-      }
-      if (!switchedSection) {
-        if (isEssaySectionHeader(rowJoined)) {
-          inEssaySection = true;
-          continue;
-        } else if (isMcqOrExplanationHeader(rowJoined)) {
-          inEssaySection = false;
-          continue;
-        }
+      if (/^(?:phần\s*[IIV2-9]+|II+|IV|B|2|4)[\.\:\-\s]*tự\s*luận\b/i.test(rowJoined) || /^tự\s*luận\b/i.test(rowJoined)) {
+        inEssaySection = true;
+        inSaSection = false;
+      } else if (/trả\s*lời\s*ngắn/i.test(rowJoined)) {
+        inSaSection = true;
+        inEssaySection = false;
+      } else if (/^(?:phần\s*(?:I|II|1|2)|I|II|A|1|2)[\.\:\-\s]*(?:trắc\s*nghiệm|đúng\s*\/?\s*sai)\b/i.test(rowJoined)) {
+        inEssaySection = false;
+        inSaSection = false;
       }
 
       if (!inEssaySection) {
+        if (inSaSection) {
+          // Giải mã bảng ngang cho Trả lời ngắn (Hàng r là số câu, hàng r+1 là đáp án số)
+          if (r + 1 < rows.length) {
+            var nextRowSa = rows[r + 1];
+            var saPairs = [];
+            var maxCSa = Math.min(row.length, nextRowSa.length);
+            for (var cSa = 0; cSa < maxCSa; cSa++) {
+              var qNSa = extractQuestionNumFromCell(row[cSa]);
+              var valSa = cleanCell(nextRowSa[cSa]);
+              if (qNSa !== null && /^[\-\+]?\d+(?:[\.,]\d+)?$/.test(valSa)) {
+                saPairs.push({ q: String(qNSa), a: valSa });
+              }
+            }
+            if (saPairs.length >= 1) {
+              saPairs.forEach(function(p) { saMap[p.q] = p.a; });
+              r++;
+              continue;
+            }
+          }
+          var inlineSa = parseSaKey(rowJoined);
+          Object.keys(inlineSa).forEach(function(k) { saMap[k] = inlineSa[k]; });
+          continue;
+        }
+
         var rowFoundMcq = 0;
 
         // 1. Kiểm tra BẢNG NGANG: Hàng r là số câu (1..N), Hàng r+1 là đáp án (A..D)
@@ -2168,25 +2070,18 @@ Trả về đúng cấu trúc JSON:
         }
 
         // 3. Nếu hàng chứa chuỗi đáp án viết liền (VD: "1A 2B 3C..." hoặc "1aĐ 1bS...")
-        // Tuyệt đối không quét parseMcqKey trên các dòng câu văn giải thích dài để tránh bắt nhầm "1A" trong đơn vị "1A (ampe)"
         if (rowFoundMcq === 0) {
-          if (!isMcqExplanationBlockOrLine(rowJoined) && rowJoined.length < 180) {
-            var inlineMcq = parseMcqKey(rowJoined);
-            if (Object.keys(inlineMcq).length >= 2) {
-              Object.keys(inlineMcq).forEach(function(k) { mcqMap[k] = inlineMcq[k]; });
-            }
+          var inlineMcq = parseMcqKey(rowJoined);
+          if (Object.keys(inlineMcq).length >= 2) {
+            Object.keys(inlineMcq).forEach(function(k) { mcqMap[k] = inlineMcq[k]; });
           }
           var inlineTf = parseTfKey(rowJoined);
           Object.keys(inlineTf).forEach(function(k) { tfMap[k] = inlineTf[k]; });
         }
       } else {
-        // Đang trong phần Tự luận: Chỉ thu thập nếu dòng đó không phải là lời giải chi tiết trắc nghiệm
-        if (!isMcqExplanationBlockOrLine(rowJoined)) {
-          essayLines.push(rowJoined);
-        }
+        essayLines.push(rowJoined);
       }
     }
-    return inEssaySection;
   }
 
   function parseDocxHtmlAndTablesSmart(htmlStr, fallbackRawText) {
@@ -2199,6 +2094,7 @@ Trả về đúng cấu trúc JSON:
     try {
       var doc = new DOMParser().parseFromString(htmlStr, 'text/html');
       var inEssaySection = false;
+      var inSaSection = false;
 
       var elements = doc.body.querySelectorAll('p, h1, h2, h3, h4, table');
       Array.from(elements).forEach(function(el) {
@@ -2208,27 +2104,29 @@ Trả về đúng cấu trúc JSON:
           if (!txt) return;
           structuredLines.push(txt);
 
-          if (isEssaySectionHeader(txt)) {
+          if (/^(?:phần\s*[IIV2-9]+|II+|IV|B|2|4)[\.\:\-\s]*tự\s*luận\b/i.test(txt) || /^tự\s*luận\s*(?:\([\d\.,]+\s*điểm\))?[\.\:]?$/i.test(txt)) {
             inEssaySection = true;
-            return;
-          } else if (isMcqOrExplanationHeader(txt)) {
+            inSaSection = false;
+          } else if (/trả\s*lời\s*ngắn/i.test(txt)) {
+            inSaSection = true;
             inEssaySection = false;
-            return;
+          } else if (/^(?:phần\s*(?:I|II|1|2)|I|II|A|1|2)[\.\:\-\s]*(?:trắc\s*nghiệm|đúng\s*\/?\s*sai)\b/i.test(txt)) {
+            inEssaySection = false;
+            inSaSection = false;
           }
 
           if (!inEssaySection) {
-            if (!isMcqExplanationBlockOrLine(txt)) {
+            if (inSaSection) {
+              var inlineSa = parseSaKey(txt);
+              Object.keys(inlineSa).forEach(function(k) { saMap[k] = inlineSa[k]; });
+            } else {
               var inlineMcq = parseMcqKey(txt);
-              if (Object.keys(inlineMcq).length >= 2) {
-                Object.keys(inlineMcq).forEach(function(k) { mcqMap[k] = inlineMcq[k]; });
-              }
+              Object.keys(inlineMcq).forEach(function(k) { mcqMap[k] = inlineMcq[k]; });
+              var inlineTf = parseTfKey(txt);
+              Object.keys(inlineTf).forEach(function(k) { tfMap[k] = inlineTf[k]; });
             }
-            var inlineTf = parseTfKey(txt);
-            Object.keys(inlineTf).forEach(function(k) { tfMap[k] = inlineTf[k]; });
           } else {
-            if (!isMcqExplanationBlockOrLine(txt)) {
-              essayLines.push(txt);
-            }
+            essayLines.push(txt);
           }
         } else {
           var rows = [];
@@ -2238,24 +2136,27 @@ Trả về đúng cấu trúc JSON:
           });
           if (rows.length === 0) return;
 
-          var beforeCount = Object.keys(mcqMap).length;
+          var beforeCount = Object.keys(mcqMap).length + Object.keys(tfMap).length + Object.keys(saMap).length;
           var tempEssay = [];
-          inEssaySection = parseTableRowsSmart(rows, mcqMap, tfMap, saMap, tempEssay, inEssaySection);
-          var addedMcq = Object.keys(mcqMap).length - beforeCount;
+          parseTableRowsSmart(rows, mcqMap, tfMap, saMap, tempEssay);
+          var addedObjCount = (Object.keys(mcqMap).length + Object.keys(tfMap).length + Object.keys(saMap).length) - beforeCount;
 
           rows.forEach(function(row) {
-            structuredLines.push(row.join(' | '));
+            var lineStr = row.join(' | ');
+            structuredLines.push(lineStr);
+            if (addedObjCount === 0 && inEssaySection) {
+              essayLines.push(lineStr);
+            }
           });
 
-          if (addedMcq === 0) {
+          if (addedObjCount === 0 && !inEssaySection) {
             if (tempEssay.length > 0) {
               essayLines = essayLines.concat(tempEssay);
-            } else if (!inEssaySection && isGenuineEssayRubricTable(rows)) {
-              // Chỉ nhận bảng khi có cột Điểm/Thang điểm chuẩn của Tự luận và không chứa giải thích trắc nghiệm
-              rows.forEach(function(r) {
-                var rStr = r.join(' | ');
-                if (!isMcqExplanationBlockOrLine(rStr)) essayLines.push(rStr);
-              });
+            } else {
+              var tableTextJoined = rows.map(function(r) { return r.join(' | '); }).join('\n');
+              if (/(?:câu|bài)\s*\d+/i.test(tableTextJoined) && /\b\d+[\.,]\d+\b/.test(tableTextJoined)) {
+                essayLines.push(tableTextJoined);
+              }
             }
           }
         }
@@ -2268,7 +2169,10 @@ Trả về đúng cấu trúc JSON:
     var tfSorted = Object.keys(tfMap);
     var tfKeyString = tfSorted.map(function(k) { return k + tfMap[k]; }).join(', ');
 
-    var essayTextClean = cleanAndFilterEssayRubric(essayLines.join('\n'));
+    var saSorted = Object.keys(saMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var saKeyString = saSorted.map(function(q) { return q + ': ' + saMap[q]; }).join(' | ');
+
+    var essayTextClean = essayLines.join('\n').trim();
     var finalStructuredText = structuredLines.join('\n');
     if (mcqKeyString) {
       finalStructuredText = '[ĐÁP ÁN TRẮC NGHIỆM ABCD TRÍCH XUẤT TỪ BẢNG: ' + mcqKeyString + ']\n' + finalStructuredText;
@@ -2278,7 +2182,7 @@ Trả về đúng cấu trúc JSON:
       structuredText: finalStructuredText || fallbackRawText,
       mcqKey: mcqKeyString,
       tfKey: tfKeyString,
-      saKey: '',
+      saKey: saKeyString,
       essayRubric: essayTextClean
     };
   }
@@ -2289,24 +2193,19 @@ Trả về đúng cấu trúc JSON:
     var saMap = {};
     var essayLines = [];
 
-    parseTableRowsSmart(rows, mcqMap, tfMap, saMap, essayLines, false);
+    parseTableRowsSmart(rows, mcqMap, tfMap, saMap, essayLines);
 
-    // Chỉ khi file PDF là HDC chỉ có Tự luận (không có câu TN nào) và người soạn không ghi dòng "PHẦN TỰ LUẬN",
-    // mới quét các dòng có đơn vị điểm rõ ràng ("0.5 điểm", "1,0 đ") và lọc sạch mọi câu giải thích trắc nghiệm
-    if (essayLines.length === 0 && Object.keys(mcqMap).length === 0 && Object.keys(tfMap).length === 0 && rows.length > 0) {
+    if (essayLines.length === 0 && rows.length > 0) {
       var captureEssay = false;
       rows.forEach(function(row) {
         var line = row.join(' | ').trim();
-        if (isMcqOrExplanationHeader(line)) {
-          captureEssay = false;
-          return;
-        }
-        // Bắt buộc phải có đơn vị "đ" hoặc "điểm" rõ ràng sau số điểm (không dùng ? tùy chọn)
-        if (/^(?:câu|bài)\s*\d+\s*[\(\:\.\-].*\b\d+(?:[\.,]\d+)?\s*(?:đ|điểm)\b/i.test(line) && !isMcqExplanationBlockOrLine(line)) {
+        if (/(?:câu|bài)\s*\d+\s*[\(\:\.\-].*\b\d+[\.,]\d+\s*(?:đ|điểm)?/i.test(line)) {
           captureEssay = true;
         }
-        if (captureEssay && !isMcqExplanationBlockOrLine(line)) {
-          essayLines.push(line);
+        if (captureEssay) {
+          if (!/^(?:\d+\s*[\.\:]?\s*[A-D]\s*[\|\,\s]*)+$/i.test(line)) {
+            essayLines.push(line);
+          }
         }
       });
     }
@@ -2314,13 +2213,15 @@ Trả về đúng cấu trúc JSON:
     var sortedQ = Object.keys(mcqMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
     var mcqKeyString = sortedQ.map(function(q) { return q + mcqMap[q]; }).join(', ');
     var tfKeyString = Object.keys(tfMap).map(function(k) { return k + tfMap[k]; }).join(', ');
-    var essayTextClean = cleanAndFilterEssayRubric(essayLines.join('\n'));
+    var saSorted = Object.keys(saMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var saKeyString = saSorted.map(function(q) { return q + ': ' + saMap[q]; }).join(' | ');
+    var essayTextClean = essayLines.join('\n').trim();
 
     return {
       structuredText: fullText,
       mcqKey: mcqKeyString,
       tfKey: tfKeyString,
-      saKey: '',
+      saKey: saKeyString,
       essayRubric: essayTextClean
     };
   }
@@ -2329,14 +2230,11 @@ Trả về đúng cấu trúc JSON:
     var statusBox = document.getElementById('fileStatusBox');
     statusBox.style.display = 'block';
 
-    // Luôn lọc sạch phần giải thích trắc nghiệm khỏi chuỗi Tự luận trước khi đưa lên giao diện
-    var cleanEssayStr = cleanAndFilterEssayRubric(essayStr);
-
     var hasMulti = multiCodesStr && String(multiCodesStr).trim() !== '';
     var hasMcqSingle = mcqStr && String(mcqStr).trim() !== '';
     var hasTf = tfStr && String(tfStr).trim() !== '';
     var hasSa = saStr && String(saStr).trim() !== '';
-    var hasEssay = cleanEssayStr !== '';
+    var hasEssay = essayStr && String(essayStr).trim() !== '';
 
     if (hasMulti) {
       document.getElementById('useMultiCodeChk').checked = true;
@@ -2350,7 +2248,7 @@ Trả về đúng cấu trúc JSON:
     }
     document.getElementById('tfKey').value = hasTf ? String(tfStr).trim() : '';
     document.getElementById('saKey').value = hasSa ? String(saStr).trim() : '';
-    document.getElementById('essayRubric').value = hasEssay ? cleanEssayStr : '';
+    document.getElementById('essayRubric').value = hasEssay ? String(essayStr).trim() : '';
 
     autoDetectStructureFromInputs(true);
     saveConfig();
@@ -2367,7 +2265,7 @@ Trả về đúng cấu trúc JSON:
     if (saCount > 0) summaryParts.push(saCount + ' câu TL ngắn');
     if (hasEssay) summaryParts.push(esList.length > 0 ? (esList.length + ' câu Tự luận (' + esList.join(', ') + ')') : 'Phần Tự luận');
 
-    statusBox.innerText = '✅ Đã nạp "' + fileName + '" — Nhận diện: [' + (summaryParts.join(' + ') || 'Trống') + '] (Đã lọc bỏ giải thích TN)!';
+    statusBox.innerText = '✅ Đã nạp "' + fileName + '" — Nhận diện: [' + (summaryParts.join(' + ') || 'Trống') + '] (0 tốn lượt API)!';
   }
 
   async function handleAnswerFile(event) {
@@ -2388,13 +2286,13 @@ Trả về đúng cấu trúc JSON:
         var localParsed = parseDocxHtmlAndTablesSmart(htmlRes.value, rawRes.value.trim());
 
         resetAllAnswerFields();
-        if (localParsed.mcqKey || localParsed.tfKey || localParsed.essayRubric) {
+        if (localParsed.mcqKey || localParsed.tfKey || localParsed.saKey || localParsed.essayRubric) {
           applyExtractedRubricToUI(localParsed.mcqKey, localParsed.tfKey, localParsed.saKey, localParsed.essayRubric, '', file.name);
         } else if (isValidKey) {
           statusBox.innerText = '🤖 Đang dùng AI phân tích cấu trúc đặc biệt của file Word...';
           await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + localParsed.structuredText }], file.name, localParsed);
         } else {
-          applyExtractedRubricToUI('', '', '', cleanAndFilterEssayRubric(rawRes.value.trim()), '', file.name);
+          applyExtractedRubricToUI('', '', '', rawRes.value.trim(), '', file.name);
         }
       } else if (fName.endsWith('.pdf')) {
         resetAllAnswerFields();
@@ -2407,7 +2305,7 @@ Trả về đúng cấu trúc JSON:
 
         if (pdfLocal && pdfLocal.rows && pdfLocal.rows.length > 0 && pdfLocal.fullText.length >= 20) {
           var parsedPdf = parsePdfLocalRowsSmart(pdfLocal.rows, pdfLocal.fullText);
-          if (parsedPdf.mcqKey || parsedPdf.tfKey || parsedPdf.essayRubric) {
+          if (parsedPdf.mcqKey || parsedPdf.tfKey || parsedPdf.saKey || parsedPdf.essayRubric) {
             applyExtractedRubricToUI(parsedPdf.mcqKey, parsedPdf.tfKey, parsedPdf.saKey, parsedPdf.essayRubric, '', file.name);
             event.target.value = '';
             return;
@@ -2419,12 +2317,12 @@ Trả về đúng cấu trúc JSON:
               event.target.value = '';
               return;
             } catch (aiTextErr) {
-              applyExtractedRubricToUI(parsedPdf.mcqKey, parsedPdf.tfKey, '', cleanAndFilterEssayRubric(pdfLocal.fullText), '', file.name);
+              applyExtractedRubricToUI(parsedPdf.mcqKey, parsedPdf.tfKey, parsedPdf.saKey, pdfLocal.fullText, '', file.name);
               event.target.value = '';
               return;
             }
           } else {
-            applyExtractedRubricToUI('', '', '', cleanAndFilterEssayRubric(pdfLocal.fullText), '', file.name);
+            applyExtractedRubricToUI('', '', '', pdfLocal.fullText, '', file.name);
             event.target.value = '';
             return;
           }
@@ -2453,10 +2351,10 @@ Trả về đúng cấu trúc JSON:
   async function extractRubricWithAI(apiKey, modelName, contentParts, fileName, localHint) {
     var prompt = `Bạn là chuyên gia phân tích Đáp án & Hướng dẫn chấm thi. Hãy đọc kỹ tài liệu đính kèm và tách chính xác phần TRẮC NGHIỆM và phần TỰ LUẬN thành JSON:
 1. "multi_codes": Nếu có nhiều mã đề trắc nghiệm ABCD (VD: 101, 102...), xuất mỗi mã 1 dòng theo mẫu "101 | 1A, 2B, 3C...". Không có để "".
-2. "mcq_key": Trích xuất TẤT CẢ đáp án Trắc nghiệm nhiều lựa chọn (A, B, C, D) thành chuỗi "1A, 2B, 3C, ..., 17D" (lấy tối đa toàn bộ số câu trắc nghiệm có trong bảng ngang/dọc hoặc trong phần lời giải chi tiết trắc nghiệm). Nếu tài liệu KHÔNG có trắc nghiệm ABCD thì để "".
+2. "mcq_key": Trích xuất TẤT CẢ đáp án Trắc nghiệm nhiều lựa chọn (A, B, C, D) thành chuỗi "1A, 2B, 3C, ..., 17D" (lấy tối đa toàn bộ số câu trắc nghiệm có trong bảng ngang/dọc hoặc văn bản). Nếu tài liệu KHÔNG có trắc nghiệm ABCD thì để "".
 3. "tf_key": Đáp án Đúng/Sai dạng "1aĐ, 1bS, 1cĐ, 1dS..." (nếu KHÔNG có để "").
 4. "sa_key": Đáp án Trả lời ngắn dạng "1: 12.5 | 2: 4..." (nếu KHÔNG có để "").
-5. "essay_rubric": CHỈ trích xuất hướng dẫn chấm và thang điểm của phần TỰ LUẬN (các câu thuộc mục TỰ LUẬN có chia điểm từng bước giải). TUYỆT ĐỐI KHÔNG đưa các câu hỏi trắc nghiệm, bảng đáp án trắc nghiệm, hoặc phần LỜI GIẢI CHI TIẾT / GIẢI THÍCH CHI TIẾT CỦA CÁC CÂU TRẮC NGHIỆM (các câu có dạng "Chọn A", "Đáp án B", giải thích tại sao chọn A/B/C/D hoặc giải thích ý a, b, c, d Đúng/Sai) vào "essay_rubric". Nếu đề chỉ có Trắc nghiệm và lời giải chi tiết Trắc nghiệm thì bắt buộc để "essay_rubric": "".
+5. "essay_rubric": CHỈ trích xuất hướng dẫn chấm và thang điểm của phần TỰ LUẬN (giữ nguyên số hiệu câu như Câu 1, Câu 2... hoặc Câu 18, Câu 19... kèm điểm số từng ý). TUYỆT ĐỐI KHÔNG đưa các câu hỏi hoặc bảng đáp án Trắc nghiệm (ABCD, Đ/S, TLN) vào trường "essay_rubric". Nếu đề chỉ có Trắc nghiệm thì để "".
 
 JSON:
 {"multi_codes": "", "mcq_key": "", "tf_key": "", "sa_key": "", "essay_rubric": ""}`;
@@ -2468,7 +2366,7 @@ JSON:
     var aiMcq = (parsed.mcq_key && String(parsed.mcq_key).trim()) || '';
     var aiTf = (parsed.tf_key && String(parsed.tf_key).trim()) || '';
     var aiSa = (parsed.sa_key && String(parsed.sa_key).trim()) || '';
-    var aiEssay = cleanAndFilterEssayRubric((parsed.essay_rubric && String(parsed.essay_rubric).trim()) || '');
+    var aiEssay = (parsed.essay_rubric && String(parsed.essay_rubric).trim()) || '';
 
     if (localHint && localHint.mcqKey) {
       var aiMcqCount = Object.keys(parseMcqKey(aiMcq)).length;
@@ -2485,7 +2383,6 @@ JSON:
       var rescuedMcq = parseMcqKey(aiEssay);
       if (Object.keys(rescuedMcq).length >= 5) {
         aiMcq = Object.keys(rescuedMcq).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); }).map(function(k) { return k + rescuedMcq[k]; }).join(', ');
-        aiEssay = '';
       }
     }
 
@@ -2842,7 +2739,7 @@ JSON:
 
       if (expectedMcqNums.length > 0) {
         promptLines.push('- "mcq": Nhận diện CHÍNH XÁC TỐI ĐA toàn bộ các câu trắc nghiệm ABCD học sinh làm trên bài thi theo danh sách câu [' + expectedMcqNums.join(',') + '] (' +
-          ((examMode === 'CIRCLE') ? 'chỉ lấy chữ cái A,B,C,D có nét khoanh tròn/đánh dấu hoặc điền vào ô đáp án; nếu học sinh gạch bỏ đáp án cũ và khoanh đáp án mới thì lấy đáp án mới' : 'đọc chữ cái A,B,C,D viết tay theo từng số câu') + '), ghi chuỗi liền "1A 2B 3C...". Câu bỏ trống ghi "1_". Nếu ảnh hoàn toàn KHÔNG có bài làm trắc nghiệm ABCD thì để ""');
+          ((examMode === 'CIRCLE') ? 'chỉ lấy chữ cái A,B,C,D có nét khoanh tròn/đánh dấu hoặc điền vào ô đáp án; nếu học sinh gạch bỏ đápán cũ và khoanh đáp án mới thì lấy đáp án mới' : 'đọc chữ cái A,B,C,D viết tay theo từng số câu') + '), ghi chuỗi liền "1A 2B 3C...". Câu bỏ trống ghi "1_". Nếu ảnh hoàn toàn KHÔNG có bài làm trắc nghiệm ABCD thì để ""');
         jsonSchemaExample.mcq = "";
       }
       if (expectedTfIds.length > 0) {
