@@ -1,0 +1,3815 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chấm Bài KT By TVB CVA-HD-CM (v27)</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 10px; background: #eef2f6; color: #1e293b; -webkit-tap-highlight-color: transparent; }
+  .card { background: #fff; padding: 14px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); margin-bottom: 12px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  h3 { margin: 0; color: #0f52ba; font-size: 16px; }
+  label { font-weight: 600; display: block; margin-top: 10px; font-size: 13px; color: #475569; }
+  textarea, input, select { width: 100%; padding: 9px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+  .masked-key { -webkit-text-security: disc; text-security: disc; font-family: monospace; }
+  .plain-key { -webkit-text-security: none; text-security: none; font-family: monospace; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .toggle-btn { background: #e2e8f0; color: #334155; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .mode-switch { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin-top: 6px; gap: 4px; }
+  .mode-btn { flex: 1; border: none; background: transparent; text-align: center; padding: 10px 6px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; color: #475569; transition: 0.15s; }
+  .mode-btn.active { background: #0f52ba; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .btn { width: 100%; padding: 12px; background: #0f52ba; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; display: block; text-align: center; }
+  .btn:active { opacity: 0.85; }
+  .btn-file { background: #7c3aed; font-size: 13px; padding: 10px; }
+  .btn-clear-ans { background: #ef4444; font-size: 12px; padding: 8px; margin-top: 6px; }
+  .btn-show-hidden { background: #f1f5f9; color: #0f52ba; border: 1px dashed #94a3b8; font-size: 12px; padding: 8px; margin-top: 8px; font-weight: bold; border-radius: 8px; width: 100%; cursor: pointer; display: none; }
+  .btn-cam { background: #16a34a; }
+  .btn-gallery { background: #0d9488; }
+  .btn-pdf-stu { background: #e11d48; }
+  .btn-dl-img { background: #2563eb; margin-top: 8px; font-size: 13px; padding: 9px; }
+  .btn-save { background: #d97706; font-size: 15px; }
+  .btn-discard { background: #dc2626; font-size: 14px; padding: 11px; margin-top: 8px; }
+  .btn-excel { background: #15803d; }
+  .btn-roster { background: #0f766e; font-size: 13px; padding: 10px; margin-top: 6px; }
+  .btn-roster-cam { background: #16a34a; font-size: 13px; padding: 10px; margin-top: 6px; }
+  .btn-merge { background: #6366f1; margin-top: 8px; font-size: 14px; }
+  .btn-copy-full { background: #0284c7; margin-top: 8px; font-size: 13px; }
+  .btn-copy-short { background: #0369a1; margin-top: 6px; font-size: 13px; }
+  .btn-clear { background: #dc2626; margin-top: 8px; padding: 10px; font-size: 13px; }
+  .btn-danger { background: #dc2626; padding: 8px; font-size: 13px; margin-top: 8px; }
+
+  .api-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 6px; }
+  .api-btn-row { display: flex; gap: 6px; margin-top: 6px; }
+  .btn-api-save { flex: 1.1; background: #16a34a; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-api-del { flex: 1.1; background: #dc2626; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-api-detect { flex: 1.4; background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-api-eye { flex: 0.6; background: #64748b; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .api-status { font-size: 12px; margin-top: 6px; font-weight: 600; padding: 5px 8px; border-radius: 5px; }
+  .api-temp { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+  .api-saved { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .api-invalid { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .model-detect-note { font-size: 11.5px; color: #0f52ba; margin-top: 6px; font-weight: 600; line-height: 1.4; background: #eff6ff; padding: 6px 8px; border-radius: 6px; border: 1px solid #bfdbfe; }
+  .rpd-bar { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-top: 6px; }
+  .btn-rpd-reset { background: #dcfce7; color: #15803d; border: 1px solid #86efac; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+  .struct-banner { background: #e0f2fe; border: 1px solid #7dd3fc; color: #0369a1; padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-top: 8px; text-align: center; }
+  .excel-status-box { background: #dcfce7; border: 2px solid #16a34a; color: #14532d; padding: 10px; border-radius: 8px; margin-top: 8px; font-size: 13px; display: none; }
+
+  .file-status { font-size: 12px; color: #6d28d9; background: #f3e8ff; padding: 8px; border-radius: 6px; margin-top: 6px; display: none; font-weight: 600; }
+  .roster-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+  .roster-status { font-size: 12px; color: #166534; font-weight: 600; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .roster-loading { font-size: 12px; color: #0f52ba; background: #dbeafe; border: 1px solid #93c5fd; padding: 7px 9px; border-radius: 6px; margin-top: 6px; font-weight: 600; display: none; }
+  .sec-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 10px; }
+  .sec-title { font-size: 13px; font-weight: bold; color: #0f52ba; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+  .packet-box { background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 10px; padding: 10px; margin-top: 10px; }
+  .packet-title { font-size: 13px; font-weight: bold; color: #0f52ba; display: flex; justify-content: space-between; align-items: center; }
+  .btn-clear-top { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: none; }
+  .img-grid { display: flex; gap: 10px; overflow-x: auto; margin-top: 8px; padding-bottom: 4px; }
+  .img-card { position: relative; flex: 0 0 auto; width: 95px; text-align: center; }
+  .img-card img { width: 95px; height: 120px; object-fit: cover; border-radius: 6px; border: 2px solid #0f52ba; display: block; }
+  .pdf-card { width: 110px; height: 120px; background: #ffe4e6; border: 2px solid #e11d48; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 6px; box-sizing: border-box; font-size: 11px; color: #9f1239; font-weight: bold; word-break: break-all; }
+  .img-badge { background: #0f52ba; color: #fff; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; position: absolute; bottom: 4px; left: 4px; }
+  .img-del { background: #dc2626; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: bold; position: absolute; top: -6px; right: -6px; cursor: pointer; line-height: 20px; padding: 0; }
+  .warn-banner { background: #fee2e2; border: 2px solid #dc2626; color: #991b1b; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: bold; margin-bottom: 10px; }
+  .merge-notice { background: #dbeafe; border: 1px solid #3b82f6; color: #1e40af; padding: 8px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
+  .total-banner { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .total-score { font-size: 26px; font-weight: 800; color: #dc2626; text-align: center; margin-top: 6px; }
+  .mcq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 6px; margin: 8px 0; }
+  .mcq-item { padding: 7px 4px; border-radius: 6px; font-weight: bold; font-size: 12px; text-align: center; cursor: pointer; user-select: none; border: 1px solid transparent; }
+  .mcq-ok { background: #dcfce7; color: #15803d; border-color: #86efac; }
+  .mcq-err { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+  .essay-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 8px; margin-top: 8px; }
+  .essay-chip { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0f52ba; padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .essay-score-input { width: 62px !important; padding: 5px !important; font-weight: bold; color: #dc2626; text-align: center; margin: 0 !important; }
+  .hint { font-size: 12px; color: #64748b; font-style: italic; margin-top: 4px; }
+  .table-wrap { overflow-x: auto; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 5px; text-align: left; }
+  th { background: #f1f5f9; color: #334155; }
+  .row-ungraded { background: #f8fafc; color: #94a3b8; }
+  .row-unmatched { background: #fff1f2; }
+  .del-row { color: #dc2626; font-weight: bold; cursor: pointer; text-align: center; }
+  .q-tag { display: inline-block; background: #fef3c7; border: 1px solid #f59e0b; color: #b45309; padding: 2px 5px; border-radius: 4px; font-size: 11px; font-weight: bold; margin: 1px; }
+  .badge-match { display: inline-block; background: #dcfce7; color: #166534; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; }
+  .badge-outside { display: inline-block; background: #fee2e2; color: #991b1b; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; }
+  .count-pill { background: #dbeafe; color: #1e40af; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+  <!-- 1. CẤU HÌNH ĐÁP ÁN & BẢO MẬT API KEY -->
+  <div class="card">
+    <div class="card-header">
+      <h3>⚙️ 1. Đáp án & Cấu hình AI</h3>
+      <button type="button" class="toggle-btn" id="cfgToggleBtn" onclick="toggleConfig()">Thu gọn ▲</button>
+    </div>
+
+    <div id="configArea">
+      <div class="api-box">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="margin-top:0;">🔑 API Key cá nhân:</label>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:12px; color:#0f52ba; font-weight:bold; text-decoration:none;">👉 Lấy API Key miễn phí</a>
+        </div>
+        <input type="text" id="apiKey" class="masked-key" placeholder="Dán nguyên vẹn API Key (AQ_... / AIza...) vào đây..." oninput="onApiInputChanged()" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true">
+
+        <div class="api-btn-row">
+          <button type="button" class="btn-api-eye" id="btnEyeApi" onclick="toggleApiVisibility()">👁️ Hiện</button>
+          <button type="button" class="btn-api-detect" onclick="verifyAndAutoSelectModel(false)">🔄 Quét & Chọn Gói Tốt Nhất</button>
+          <button type="button" class="btn-api-save" onclick="saveApiKeyExplicit()">💾 Lưu API</button>
+          <button type="button" class="btn-api-del" onclick="deleteApiKeyExplicit()">🗑️ Xóa API</button>
+        </div>
+        <div id="apiStatusBanner" class="api-status api-temp">
+          🔒 Mặc định: Nếu không bấm "Lưu API", Key sẽ TỰ ĐỘNG XÓA SẠCH ngay khi đóng tab hoặc thoát App.
+        </div>
+
+        <div class="rpd-bar">
+          <span id="rpdText">📊 Hôm nay đã dùng: 0 / 1500 lượt Free (Còn 1500 lượt)</span>
+          <button type="button" class="btn-rpd-reset" onclick="resetRpdCounterManual()">Đặt lại 0</button>
+        </div>
+
+        <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model theo gói tài khoản:</label>
+        <div class="mode-switch">
+          <button type="button" class="mode-btn active" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Hạn mức cao nhất (1500 lượt/ngày)</button>
+          <button type="button" class="mode-btn" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Cân bằng Chuẩn xác (Flash chuẩn)</button>
+        </div>
+
+        <div class="row" style="margin-top:6px;">
+          <div style="flex:1.45;">
+            <label style="margin-top:2px;">Mô hình thực tế trong tài khoản API:</label>
+            <select id="aiModel" onchange="onManualModelChange()">
+              <option value="gemini-2.5-flash" selected>🎯 gemini-2.5-flash (Free Ổn định - Chuẩn xác cao)</option>
+              <option value="gemini-2.5-flash-lite">⚡ gemini-2.5-flash-lite (Free 1500 lượt/ngày - Siêu tốc)</option>
+              <option value="gemini-2.0-flash">⚡ gemini-2.0-flash (Free 1500 lượt/ngày - Ổn định)</option>
+            </select>
+          </div>
+          <div style="flex:0.95;">
+            <label style="margin-top:2px;">Hạn mức tư duy (Thinking):</label>
+            <select id="thinkingLevel" onchange="saveConfig()">
+              <option value="LOW" selected>⚡ Tắt hẳn (0 token - Chấm 3-5s)</option>
+              <option value="MEDIUM">⚖️ Nhanh (256 token)</option>
+              <option value="HIGH">🧠 Sâu (1024 token)</option>
+            </select>
+          </div>
+        </div>
+        <div id="modelDetectNote" class="model-detect-note">
+          ⚡ <b>Bản v27:</b> Sửa triệt để lỗi nạp <b>PDF (chạy độc lập không phụ thuộc Worker)</b>, tách sạch chi tiết Trắc nghiệm khỏi Tự luận & nạp dự phòng nội dung câu trả lời TN.
+        </div>
+      </div>
+
+      <!-- KHU VỰC NẠP FILE HƯỚNG DẪN CHẤM -->
+      <label>Nạp tự động từ file Word (.docx) hoặc PDF hướng dẫn chấm (0 tốn hạn mức API):</label>
+      <input type="file" id="ansFileInput" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleAnswerFile(event)">
+      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án / Hướng dẫn chấm (.docx / .pdf) — Tự tách Bảng TN & Tự luận</button>
+      <button type="button" class="btn btn-clear-ans" onclick="clearAnswerKeysManual()">🗑️ Xóa trắng toàn bộ Đáp án & Biểu điểm hiện tại</button>
+      <div id="fileStatusBox" class="file-status"></div>
+
+      <label>Cấu trúc bài chấm (Tự động nhận diện theo Hướng dẫn chấm & Bài làm HS):</label>
+      <div class="mode-switch">
+        <button type="button" class="mode-btn active" id="structBoth" onclick="setExamStructure('BOTH', true)">📚 Cả TN & Tự luận</button>
+        <button type="button" class="mode-btn" id="structMcqOnly" onclick="setExamStructure('MCQ_ONLY', true)">☑️ Chỉ Trắc nghiệm</button>
+        <button type="button" class="mode-btn" id="structEssayOnly" onclick="setExamStructure('ESSAY_ONLY', true)">✍️ Chỉ Tự luận</button>
+      </div>
+      <div id="structStatusBanner" class="struct-banner">
+        📌 Chế độ hiện tại: Tự động nhận diện theo phần có đáp án
+      </div>
+
+      <button type="button" class="btn-show-hidden" id="btnShowHiddenSections" onclick="showAllAnswerSectionsManual()">👁️ Hiện tất cả các phần đang ẩn (I, II, III, IV) để nhập/sửa thủ công</button>
+
+      <!-- KHỐI CẤU HÌNH TRẮC NGHIỆM -->
+      <div id="allMcqConfigWrap">
+        <div class="sec-box" id="secMultiCodeWrap" style="background:#fefce8; border-color:#fde047;">
+          <div class="sec-title" style="color:#854d0e;">
+            <span>🔀 Quản lý Mã đề Trắc nghiệm (Nếu có nhiều mã đề)</span>
+          </div>
+          <label style="margin-top:4px; font-weight:normal; font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="useMultiCodeChk" onchange="toggleMultiCodeUI()" style="width:16px; height:16px; margin:0;">
+            <b>Sử dụng nhiều Mã đề khác nhau (Ví dụ: 101, 102, 357...)</b>
+          </label>
+          <div id="multiCodeArea" style="display:none; margin-top:8px;">
+            <label>Danh sách Mã đề & Đáp án ABCD (Mỗi mã 1 dòng theo mẫu <code>MãĐề | 1A, 2B, 3C...</code>):</label>
+            <textarea id="multiCodeData" rows="3" onchange="onAnswerKeyManualEdit()" placeholder="101 | 1A, 2B, 3C, 4D&#10;102 | 1B, 2C, 3D, 4A"></textarea>
+          </div>
+        </div>
+
+        <div class="sec-box" id="secMcqAbcdWrap">
+          <div class="sec-title">
+            <span>I. Trắc nghiệm nhiều lựa chọn (A, B, C, D)</span>
+            <span class="count-pill" id="mcqCountPill">0 câu</span>
+          </div>
+          <div class="row">
+            <div style="flex: 2.2;" id="singleMcqBox">
+              <label style="margin-top:2px">Đáp án chữ cái ABCD (Tự nạp từ HDC):</label>
+              <input type="text" id="mcqKey" value="" placeholder="VD: 1A, 2B, 3C... đến câu N" oninput="updateKeyCountPills()" onchange="onAnswerKeyManualEdit()">
+            </div>
+            <div style="flex: 1;">
+              <label style="margin-top:2px">Điểm/1 câu ABCD:</label>
+              <input type="number" id="mcqPoint" value="0.25" step="0.05" onchange="saveConfig()">
+            </div>
+          </div>
+          <div id="mcqBackupWrap" style="margin-top:6px;">
+            <label style="margin-top:2px; font-size:12px; color:#0f52ba;">📌 Nội dung đáp án/chú thích Trắc nghiệm dự phòng (Dùng đối chiếu khi bài làm không ghi chữ A, B, C, D mà ghi nội dung):</label>
+            <textarea id="mcqBackupText" rows="2" onchange="saveConfig()" placeholder="Tự động trích xuất nội dung đáp án/chú thích câu TN từ HDC (VD: Câu 1A: 20W | Câu 2B: Nhiệt năng...) hoặc nhập thêm"></textarea>
+          </div>
+        </div>
+
+        <div class="sec-box" id="secTfWrap">
+          <div class="sec-title">
+            <span>II. Trắc nghiệm Đúng / Sai (Các ý a, b, c, d)</span>
+            <span class="count-pill" id="tfCountPill">0 ý</span>
+          </div>
+          <label style="margin-top:2px">Đáp án Đ/S (VD: 1aĐ, 1bS, 1cĐ, 1dS...):</label>
+          <input type="text" id="tfKey" value="" placeholder="Để trống nếu không có" oninput="updateKeyCountPills()" onchange="onAnswerKeyManualEdit()">
+          <label>Cách tính điểm Đúng/Sai:</label>
+          <select id="tfRule" onchange="saveConfig()">
+            <option value="PROG">Chuẩn lũy tiến (1 ý: 0.1đ | 2 ý: 0.25đ | 3 ý: 0.5đ | 4 ý: 1.0đ)</option>
+            <option value="EVEN">Chia đều mỗi ý 0.25đ</option>
+          </select>
+        </div>
+
+        <div class="sec-box" id="secSaWrap">
+          <div class="sec-title">
+            <span>III. Trắc nghiệm Trả lời ngắn</span>
+            <span class="count-pill" id="saCountPill">0 câu</span>
+          </div>
+          <div class="row">
+            <div style="flex: 2.2;">
+              <label style="margin-top:2px">Đáp án TLN (VD: 1: 12.5 | 2: 4...):</label>
+              <input type="text" id="saKey" value="" placeholder="Để trống nếu không có" oninput="updateKeyCountPills()" onchange="onAnswerKeyManualEdit()">
+            </div>
+            <div style="flex: 1;">
+              <label style="margin-top:2px">Điểm/1 câu TLN:</label>
+              <input type="number" id="saPoint" value="0.25" step="0.05" onchange="saveConfig()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KHỐI CẤU HÌNH TỰ LUẬN -->
+      <div id="allEssayConfigWrap">
+        <div class="sec-box" id="secEssayWrap">
+          <div class="sec-title">
+            <span>IV. Hướng dẫn chấm Tự luận (Theo HDC & Bài làm HS)</span>
+            <span class="count-pill" id="essayCountPill">Tự động</span>
+          </div>
+          <textarea id="essayRubric" rows="4" oninput="updateKeyCountPills()" onchange="onAnswerKeyManualEdit()" placeholder="Nhập biểu điểm tự luận. VD: Câu 18 (1.5đ): ... hoặc Câu 1 (2.0đ): ..."></textarea>
+          <label>Chế độ chấm Tự luận:</label>
+          <div class="mode-switch">
+            <button type="button" class="mode-btn active" id="styleFlex" onclick="setGradingStyle('FLEX')">🧠 Linh hoạt (Hiểu ý & Cách giải khác)</button>
+            <button type="button" class="mode-btn" id="styleStrict" onclick="setGradingStyle('STRICT')">📏 Sát biểu điểm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. CHỌN CÂU CẦN CHẤM, GOM ẢNH & NẠP PDF BÀI LÀM -->
+  <div class="card" id="sec2Card">
+    <h3>📷 2. Đưa bài làm Học sinh lên chấm</h3>
+    <div class="hint" style="color:#0f52ba; font-style:normal; font-weight:600; margin-bottom:6px;">
+      ✨ Tự động chấm tối đa số câu Trắc nghiệm & Tự luận tùy theo <b>Hướng dẫn chấm</b> và <b>Bài làm học sinh chụp lên</b> (Chuẩn nét 1024px — Không tốn thêm token).
+    </div>
+
+    <div class="row">
+      <div style="flex: 1.5;" id="targetQuestionsBox">
+        <label>Giới hạn câu Tự luận (Tùy chọn):</label>
+        <input type="text" id="targetQuestions" placeholder="Để trống = Chấm tối đa theo HDC & Bài làm" onchange="saveConfig()">
+      </div>
+      <div style="flex: 1.5;" id="manualExamCodeBox">
+        <label>Mã đề thi (Tùy chọn ghi đè):</label>
+        <input type="text" id="manualExamCode" placeholder="Để trống = AI tự đọc trên bài" onchange="saveConfig()">
+      </div>
+    </div>
+
+    <div id="mcqModeSwitchWrap">
+      <label>Hình thức làm Trắc nghiệm:</label>
+      <div class="mode-switch">
+        <button type="button" class="mode-btn active" id="modeCircle" onclick="setMode('CIRCLE')">📄 Đề A4 (Khoanh & Điền)</button>
+        <button type="button" class="mode-btn" id="modeWrite" onclick="setMode('WRITE')">📝 Giấy thi (Viết tay)</button>
+      </div>
+    </div>
+
+    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="addPages(event)">
+    <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addPages(event)">
+    <input type="file" id="stuPdfInput" accept=".pdf,application/pdf" style="display:none" onchange="addStudentPdf(event)">
+
+    <div class="row">
+      <div><button type="button" class="btn btn-cam" onclick="document.getElementById('camInput').click()">📷 Chụp trang (Camera ĐT)</button></div>
+      <div><button type="button" class="btn btn-gallery" onclick="document.getElementById('galleryInput').click()">🖼️ Chọn nhiều ảnh</button></div>
+    </div>
+    <button type="button" class="btn btn-pdf-stu" onclick="document.getElementById('stuPdfInput').click()">📄 Nạp file PDF bài làm đã gom của 1 Học sinh</button>
+
+    <div class="packet-box">
+      <div class="packet-title">
+        <span>🗂️ Túi bài làm đang tải lên (<span id="pageCountLbl">0 tệp</span>)</span>
+        <button type="button" class="btn-clear-top" id="clearTopBtn" onclick="clearImages(false)">🗑️ Xóa tất cả ảnh</button>
+      </div>
+      <div class="img-grid" id="imgList"></div>
+      <div id="saveMergedImgArea" style="display:none; margin-top:8px; border-top:1px solid #cbd5e1; padding-top:8px;">
+        <input type="text" id="mergedImgName" placeholder="Tên học sinh / Mã phách lưu ảnh (Tự động điền sau khi chấm)">
+        <button type="button" class="btn btn-dl-img" onclick="downloadMergedStudentImage()">📥 Ghép các trang & Tải 1 file ảnh tên HS về máy</button>
+      </div>
+      <button type="button" class="btn btn-clear" id="clearBtn" onclick="clearImages(false)" style="display:none">🗑️ Xóa tất cả ảnh trong túi này để chụp / chọn lại</button>
+    </div>
+    <button type="button" class="btn" id="gradeBtn" onclick="runGrading()" style="display:none">⚡ Bắt đầu chấm điểm</button>
+  </div>
+
+  <!-- 3. KẾT QUẢ CHI TIẾT, LƯU ĐIỂM HOẶC HỦY BÀI ĐỂ CHỤP LẠI -->
+  <div class="card" id="resCard" style="display:none">
+    <h3>📊 3. Kiểm tra & Lưu điểm (<span id="gradeTimeBadge" style="color:#16a34a; font-size:14px;"></span>)</h3>
+    <div id="resBody"></div>
+    <button type="button" class="btn btn-dl-img" onclick="downloadMergedStudentImage()">🖼️ Tải file Ảnh ghép bài làm mang tên HS / Mã phách này</button>
+    <button type="button" class="btn btn-save" onclick="saveStudentRecord()">💾 Lưu điểm vào Danh sách lớp</button>
+    <button type="button" class="btn btn-discard" onclick="discardAndRetake()">🗑️ Không lưu — Xóa tất cả ảnh bài này để chụp lại</button>
+  </div>
+
+  <!-- 4. BẢNG TỔNG HỢP & NẠP DANH SÁCH MẪU ĐA ĐỊNH DẠNG -->
+  <div class="card">
+    <h3>📁 4. Bảng điểm tổng hợp (<span id="countBadge">0</span> HS)</h3>
+    <div class="roster-box">
+      <div class="sec-title" style="color:#166534;">📋 Danh sách Học sinh mẫu (Hỗ trợ Chụp ảnh, Ảnh, PDF, Word .doc/.docx, Excel .xls/.xlsx/.csv):</div>
+
+      <input type="file" id="rosterCamInput" accept="image/*" capture="environment" style="display:none" onchange="handleRosterFile(event)">
+      <input type="file" id="rosterFileInput" accept=".xlsx,.xls,.csv,.doc,.docx,.pdf,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple style="display:none" onchange="handleRosterFile(event)">
+
+      <div class="row">
+        <div style="flex: 1;">
+          <button type="button" class="btn btn-roster-cam" onclick="document.getElementById('rosterCamInput').click()">📷 Chụp ảnh DS mẫu</button>
+        </div>
+        <div style="flex: 1.35;">
+          <button type="button" class="btn btn-roster" onclick="document.getElementById('rosterFileInput').click()">📂 Tải File / Ảnh (.doc, .docx, .pdf, Excel)</button>
+        </div>
+      </div>
+
+      <div id="rosterLoadingBox" class="roster-loading"></div>
+
+      <div id="rosterInfoArea" style="display:none;">
+        <div class="roster-status">
+          <span id="rosterSummaryText">Đã nạp: 0 HS</span>
+          <button type="button" class="toggle-btn" style="background:#fee2e2;color:#991b1b;" onclick="clearMasterRoster()">✕ Xóa DS mẫu</button>
+        </div>
+        <label style="margin-top:6px; font-weight:normal; font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="showUngradedChk" checked onchange="renderTable()" style="width:16px; height:16px; margin:0;">
+          Hiển thị cả HS có trong DS mẫu nhưng chưa chấm bài (để khớp 100% số dòng khi Copy vào sổ điểm)
+        </label>
+      </div>
+    </div>
+
+    <label>Sắp xếp bảng điểm:</label>
+    <select id="sortOrder" onchange="onSortOrderChange()">
+      <option value="ROSTER" id="optRosterSort" disabled>📋 Theo thứ tự Danh sách mẫu (Chưa nạp)</option>
+      <option value="NAME" selected>Theo Tên học sinh (A → Z)</option>
+      <option value="SBD">Theo Số báo danh tăng dần</option>
+      <option value="PHACH">Theo Mã phách tăng dần</option>
+      <option value="TIME">Theo thứ tự thời gian chấm</option>
+    </select>
+
+    <div class="table-wrap">
+      <table id="gradeTable">
+        <thead>
+          <tr>
+            <th>STT</th><th>SBD</th><th>Mã phách</th><th>Mã đề</th><th>Họ và tên</th><th>Lớp</th><th>TN</th><th>TL từng câu</th><th>Tổng TL</th><th>Tổng cộng</th><th>Xóa</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <input type="file" id="mergeExcelInput" accept=".xlsx,.xls" multiple style="display:none" onchange="mergeExternalExcel(event)">
+    <button type="button" class="btn btn-merge" onclick="document.getElementById('mergeExcelInput').click()">🔗 Gộp file Excel từ GV khác (Tự động ghép các câu TL & TN)</button>
+
+    <button type="button" class="btn btn-excel" onclick="exportExcelAPK()">📤 Xuất / Chia sẻ File Excel (.xlsx đủ cột từng câu)</button>
+    <div id="excelExportBox" class="excel-status-box"></div>
+
+    <button type="button" class="btn btn-copy-full" onclick="copyForExcel('FULL')">📋 Copy Đầy đủ tất cả các cột (Giống hệt bảng lưu trên App)</button>
+    <button type="button" class="btn btn-copy-short" onclick="copyForExcel('SHORT')">📋 Chỉ Copy Rút gọn (STT, SBD, Mã phách, Họ tên, Lớp, Tổng điểm)</button>
+
+    <button type="button" class="btn btn-danger" onclick="clearAllRecords()">🗑️ Xóa tất cả để chấm lớp mới</button>
+  </div>
+
+<script>
+  var SCHEMA_CACHE_VERSION = 'v27_mcq_essay_pdf_fixed';
+  var memStore = {};
+  function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
+  function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
+  function safeRemove(k) { delete memStore[k]; try { window.localStorage.removeItem(k); } catch (e) {} }
+
+  function parseNum(val, fallback) {
+    if (val === undefined || val === null || val === '') return fallback !== undefined ? fallback : 0;
+    var n = parseFloat(String(val).replace(/,/g, '.'));
+    return isNaN(n) ? (fallback !== undefined ? fallback : 0) : n;
+  }
+
+  function cleanCell(str) {
+    if (str === undefined || str === null) return '';
+    return String(str).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function sanitizeApiKey(rawKey) {
+    return String(rawKey || '').replace(/[\s\u200B-\u200D\uFEFF]+/g, '').trim();
+  }
+
+  function isValidGeminiKeyFormat(key) {
+    var k = sanitizeApiKey(key);
+    return k.length >= 20 && k.length <= 150;
+  }
+
+  var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH';
+  var apiPrefMode = 'QUOTA';
+  var pagesData = [];
+  var currentMcqState = [], currentTfState = [], currentSaState = [], currentEssayState = [];
+  var currentStuHasMcq = true, currentStuHasEssay = true;
+  var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
+  var availableBackendModels = [];
+
+  // Chỉ chặn các model thế hệ 1.5 đã ngừng hoạt động; mở khóa toàn bộ 2.5-flash-lite, 2.0-flash-lite, 2.5-flash, 2.0-flash
+  var deadModelsMap = {
+    'gemini-1.5-flash': true,
+    'gemini-1.5-flash-8b': true,
+    'gemini-1.5-pro': true
+  };
+  var quotaExhaustedMap = {}; // Lưu các model bị hết hạn mức RPD trong ngày (VD: gemini-3.8-flash limit 20)
+  var tempBusyModelsMap = {}; // Lưu các model đang bị 503 High Demand trong phiên làm việc
+  var noThinkModelsMap = {};
+  var gradingCacheMap = {};   // Bộ nhớ đệm kết quả chấm giúp 0 tốn lượt API nếu bấm chấm lại cùng 1 bài
+  var detectedAccountTier = 'FREE';
+  var autoDetectTimer = null;
+  var lastExportedBlobUrl = null;
+
+  function getTodayDateString() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function loadModelMaps() {
+    try {
+      var today = getTodayDateString();
+      if (safeGet('g_schema_ver') !== SCHEMA_CACHE_VERSION) {
+        safeRemove('g_avail_models');
+        safeRemove('g_dead_models');
+        safeRemove('g_quota_models');
+        safeRemove('g_nothink_models');
+        safeSet('g_apipref', 'QUOTA');
+        safeSet('g_model', 'gemini-2.5-flash');
+        if (safeGet('g_mcq') === '1A, 2B, 3C, 4D, 5A, 6B, 7C, 8D') {
+          safeSet('g_mcq', '');
+        }
+        safeSet('g_schema_ver', SCHEMA_CACHE_VERSION);
+      }
+      var rawDead = safeGet('g_dead_models');
+      if (rawDead) {
+        var parsedDead = JSON.parse(rawDead) || {};
+        Object.keys(parsedDead).forEach(function(k) {
+          if (k.indexOf('1.5') !== -1) deadModelsMap[k] = true;
+        });
+      }
+      if (safeGet('g_quota_date') === today && safeGet('g_quota_models')) {
+        quotaExhaustedMap = JSON.parse(safeGet('g_quota_models')) || {};
+      } else {
+        quotaExhaustedMap = {};
+        safeSet('g_quota_date', today);
+        safeSet('g_quota_models', '{}');
+      }
+      var rawNoThink = safeGet('g_nothink_models');
+      if (rawNoThink) noThinkModelsMap = JSON.parse(rawNoThink) || {};
+      if (safeGet('g_tier')) detectedAccountTier = safeGet('g_tier');
+    } catch (e) {}
+  }
+
+  function markModelAsDead(modelId) {
+    if (!modelId) return;
+    deadModelsMap[modelId] = true;
+    safeSet('g_dead_models', JSON.stringify(deadModelsMap));
+    availableBackendModels = availableBackendModels.filter(function(m) { return m !== modelId; });
+    safeSet('g_avail_models', JSON.stringify(availableBackendModels));
+  }
+
+  function markModelQuotaExhausted(modelId) {
+    if (!modelId) return;
+    quotaExhaustedMap[modelId] = true;
+    safeSet('g_quota_date', getTodayDateString());
+    safeSet('g_quota_models', JSON.stringify(quotaExhaustedMap));
+  }
+
+  function markModelTempBusy(modelId) {
+    if (!modelId) return;
+    tempBusyModelsMap[modelId] = Date.now();
+  }
+
+  function isModelTempBusy(modelId) {
+    var ts = tempBusyModelsMap[modelId];
+    if (!ts) return false;
+    if (Date.now() - ts > 120000) { // Sau 2 phút tự mở khóa thử lại
+      delete tempBusyModelsMap[modelId];
+      return false;
+    }
+    return true;
+  }
+
+  function markModelNoThink(modelId) {
+    if (!modelId) return;
+    noThinkModelsMap[modelId] = true;
+    safeSet('g_nothink_models', JSON.stringify(noThinkModelsMap));
+  }
+
+  function getRpdCount() {
+    var today = getTodayDateString();
+    var savedDate = safeGet('g_rpd_date');
+    if (savedDate !== today) {
+      safeSet('g_rpd_date', today);
+      safeSet('g_rpd_count', '0');
+      return 0;
+    }
+    return parseInt(safeGet('g_rpd_count') || '0', 10) || 0;
+  }
+
+  function incrementRpdCounter() {
+    var cur = getRpdCount() + 1;
+    safeSet('g_rpd_date', getTodayDateString());
+    safeSet('g_rpd_count', String(cur));
+    updateRpdUI();
+  }
+
+  function resetRpdCounterManual() {
+    if (!confirm('Đặt lại bộ đếm số lượt gọi API hôm nay về 0 và mở khóa lại các model đã báo hết hạn mức?')) return;
+    safeSet('g_rpd_date', getTodayDateString());
+    safeSet('g_rpd_count', '0');
+    quotaExhaustedMap = {};
+    tempBusyModelsMap = {};
+    safeSet('g_quota_models', '{}');
+    updateRpdUI();
+    populateModelDropdown(availableBackendModels, document.getElementById('aiModel').value);
+  }
+
+  function updateRpdUI() {
+    var used = getRpdCount();
+    var maxFree = (detectedAccountTier === 'PAID') ? 10000 : 1500;
+    var remain = Math.max(0, maxFree - used);
+    var tierLabel = (detectedAccountTier === 'PAID') ? 'Gói Trả phí (Paid)' : 'Gói Free';
+    var el = document.getElementById('rpdText');
+    if (el) {
+      el.innerText = '📊 [' + tierLabel + '] Hôm nay đã dùng: ' + used + ' / ' + maxFree + ' lượt (Còn ~' + remain + ' lượt)';
+    }
+  }
+
+  async function safeParseResponse(res) {
+    var rawText = await res.text();
+    var trimmed = String(rawText || '').trim();
+
+    if (trimmed.indexOf('<') === 0 || trimmed.toLowerCase().indexOf('<!doctype') === 0) {
+      if (res.status === 413) {
+        throw new Error('HTTP 413: File tải lên quá nặng. Hãy chụp ảnh từng trang.');
+      }
+      if (res.status === 404) {
+        var err404 = new Error('HTTP 404: Mô hình không tồn tại.');
+        err404.isModelNotFound = true;
+        throw err404;
+      }
+      if (res.status === 429) {
+        var err429 = new Error('HTTP 429: Mô hình đã chạm giới hạn lượt gọi.');
+        err429.isQuotaError = true;
+        throw err429;
+      }
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        var err5xx = new Error('HTTP ' + res.status + ': Máy chủ đang bận tạm thời.');
+        err5xx.isHighDemand = true;
+        throw err5xx;
+      }
+      throw new Error('Máy chủ trả về HTML thay vì JSON (HTTP ' + res.status + ').');
+    }
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      throw new Error('Phản hồi không đúng định dạng JSON (HTTP ' + res.status + ').');
+    }
+  }
+
+  window.addEventListener('pagehide', function() {
+    if (!safeGet('g_api')) {
+      var inp = document.getElementById('apiKey');
+      if (inp) inp.value = '';
+    }
+  });
+
+  function toggleApiVisibility() {
+    var inp = document.getElementById('apiKey'), btn = document.getElementById('btnEyeApi');
+    if (inp.classList.contains('masked-key')) {
+      inp.classList.remove('masked-key');
+      inp.classList.add('plain-key');
+      btn.innerText = '🙈 Ẩn';
+    } else {
+      inp.classList.remove('plain-key');
+      inp.classList.add('masked-key');
+      btn.innerText = '👁️ Hiện';
+    }
+  }
+
+  function setApiPrefMode(mode) {
+    apiPrefMode = mode;
+    document.getElementById('prefBalanced').className = (mode === 'BALANCED') ? 'mode-btn active' : 'mode-btn';
+    document.getElementById('prefQuota').className = (mode === 'QUOTA') ? 'mode-btn active' : 'mode-btn';
+    safeSet('g_apipref', mode);
+    if (availableBackendModels.length > 0) {
+      applyBestModelSelection(availableBackendModels, false);
+    } else {
+      var defModel = (mode === 'QUOTA') ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+      var sel = document.getElementById('aiModel');
+      if (sel && Array.from(sel.options).some(function(o) { return o.value === defModel; })) {
+        sel.value = defModel;
+        saveConfig();
+      }
+    }
+  }
+
+  function onManualModelChange() {
+    saveConfig();
+    var chosen = document.getElementById('aiModel').value;
+    var noteBox = document.getElementById('modelDetectNote');
+    var info = classifyGeminiModel(chosen);
+    noteBox.innerHTML = '📌 Đang chọn: <b>' + escapeHtml(chosen) + '</b> — ' + info.desc;
+  }
+
+  function onApiInputChanged() {
+    var rawVal = document.getElementById('apiKey').value;
+    var curKey = sanitizeApiKey(rawVal);
+    if (rawVal !== curKey) document.getElementById('apiKey').value = curKey;
+
+    var savedKey = safeGet('g_api');
+    var banner = document.getElementById('apiStatusBanner');
+    var isValidFmt = isValidGeminiKeyFormat(curKey);
+
+    if (!curKey) {
+      banner.className = 'api-status api-temp';
+      banner.innerText = '🔒 Chưa nhập API Key. Nếu chỉ dán vào mà không bấm "Lưu API", Key sẽ tự xóa khi thoát.';
+    } else if (!isValidFmt) {
+      banner.className = 'api-status api-invalid';
+      banner.innerText = '⚠️ Key đang nhập (' + curKey.length + ' ký tự) quá ngắn. Hãy dán đầy đủ chuỗi API Key của bạn!';
+    } else if (savedKey && curKey === savedKey) {
+      banner.className = 'api-status api-saved';
+      banner.innerText = '📌 API Key (' + curKey.length + ' ký tự) đang được lưu trên máy của bạn. Bấm "Xóa API" nếu muốn gỡ bỏ.';
+    } else {
+      banner.className = 'api-status api-temp';
+      banner.innerText = '✅ Đã nhận đủ ' + curKey.length + ' ký tự Key (Đang dùng tạm thời — Bấm "Lưu API" nếu muốn giữ lại).';
+    }
+
+    if (autoDetectTimer) clearTimeout(autoDetectTimer);
+    if (isValidFmt) {
+      autoDetectTimer = setTimeout(function() {
+        verifyAndAutoSelectModel(true);
+      }, 450);
+    }
+  }
+
+  // Chặn triệt để các model codename thử nghiệm (gemini-4-carbon, argon, v.v.) và các model không phục vụ chấm bài
+  function isSuitableGradingModel(modelId) {
+    var m = String(modelId || '').toLowerCase();
+    if (m.indexOf('gemini-') !== 0) return false;
+    if (deadModelsMap[modelId]) return false;
+    var blockedKeywords = [
+      'tts', 'audio', 'image', 'imagen', 'veo', 'embedding', 'aqa',
+      'learnlm', 'robotics', 'computer-use', 'thinking', 'live', 'bisheng',
+      'exp', 'carbon', 'argon', 'bison', 'gecko', 'unicorn', 'medlm',
+      'gemma', 'deep-research', 'custom', 'tuning', '001', '002'
+    ];
+    for (var i = 0; i < blockedKeywords.length; i++) {
+      if (m.indexOf(blockedKeywords[i]) !== -1) return false;
+    }
+    // Chỉ nhận các model thuộc nhánh flash hoặc pro chính thức
+    if (m.indexOf('flash') === -1 && m.indexOf('pro') === -1) return false;
+    return true;
+  }
+
+  function isLowFreeQuotaModel(modelId) {
+    var m = String(modelId || '').toLowerCase();
+    // Các model nhánh 3.8, 4.x hoặc preview/pro thường bị giới hạn 20-50 lượt/ngày trên Free Tier
+    if (m.indexOf('3.8') !== -1 || m.indexOf('gemini-4') === 0 || m.indexOf('preview') !== -1 || m.indexOf('pro') !== -1) {
+      return true;
+    }
+    return false;
+  }
+
+  function classifyGeminiModel(modelId) {
+    var m = String(modelId || '').toLowerCase();
+    var isExhausted = !!quotaExhaustedMap[modelId];
+    var isBusy = isModelTempBusy(modelId);
+    var isLite = m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1;
+    var isPro = m.indexOf('pro') !== -1;
+    var isLowQ = isLowFreeQuotaModel(modelId);
+
+    var statusPrefix = isExhausted ? '⛔ [Hết lượt hôm nay] ' : (isBusy ? '⏳ [Đang bận] ' : '');
+
+    if (isPro) {
+      return {
+        tier: 'PRO',
+        label: statusPrefix + '🧠 ' + modelId + ' (Pro - Hạn mức Free thấp 20-50 lượt/ngày)',
+        desc: 'Mô hình Pro suy luận sâu nhưng hạn mức miễn phí rất thấp.'
+      };
+    }
+    if (isLowQ) {
+      return {
+        tier: 'LOW_QUOTA',
+        label: statusPrefix + '⚠️ ' + modelId + ' (Hạn mức Free thấp ~20 lượt/ngày - Dự phòng)',
+        desc: 'Mô hình giới hạn ~20 lượt/ngày trên gói Free, chỉ nên dùng làm dự phòng.'
+      };
+    }
+    if (isLite) {
+      return {
+        tier: 'FREE_LITE',
+        label: statusPrefix + '⚡ ' + modelId + ' (Free 1500 lượt/ngày - Siêu tốc 3-5s)',
+        desc: 'Hạn mức miễn phí cao nhất (1500 lượt/ngày), tốc độ phản hồi 3-5 giây/bài.'
+      };
+    }
+    return {
+      tier: 'FREE_FLASH',
+      label: statusPrefix + '🎯 ' + modelId + ' (Free Ổn định - Chuẩn xác cao 3-6s)',
+      desc: 'Đọc chữ viết tay & nét khoanh trắc nghiệm chính xác cao, hạn mức Free lớn.'
+    };
+  }
+
+  // Bảng chấm điểm ưu tiên chuẩn xác theo gói tài khoản thực tế (Tuyệt đối không để gemini-3.8-flash hay 4-carbon đè lên 2.5-flash/2.0-flash)
+function scoreModelForAutoSelect(modelId, prefMode) {
+    var m = String(modelId || '').toLowerCase();
+    if (deadModelsMap[modelId]) return -99999;
+    if (quotaExhaustedMap[modelId]) return -50000;
+    if (isModelTempBusy(modelId)) return -20000;
+
+    var isLite = (m.indexOf('lite') !== -1 || m.indexOf('8b') !== -1);
+    var isFlash = (m.indexOf('flash') !== -1 && !isLite);
+    var isPro = (m.indexOf('pro') !== -1);
+    var isPreview = (m.indexOf('preview') !== -1);
+    var isLowQ = isLowFreeQuotaModel(modelId);
+
+    if (isPro) return 50;
+    if (isLowQ && detectedAccountTier !== 'PAID') {
+      return 150 + (isLite ? 20 : 10);
+    }
+
+    var highQuotaPriority = {
+      'gemini-2.5-flash-lite': (prefMode === 'QUOTA') ? 9600 : 8900,
+      'gemini-2.5-flash':      (prefMode === 'QUOTA') ? 9300 : 9600,
+      'gemini-2.0-flash':      (prefMode === 'QUOTA') ? 9100 : 9000,
+      'gemini-2.0-flash-lite': (prefMode === 'QUOTA') ? 9000 : 8600
+    };
+
+    if (highQuotaPriority[m] !== undefined) {
+      return highQuotaPriority[m];
+    }
+
+    var score = 4000;
+    if (prefMode === 'QUOTA') {
+      if (isLite) score += 600;
+      else if (isFlash) score += 300;
+    } else {
+      if (isFlash) score += 600;
+      else if (isLite) score += 400;
+    }
+    if (!isPreview) score += 200;
+    return score;
+  }
+
+  function populateModelDropdown(modelsList, selectedModelId) {
+    var sel = document.getElementById('aiModel');
+    if (!sel) return;
+
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
+
+    defaultSafeModels.forEach(function(dm) {
+      if (baseList.indexOf(dm) === -1 && !deadModelsMap[dm]) {
+        baseList.push(dm);
+      }
+    });
+
+    var cleanList = baseList.filter(function(m) { return !deadModelsMap[m] && isSuitableGradingModel(m); });
+    if (cleanList.length === 0) cleanList = defaultSafeModels.slice();
+
+    var sorted = cleanList.slice().sort(function(a, b) {
+      return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
+    });
+
+    var targetSel = (selectedModelId && sorted.indexOf(selectedModelId) !== -1 && !quotaExhaustedMap[selectedModelId])
+      ? selectedModelId
+      : sorted[0];
+
+    sel.innerHTML = sorted.map(function(mId) {
+      var info = classifyGeminiModel(mId);
+      var isSel = (mId === targetSel) ? ' selected' : '';
+      return '<option value="' + escapeHtml(mId) + '"' + isSel + '>' + escapeHtml(info.label) + '</option>';
+    }).join('');
+  }
+
+  function applyBestModelSelection(modelsList, showPopup) {
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
+    var cleanList = baseList.filter(function(m) { return !deadModelsMap[m] && isSuitableGradingModel(m); });
+    if (cleanList.length === 0) cleanList = defaultSafeModels.slice();
+
+    var sorted = cleanList.slice().sort(function(a, b) {
+      return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
+    });
+    var bestModel = sorted[0];
+    populateModelDropdown(cleanList, bestModel);
+
+    document.getElementById('thinkingLevel').value = 'LOW';
+    saveConfig();
+    updateRpdUI();
+
+    var info = classifyGeminiModel(bestModel);
+    var tierBadge = (detectedAccountTier === 'PAID') ? 'Gói Trả phí (Paid Tier)' : 'Gói Miễn phí (Free Tier - Ưu tiên hạn mức 1500 lượt/ngày)';
+    var noteBox = document.getElementById('modelDetectNote');
+    noteBox.innerHTML = '✅ <b>' + tierBadge + '</b> — Đã chọn: <b>' + escapeHtml(bestModel) + '</b> — ' + info.desc;
+
+    if (showPopup) {
+      alert('✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!\n\n• Phân loại tài khoản: ' + tierBadge + '\n• Model tốt nhất đã chọn: ' + bestModel + '\n• Đã loại bỏ các model ảo/giới hạn 20 lượt/ngày và bật chế độ tự động chuyển luồng khi máy chủ bận.');
+    }
+  }
+
+  // Quét danh sách model thực tế trong tài khoản + Ping kiểm tra sống 100% để tránh chọn nhầm model đang nghẽn (503) hoặc hết quota (429)
+  async function verifyAndAutoSelectModel(silent) {
+    var key = sanitizeApiKey(document.getElementById('apiKey').value);
+    var noteBox = document.getElementById('modelDetectNote');
+    if (!key) {
+      if (!silent) alert('Vui lòng dán API Key vào ô trước!');
+      return;
+    }
+
+    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra thực tế mô hình có hạn mức cao nhất...';
+    try {
+      var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key), {
+        method: 'GET',
+        headers: { 'x-goog-api-key': key }
+      });
+      var data = await safeParseResponse(res);
+      if (data.error) throw new Error(data.error.message);
+
+      var rawModels = (data.models || []).filter(function(m) {
+        var methods = m.supportedGenerationMethods || [];
+        var id = (m.name || '').replace('models/', '');
+        return methods.indexOf('generateContent') !== -1 && isSuitableGradingModel(id);
+      }).map(function(m) {
+        return m.name.replace('models/', '');
+      });
+
+      if (rawModels.length === 0) {
+        rawModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+      }
+
+      availableBackendModels = rawModels;
+      safeSet('g_avail_models', JSON.stringify(availableBackendModels));
+
+      // Sắp xếp danh sách ứng viên và thực hiện Ping kiểm tra nhanh (1 token) trên ứng viên số 1
+      var sortedCandidates = availableBackendModels.slice().sort(function(a, b) {
+        return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
+      });
+
+      var verifiedModel = null;
+      for (var i = 0; i < Math.min(sortedCandidates.length, 4); i++) {
+        var cand = sortedCandidates[i];
+        if (quotaExhaustedMap[cand] || isModelTempBusy(cand)) continue;
+        try {
+          var pingRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(cand) + ':generateContent?key=' + encodeURIComponent(key), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: '1' }] }],
+              generationConfig: { maxOutputTokens: 1, temperature: 0 }
+            })
+          });
+          var pingData = await safeParseResponse(pingRes);
+          if (pingData && pingData.error) {
+            var eMsg = String(pingData.error.message || '').toLowerCase();
+            if (eMsg.indexOf('quota') !== -1 || eMsg.indexOf('resource_exhausted') !== -1 || pingRes.status === 429) {
+              if (eMsg.indexOf('free_tier') !== -1) {
+                detectedAccountTier = 'FREE';
+                safeSet('g_tier', 'FREE');
+              }
+              markModelQuotaExhausted(cand);
+              continue;
+            }
+            if (eMsg.indexOf('high demand') !== -1 || eMsg.indexOf('overloaded') !== -1 || pingRes.status === 503) {
+              markModelTempBusy(cand);
+              continue;
+            }
+            if (pingRes.status === 404 || eMsg.indexOf('not found') !== -1 || eMsg.indexOf('no longer available') !== -1) {
+              markModelAsDead(cand);
+              continue;
+            }
+          } else {
+            verifiedModel = cand;
+            break;
+          }
+        } catch (pingErr) {
+          if (pingErr.isQuotaError) markModelQuotaExhausted(cand);
+          else if (pingErr.isHighDemand) markModelTempBusy(cand);
+          else if (pingErr.isModelNotFound) markModelAsDead(cand);
+        }
+      }
+
+      applyBestModelSelection(availableBackendModels, !silent);
+      if (verifiedModel) {
+        var sel = document.getElementById('aiModel');
+        if (sel) sel.value = verifiedModel;
+        saveConfig();
+      }
+    } catch (e) {
+      noteBox.innerHTML = '⚠️ Chưa đồng bộ được danh sách model: <b>' + escapeHtml(e.message) + '</b>';
+      if (!silent) alert('Lỗi kiểm tra API Key: ' + e.message);
+    }
+  }
+
+  function saveApiKeyExplicit() {
+    var key = sanitizeApiKey(document.getElementById('apiKey').value);
+    if (!key) { alert('Vui lòng dán API Key vào ô trước khi bấm Lưu!'); return; }
+    if (!isValidGeminiKeyFormat(key)) {
+      alert('⚠️ Chuỗi bạn nhập (' + key.length + ' ký tự) quá ngắn! Vui lòng kiểm tra lại.');
+      return;
+    }
+    document.getElementById('apiKey').value = key;
+    safeSet('g_api', key);
+    onApiInputChanged();
+    alert('✅ Đã lưu nguyên vẹn API Key (' + key.length + ' ký tự) cố định trên thiết bị này!');
+  }
+
+  function deleteApiKeyExplicit() {
+    var inp = document.getElementById('apiKey');
+    inp.value = '';
+    safeRemove('g_api');
+    safeRemove('g_avail_models');
+    safeRemove('g_dead_models');
+    safeRemove('g_quota_models');
+    availableBackendModels = [];
+    quotaExhaustedMap = {};
+    tempBusyModelsMap = {};
+    try { window.sessionStorage.removeItem('g_api'); } catch (e) {}
+    onApiInputChanged();
+    document.getElementById('modelDetectNote').innerHTML = '🗑️ Đã xóa sạch API Key cũ khỏi bộ nhớ máy.';
+    alert('🗑️ Đã xóa sạch API Key khỏi ứng dụng và bộ nhớ trình duyệt!');
+  }
+
+  // ============================================================================
+  // ĐẾM SỐ CÂU TRẮC NGHIỆM & TỰ LUẬN TRỰC TIẾP TRÊN GIAO DIỆN ĐỂ KIỂM SOÁT CHÍNH XÁC
+  // ============================================================================
+  function extractEssayQuestionListFromRubric(rubricText) {
+    if (!rubricText || !rubricText.trim()) return [];
+    var seen = {}, list = [];
+    var regex = /(?:^|\n|\||;)\s*(?:Câu|Bài)\s*(\d+\s*[a-z]?)\b/gi, m;
+    while ((m = regex.exec(rubricText)) !== null) {
+      var label = 'Câu ' + m[1].replace(/\s+/g, '');
+      if (!seen[label.toLowerCase()]) {
+        seen[label.toLowerCase()] = true;
+        list.push(label);
+      }
+    }
+    return list;
+  }
+
+  function updateKeyCountPills() {
+    var isMulti = document.getElementById('useMultiCodeChk').checked;
+    var mcqCount = 0;
+    if (isMulti) {
+      var mm = parseMultiCodeKeys(document.getElementById('multiCodeData').value);
+      var firstCode = Object.keys(mm)[0];
+      if (firstCode) mcqCount = Object.keys(mm[firstCode]).length;
+    } else {
+      mcqCount = Object.keys(parseMcqKey(document.getElementById('mcqKey').value)).length;
+    }
+    var tfCount = Object.keys(parseTfKey(document.getElementById('tfKey').value)).length;
+    var saCount = Object.keys(parseSaKey(document.getElementById('saKey').value)).length;
+    var essayList = extractEssayQuestionListFromRubric(document.getElementById('essayRubric').value);
+
+    var pMcq = document.getElementById('mcqCountPill');
+    var pTf = document.getElementById('tfCountPill');
+    var pSa = document.getElementById('saCountPill');
+    var pEs = document.getElementById('essayCountPill');
+
+    if (pMcq) pMcq.innerText = mcqCount + ' câu';
+    if (pTf) pTf.innerText = tfCount + ' ý';
+    if (pSa) pSa.innerText = saCount + ' câu';
+    if (pEs) {
+      var hasRub = document.getElementById('essayRubric').value.trim() !== '';
+      pEs.innerText = essayList.length > 0 ? (essayList.length + ' câu (' + essayList.join(', ') + ')') : (hasRub ? 'Có biểu điểm' : '0 câu');
+    }
+  }
+
+  // ============================================================================
+  // CƠ CHẾ TỰ ĐỘNG ẨN / HIỆN TỪNG PHẦN (I, II, III, IV) THEO HƯỚNG DẪN CHẤM
+  // ============================================================================
+  function updateGranularSectionVisibility(hideEmptySections) {
+    updateKeyCountPills();
+    var isMulti = document.getElementById('useMultiCodeChk').checked;
+    var hasMultiData = document.getElementById('multiCodeData').value.trim() !== '';
+    var hasMcqSingle = Object.keys(parseMcqKey(document.getElementById('mcqKey').value)).length > 0;
+    var hasTf = Object.keys(parseTfKey(document.getElementById('tfKey').value)).length > 0;
+    var hasSa = Object.keys(parseSaKey(document.getElementById('saKey').value)).length > 0;
+    var hasEssay = document.getElementById('essayRubric').value.trim() !== '';
+
+    var hasAnyMcq = (isMulti && hasMultiData) || hasMcqSingle || hasTf || hasSa;
+    var hasAnyDataAtAll = hasAnyMcq || hasEssay;
+
+    var secMulti = document.getElementById('secMultiCodeWrap');
+    var secAbcd = document.getElementById('secMcqAbcdWrap');
+    var secTf = document.getElementById('secTfWrap');
+    var secSa = document.getElementById('secSaWrap');
+    var secEssay = document.getElementById('secEssayWrap');
+    var btnShowHidden = document.getElementById('btnShowHiddenSections');
+
+    if (!hideEmptySections || !hasAnyDataAtAll) {
+      secMulti.style.display = 'block';
+      secAbcd.style.display = 'block';
+      secTf.style.display = 'block';
+      secSa.style.display = 'block';
+      secEssay.style.display = 'block';
+      btnShowHidden.style.display = 'none';
+      return;
+    }
+
+    var showMulti = isMulti && hasMultiData;
+    var showAbcd = hasMcqSingle || showMulti;
+    var showTf = hasTf;
+    var showSa = hasSa;
+    var showEssay = hasEssay;
+
+    secMulti.style.display = showMulti ? 'block' : 'none';
+    secAbcd.style.display = showAbcd ? 'block' : 'none';
+    secTf.style.display = showTf ? 'block' : 'none';
+    secSa.style.display = showSa ? 'block' : 'none';
+    secEssay.style.display = showEssay ? 'block' : 'none';
+
+    var hiddenCount = (!showMulti ? 1 : 0) + (!showAbcd ? 1 : 0) + (!showTf ? 1 : 0) + (!showSa ? 1 : 0) + (!showEssay ? 1 : 0);
+    btnShowHidden.style.display = (hiddenCount > 0) ? 'block' : 'none';
+  }
+
+  function showAllAnswerSectionsManual() {
+    setExamStructure('BOTH', false);
+    updateGranularSectionVisibility(false);
+  }
+
+  function setExamStructure(mode, manualClick) {
+    examStructureMode = mode;
+    document.getElementById('structBoth').className = (mode === 'BOTH') ? 'mode-btn active' : 'mode-btn';
+    document.getElementById('structMcqOnly').className = (mode === 'MCQ_ONLY') ? 'mode-btn active' : 'mode-btn';
+    document.getElementById('structEssayOnly').className = (mode === 'ESSAY_ONLY') ? 'mode-btn active' : 'mode-btn';
+
+    var mcqWrap = document.getElementById('allMcqConfigWrap');
+    var essayWrap = document.getElementById('allEssayConfigWrap');
+    var targetQBox = document.getElementById('targetQuestionsBox');
+    var manualCodeBox = document.getElementById('manualExamCodeBox');
+    var mcqSwitchWrap = document.getElementById('mcqModeSwitchWrap');
+    var banner = document.getElementById('structStatusBanner');
+
+    if (mode === 'MCQ_ONLY') {
+      mcqWrap.style.display = 'block';
+      essayWrap.style.display = 'none';
+      targetQBox.style.display = 'none';
+      manualCodeBox.style.display = 'block';
+      mcqSwitchWrap.style.display = 'block';
+      banner.innerText = '☑️ Chế độ đề: CHỈ CHẤM TRẮC NGHIỆM (Chấm tối đa theo số câu trên HDC & Bài làm chụp lên)';
+    } else if (mode === 'ESSAY_ONLY') {
+      mcqWrap.style.display = 'none';
+      essayWrap.style.display = 'block';
+      targetQBox.style.display = 'block';
+      manualCodeBox.style.display = 'none';
+      mcqSwitchWrap.style.display = 'none';
+      banner.innerText = '✍️ Chế độ đề: CHỈ CHẤM TỰ LUẬN (Chấm tối đa theo các câu trên HDC & Bài làm chụp lên)';
+    } else {
+      mcqWrap.style.display = 'block';
+      essayWrap.style.display = 'block';
+      targetQBox.style.display = 'block';
+      manualCodeBox.style.display = 'block';
+      mcqSwitchWrap.style.display = 'block';
+      banner.innerText = '📚 Chế độ đề: CHẤM CẢ TRẮC NGHIỆM & TỰ LUẬN (Tối đa theo HDC & Bài làm chụp lên)';
+    }
+
+    if (manualClick) {
+      if (mode === 'ESSAY_ONLY') {
+        document.getElementById('secEssayWrap').style.display = 'block';
+      } else if (mode === 'MCQ_ONLY') {
+        document.getElementById('secMcqAbcdWrap').style.display = 'block';
+      }
+    }
+    safeSet('g_struct', mode);
+  }
+
+  function autoDetectStructureFromInputs(hideEmptySubSections) {
+    updateKeyCountPills();
+    var isMulti = document.getElementById('useMultiCodeChk').checked;
+    var hasMultiData = document.getElementById('multiCodeData').value.trim() !== '';
+    var hasMcq = (isMulti && hasMultiData) ||
+                 Object.keys(parseMcqKey(document.getElementById('mcqKey').value)).length > 0 ||
+                 Object.keys(parseTfKey(document.getElementById('tfKey').value)).length > 0 ||
+                 Object.keys(parseSaKey(document.getElementById('saKey').value)).length > 0;
+    var hasEssay = document.getElementById('essayRubric').value.trim() !== '';
+
+    if (hasMcq && !hasEssay) setExamStructure('MCQ_ONLY', false);
+    else if (!hasMcq && hasEssay) setExamStructure('ESSAY_ONLY', false);
+    else setExamStructure('BOTH', false);
+
+    if (hideEmptySubSections) {
+      updateGranularSectionVisibility(true);
+    }
+  }
+
+  function onAnswerKeyManualEdit() {
+    updateKeyCountPills();
+    saveConfig();
+    autoDetectStructureFromInputs(false);
+  }
+
+  function resetAllAnswerFields() {
+    document.getElementById('useMultiCodeChk').checked = false;
+    document.getElementById('multiCodeData').value = '';
+    document.getElementById('mcqKey').value = '';
+    if (document.getElementById('mcqBackupText')) document.getElementById('mcqBackupText').value = '';
+    document.getElementById('tfKey').value = '';
+    document.getElementById('saKey').value = '';
+    document.getElementById('essayRubric').value = '';
+    toggleMultiCodeUI();
+    setExamStructure('BOTH', false);
+    updateGranularSectionVisibility(false);
+    updateKeyCountPills();
+    saveConfig();
+  }
+
+  function clearAnswerKeysManual() {
+    if (!confirm('Xóa trắng toàn bộ Đáp án Trắc nghiệm, Mã đề và Hướng dẫn chấm Tự luận hiện tại để nhập đề mới?')) return;
+    resetAllAnswerFields();
+    var statusBox = document.getElementById('fileStatusBox');
+    statusBox.style.display = 'block';
+    statusBox.innerText = '🗑️ Đã xóa sạch toàn bộ Đáp án & Biểu điểm cũ!';
+  }
+
+  function toggleConfig() {
+    var area = document.getElementById('configArea'), btn = document.getElementById('cfgToggleBtn');
+    if (area.style.display === 'none') { area.style.display = 'block'; btn.innerText = 'Thu gọn ▲'; }
+    else { area.style.display = 'none'; btn.innerText = 'Mở rộng ▼'; }
+  }
+
+  function toggleMultiCodeUI() {
+    var isMulti = document.getElementById('useMultiCodeChk').checked;
+    document.getElementById('multiCodeArea').style.display = isMulti ? 'block' : 'none';
+    document.getElementById('singleMcqBox').style.display = isMulti ? 'none' : 'block';
+    updateKeyCountPills();
+    safeSet('g_ismulti', isMulti ? '1' : '0');
+  }
+
+  function setMode(m) {
+    examMode = m;
+    document.getElementById('modeCircle').className = (m === 'CIRCLE') ? 'mode-btn active' : 'mode-btn';
+    document.getElementById('modeWrite').className = (m === 'WRITE') ? 'mode-btn active' : 'mode-btn';
+    safeSet('g_mode', m);
+  }
+
+  function setGradingStyle(s) {
+    gradingStyle = s;
+    document.getElementById('styleFlex').className = (s === 'FLEX') ? 'mode-btn active' : 'mode-btn';
+    document.getElementById('styleStrict').className = (s === 'STRICT') ? 'mode-btn active' : 'mode-btn';
+    safeSet('g_style', s);
+  }
+
+  function onSortOrderChange() { safeSet('g_sort', document.getElementById('sortOrder').value); renderTable(); }
+
+  function saveConfig() {
+    safeSet('g_model', document.getElementById('aiModel').value);
+    safeSet('g_think', document.getElementById('thinkingLevel').value);
+    safeSet('g_ismulti', document.getElementById('useMultiCodeChk').checked ? '1' : '0');
+    safeSet('g_multidata', document.getElementById('multiCodeData').value.trim());
+    safeSet('g_mcq', document.getElementById('mcqKey').value.trim());
+    if (document.getElementById('mcqBackupText')) safeSet('g_mcq_backup', document.getElementById('mcqBackupText').value.trim());
+    safeSet('g_pt', document.getElementById('mcqPoint').value);
+    safeSet('g_tf', document.getElementById('tfKey').value.trim());
+    safeSet('g_tfrule', document.getElementById('tfRule').value);
+    safeSet('g_sa', document.getElementById('saKey').value.trim());
+    safeSet('g_sapt', document.getElementById('saPoint').value);
+    safeSet('g_rubric', document.getElementById('essayRubric').value.trim());
+    safeSet('g_targetq', document.getElementById('targetQuestions').value.trim());
+    safeSet('g_manualcode', document.getElementById('manualExamCode').value.trim());
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    loadModelMaps();
+    updateRpdUI();
+
+    if (safeGet('g_apipref')) {
+      apiPrefMode = safeGet('g_apipref');
+      document.getElementById('prefBalanced').className = (apiPrefMode === 'BALANCED') ? 'mode-btn active' : 'mode-btn';
+      document.getElementById('prefQuota').className = (apiPrefMode === 'QUOTA') ? 'mode-btn active' : 'mode-btn';
+    }
+    if (safeGet('g_avail_models')) {
+      try { availableBackendModels = JSON.parse(safeGet('g_avail_models')) || []; } catch (e) { availableBackendModels = []; }
+    }
+
+    var savedM = safeGet('g_model');
+    if (!savedM || deadModelsMap[savedM] || !isSuitableGradingModel(savedM) || isLowFreeQuotaModel(savedM)) {
+      savedM = 'gemini-2.5-flash';
+      safeSet('g_model', savedM);
+    }
+
+    populateModelDropdown(availableBackendModels, savedM);
+
+    if (safeGet('g_think')) document.getElementById('thinkingLevel').value = safeGet('g_think');
+    if (safeGet('g_api')) {
+      var storedKey = sanitizeApiKey(safeGet('g_api'));
+      document.getElementById('apiKey').value = storedKey;
+      onApiInputChanged();
+    }
+
+    if (safeGet('g_ismulti') === '1') { document.getElementById('useMultiCodeChk').checked = true; toggleMultiCodeUI(); }
+    if (safeGet('g_multidata')) document.getElementById('multiCodeData').value = safeGet('g_multidata');
+    if (safeGet('g_mcq') !== null) document.getElementById('mcqKey').value = safeGet('g_mcq');
+    if (safeGet('g_mcq_backup') !== null && document.getElementById('mcqBackupText')) document.getElementById('mcqBackupText').value = safeGet('g_mcq_backup');
+    if (safeGet('g_pt')) document.getElementById('mcqPoint').value = safeGet('g_pt');
+    if (safeGet('g_tf') !== null) document.getElementById('tfKey').value = safeGet('g_tf');
+    if (safeGet('g_tfrule')) document.getElementById('tfRule').value = safeGet('g_tfrule');
+    if (safeGet('g_sa') !== null) document.getElementById('saKey').value = safeGet('g_sa');
+    if (safeGet('g_sapt')) document.getElementById('saPoint').value = safeGet('g_sapt');
+    if (safeGet('g_rubric') !== null) document.getElementById('essayRubric').value = safeGet('g_rubric');
+    if (safeGet('g_targetq') !== null) document.getElementById('targetQuestions').value = safeGet('g_targetq');
+    if (safeGet('g_manualcode') !== null) document.getElementById('manualExamCode').value = safeGet('g_manualcode');
+    if (safeGet('g_mode')) setMode(safeGet('g_mode'));
+    if (safeGet('g_style')) setGradingStyle(safeGet('g_style'));
+
+    autoDetectStructureFromInputs(true);
+
+    if (safeGet('g_roster')) { try { masterRoster = JSON.parse(safeGet('g_roster')) || []; } catch (e) { masterRoster = []; } }
+    if (safeGet('g_records')) { try { classRecords = JSON.parse(safeGet('g_records')) || []; } catch (e) { classRecords = []; } }
+    updateRosterUI();
+    if (safeGet('g_sort')) {
+      var s = safeGet('g_sort'); if (s === 'ROSTER' && masterRoster.length === 0) s = 'NAME';
+      document.getElementById('sortOrder').value = s;
+    }
+    renderTable();
+  });
+
+  // Trả về chuỗi lên tới 6 model dự phòng sạch, tự động loại trừ các model đã hết quota hôm nay hoặc đang nghẽn
+  function resolveWorkingModels(uiModel) {
+    var list = [];
+    if (uiModel && !deadModelsMap[uiModel] && !quotaExhaustedMap[uiModel] && !isModelTempBusy(uiModel)) {
+      list.push(uiModel);
+    }
+
+    var highQuotaCore = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    var pool = (availableBackendModels && availableBackendModels.length > 0)
+      ? availableBackendModels.concat(highQuotaCore)
+      : highQuotaCore.slice();
+
+    var sortedAvail = pool.filter(function(m) {
+      return !deadModelsMap[m] && !quotaExhaustedMap[m] && isSuitableGradingModel(m);
+    }).sort(function(a, b) {
+      return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
+    });
+
+    sortedAvail.forEach(function(m) {
+      if (list.indexOf(m) === -1) list.push(m);
+    });
+
+    if (list.length === 0) {
+      // Nếu tất cả đều bị đánh dấu tạm thời, mở khóa thử lại dòng 2.5-flash / 2.0-flash
+      list = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    }
+    return list.slice(0, 6);
+  }
+
+  function safeExtractAndParseJson(data) {
+    if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
+      var blockReason = (data && data.promptFeedback && data.promptFeedback.blockReason) ? data.promptFeedback.blockReason : 'Phản hồi rỗng từ AI';
+      throw new Error('AI không trả về dữ liệu (' + blockReason + ')');
+    }
+    var parts = data.candidates[0].content.parts;
+    var rawText = '';
+    for (var i = 0; i < parts.length; i++) {
+      if (!parts[i].thought && parts[i].text) {
+        rawText = parts[i].text;
+        break;
+      }
+    }
+    if (!rawText && parts[0] && parts[0].text) rawText = parts[0].text;
+
+    var cleaned = String(rawText || '').trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    try {
+      return JSON.parse(cleaned);
+    } catch (e1) {
+      var firstBrace = cleaned.indexOf('{');
+      var lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+      }
+      throw new Error('Dữ liệu AI trả về không đúng cấu trúc JSON');
+    }
+  }
+
+  function supportsThinkingConfig(modelId) {
+    var m = String(modelId || '').toLowerCase();
+    if (noThinkModelsMap[modelId]) return false;
+    if (m.indexOf('lite') !== -1) return false;
+    return m.indexOf('gemini-2.5') === 0 && m.indexOf('pro') === -1;
+  }
+
+async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut) {
+    var cleanKey = sanitizeApiKey(apiKey);
+    if (!isValidGeminiKeyFormat(cleanKey)) {
+      throw new Error('Vui lòng dán đầy đủ API Key ở mục 1 trước khi thực hiện.');
+    }
+
+    var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'LOW';
+    var modelsToTry = resolveWorkingModels(uiModelValue);
+    var lastErr = null;
+
+    var budgetMap = { 'LOW': 0, 'MEDIUM': 256, 'HIGH': 1024 };
+    var targetBudget = budgetMap[thinkLvl] !== undefined ? budgetMap[thinkLvl] : 0;
+
+    for (var mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
+      var curModel = modelsToTry[mIdx];
+      if (deadModelsMap[curModel] || quotaExhaustedMap[curModel]) continue;
+
+      var useThinkParam = supportsThinkingConfig(curModel);
+
+      for (var attempt = 0; attempt < 2; attempt++) {
+        var genConfig = {
+          temperature: baseTemp,
+          maxOutputTokens: Math.max(maxTokensOut || 4096, 2048),
+          responseMimeType: 'application/json'
+        };
+        if (useThinkParam) {
+          genConfig.thinkingConfig = { thinkingBudget: targetBudget };
+        }
+
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 25000);
+
+        try {
+          var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': cleanKey
+            },
+            body: JSON.stringify({
+              contents: [{ parts: parts }],
+              generationConfig: genConfig
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          var data = await safeParseResponse(res);
+          if (data.error) {
+            var msg = data.error.message || '';
+            var lowerMsg = msg.toLowerCase();
+
+            if (useThinkParam && (lowerMsg.indexOf('thinking') !== -1 || lowerMsg.indexOf('unknown name') !== -1 || lowerMsg.indexOf('invalid argument') !== -1)) {
+              markModelNoThink(curModel);
+              useThinkParam = false;
+              continue;
+            }
+
+            if (res.status === 429 || lowerMsg.indexOf('exceeded your current quota') !== -1 || lowerMsg.indexOf('quota exceeded') !== -1 || lowerMsg.indexOf('resource_exhausted') !== -1) {
+              if (lowerMsg.indexOf('free_tier') !== -1) {
+                detectedAccountTier = 'FREE';
+                safeSet('g_tier', 'FREE');
+              }
+              markModelQuotaExhausted(curModel);
+              lastErr = new Error('Model ' + curModel + ' đã hết hạn mức miễn phí hôm nay, đang tự chuyển sang model khác...');
+              break;
+            }
+
+            if (res.status === 503 || res.status === 502 || lowerMsg.indexOf('high demand') !== -1 || lowerMsg.indexOf('overloaded') !== -1 || lowerMsg.indexOf('unavailable') !== -1 || lowerMsg.indexOf('try again later') !== -1) {
+              markModelTempBusy(curModel);
+              lastErr = new Error('Model ' + curModel + ' đang quá tải tạm thời, đang chuyển sang model dự phòng...');
+              break;
+            }
+
+            if (lowerMsg.indexOf('no longer available') !== -1 || lowerMsg.indexOf('deprecated') !== -1 || lowerMsg.indexOf('not found') !== -1 || res.status === 404) {
+              markModelAsDead(curModel);
+              lastErr = new Error(msg);
+              break;
+            }
+
+            if (lowerMsg.indexOf('api key not valid') !== -1 || lowerMsg.indexOf('api_key_invalid') !== -1 || res.status === 403) {
+              throw new Error('API Key bị từ chối: ' + msg);
+            }
+
+            lastErr = new Error(msg);
+            break;
+          }
+
+          var parsedResult = safeExtractAndParseJson(data);
+          incrementRpdCounter();
+
+          populateModelDropdown(availableBackendModels, curModel);
+          var sel = document.getElementById('aiModel');
+          if (sel) sel.value = curModel;
+          saveConfig();
+
+          var noteBox = document.getElementById('modelDetectNote');
+          if (noteBox && curModel !== uiModelValue) {
+            noteBox.innerHTML = '🔄 Đã tự động chuyển sang model ổn định: <b>' + escapeHtml(curModel) + '</b> (Tránh nghẽn/hết lượt).';
+          }
+
+          return parsedResult;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (err.isModelNotFound) {
+            markModelAsDead(curModel);
+            lastErr = err;
+            break;
+          }
+          if (err.isQuotaError) {
+            markModelQuotaExhausted(curModel);
+            lastErr = err;
+            break;
+          }
+          if (err.isHighDemand) {
+            markModelTempBusy(curModel);
+            lastErr = err;
+            break;
+          }
+          if (err.name === 'AbortError') {
+            markModelTempBusy(curModel);
+            lastErr = new Error('Kết nối mạng quá 25 giây, đang chuyển luồng...');
+            break;
+          }
+          lastErr = err;
+          if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
+            throw err;
+          }
+          break;
+        }
+      }
+    }
+    throw lastErr || new Error('Tất cả các mô hình trong tài khoản hiện đang bận hoặc đã hết hạn mức ngày. Vui lòng thử lại sau hoặc đổi API Key khác.');
+  }
+
+  function removeVietnameseTones(str) {
+    return String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function matchStudentInMasterRoster(name, sbd, blindCode) {
+    if (!masterRoster || masterRoster.length === 0) return null;
+    var cleanPhach = String(blindCode || '').trim().toLowerCase();
+    var cleanSbd = String(sbd || '').trim().toLowerCase();
+    var cleanName = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    var noTone = removeVietnameseTones(name);
+
+    if (cleanPhach !== '') {
+      for (var p = 0; p < masterRoster.length; p++) {
+        var rPhach = String(masterRoster[p].blindCode || '').trim().toLowerCase();
+        if (rPhach !== '' && rPhach === cleanPhach) return masterRoster[p];
+      }
+    }
+    if (cleanSbd !== '') {
+      for (var i = 0; i < masterRoster.length; i++) {
+        var rSbd = String(masterRoster[i].sbd || '').trim().toLowerCase();
+        if (rSbd !== '' && (rSbd === cleanSbd || (!isNaN(rSbd) && !isNaN(cleanSbd) && parseInt(rSbd, 10) === parseInt(cleanSbd, 10)))) return masterRoster[i];
+      }
+    }
+    if (!cleanName || cleanName === 'chưa rõ tên' || cleanName.indexOf('phách:') === 0) return null;
+
+    for (var j = 0; j < masterRoster.length; j++) {
+      if (masterRoster[j].fullName.trim().toLowerCase().replace(/\s+/g, ' ') === cleanName) return masterRoster[j];
+    }
+    for (var k = 0; k < masterRoster.length; k++) {
+      if (removeVietnameseTones(masterRoster[k].fullName) === noTone) return masterRoster[k];
+    }
+    var partsA = noTone.split(' ');
+    if (partsA.length >= 2) {
+      var firstA = partsA[partsA.length - 1], lastA = partsA[0];
+      var cands = masterRoster.filter(function(m) {
+        var pB = removeVietnameseTones(m.fullName).split(' ');
+        return pB.length >= 2 && pB[pB.length - 1] === firstA && pB[0] === lastA;
+      });
+      if (cands.length === 1) return cands[0];
+    }
+    return null;
+  }
+
+  function findExistingStudent(name, sbd, blindCode) {
+    var cleanPhach = String(blindCode || '').trim().toLowerCase();
+    var cleanSbd = String(sbd || '').trim().toLowerCase();
+    var cleanName = String(name || '').trim().toLowerCase();
+    var noTone = removeVietnameseTones(name);
+
+    return classRecords.findIndex(function(r) {
+      if (cleanPhach !== '' && String(r.blindCode || '').trim().toLowerCase() === cleanPhach) return true;
+      if (cleanSbd !== '' && String(r.sbd || '').trim().toLowerCase() === cleanSbd) return true;
+      if (cleanName !== '' && cleanName !== 'chưa rõ tên' && cleanName.indexOf('phách:') !== 0 && cleanName.indexOf('sbd:') !== 0) {
+        if (String(r.fullName || '').trim().toLowerCase() === cleanName) return true;
+        if (noTone !== '' && removeVietnameseTones(r.fullName) === noTone) return true;
+      }
+      return false;
+    });
+  }
+
+  // ============================================================================
+  // BỘ TRÍCH XUẤT VĂN BẢN & BẢNG TỪ FILE PDF CỤC BỘ BẰNG PDF.JS (0 TỐN LƯỢT API)
+  // Tự động fallback disableWorker khi mở trực tiếp file:// hoặc WebView
+  // ============================================================================
+  async function loadPdfDocumentSafe(arrayBuf) {
+    if (!window.pdfjsLib) {
+      await new Promise(function(r) { setTimeout(r, 600); });
+    }
+    if (!window.pdfjsLib) {
+      throw new Error('Thư viện đọc PDF chưa tải xong. Vui lòng kiểm tra mạng lần đầu.');
+    }
+    if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    try {
+      var copyBuf1 = arrayBuf.slice ? arrayBuf.slice(0) : arrayBuf;
+      return await window.pdfjsLib.getDocument({ data: new Uint8Array(copyBuf1) }).promise;
+    } catch (err1) {
+      var copyBuf2 = arrayBuf.slice ? arrayBuf.slice(0) : arrayBuf;
+      return await window.pdfjsLib.getDocument({ data: new Uint8Array(copyBuf2), disableWorker: true }).promise;
+    }
+  }
+
+  async function renderPdfPagesToImagesLocal(pdfDoc, maxPages) {
+    var imgs = [];
+    var limit = Math.min(pdfDoc.numPages, maxPages || 4);
+    for (var p = 1; p <= limit; p++) {
+      var page = await pdfDoc.getPage(p);
+      var viewport = page.getViewport({ scale: 1.5 });
+      var maxDim = 1150;
+      if (viewport.width > maxDim || viewport.height > maxDim) {
+        var sc = 1.5 * (maxDim / Math.max(viewport.width, viewport.height));
+        viewport = page.getViewport({ scale: sc });
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      var ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+      var du = canvas.toDataURL('image/jpeg', 0.80);
+      imgs.push({ mime: 'image/jpeg', base64: du.split(',')[1] });
+    }
+    return imgs;
+  }
+
+  async function extractPdfRowsAndTextLocal(file) {
+    var arrayBuf = await file.arrayBuffer();
+    var pdfDoc = await loadPdfDocumentSafe(arrayBuf);
+    var allRows = [];
+    var allLinesText = [];
+
+    for (var pNum = 1; pNum <= pdfDoc.numPages; pNum++) {
+      var page = await pdfDoc.getPage(pNum);
+      var textContent = await page.getTextContent();
+      var items = textContent.items || [];
+      var lineBuckets = [];
+
+      items.forEach(function(item) {
+        var str = String(item.str || '');
+        if (!str.trim()) return;
+        var x = item.transform ? item.transform[4] : 0;
+        var y = item.transform ? item.transform[5] : 0;
+
+        var foundBucket = null;
+        for (var b = 0; b < lineBuckets.length; b++) {
+          if (Math.abs(lineBuckets[b].y - y) <= 5.0) {
+            foundBucket = lineBuckets[b];
+            break;
+          }
+        }
+        if (!foundBucket) {
+          foundBucket = { y: y, cells: [] };
+          lineBuckets.push(foundBucket);
+        }
+        foundBucket.cells.push({ x: x, text: str.trim(), width: item.width || (str.length * 4.5) });
+      });
+
+      lineBuckets.sort(function(a, b) { return b.y - a.y; });
+
+      lineBuckets.forEach(function(bucket) {
+        bucket.cells.sort(function(a, b) { return a.x - b.x; });
+        var mergedCells = [];
+        for (var i = 0; i < bucket.cells.length; i++) {
+          var cur = bucket.cells[i];
+          if (mergedCells.length === 0) {
+            mergedCells.push({ xStart: cur.x, xEnd: cur.x + cur.width, text: cur.text });
+          } else {
+            var prev = mergedCells[mergedCells.length - 1];
+            var gap = cur.x - prev.xEnd;
+            if (gap < 11) {
+              prev.text = (prev.text + ' ' + cur.text).replace(/\s+/g, ' ').trim();
+              prev.xEnd = Math.max(prev.xEnd, cur.x + cur.width);
+            } else {
+              mergedCells.push({ xStart: cur.x, xEnd: cur.x + cur.width, text: cur.text });
+            }
+          }
+        }
+        var rowCells = mergedCells.map(function(c) { return cleanCell(c.text); }).filter(function(t) { return t !== ''; });
+        if (rowCells.length > 0) {
+          allRows.push(rowCells);
+          allLinesText.push(rowCells.join(' | '));
+        }
+      });
+    }
+
+    return {
+      pdfDoc: pdfDoc,
+      rows: allRows,
+      fullText: allLinesText.join('\n').trim()
+    };
+  }
+
+  // ============================================================================
+  // BỘ XỬ LÝ DANH SÁCH HỌC SINH MẪU ĐA ĐỊNH DẠNG (ẢNH CHỤP, PDF, DOC, DOCX, EXCEL)
+  // ============================================================================
+  function parseRowsToRoster(rawRows) {
+    var extracted = [];
+    if (!rawRows || rawRows.length === 0) return extracted;
+    var hIdx = -1, cName = -1, cLast = -1, cFirst = -1, cSbd = -1, cPhach = -1, cCls = -1;
+
+    for (var r = 0; r < Math.min(rawRows.length, 25); r++) {
+      var cells = (rawRows[r] || []).map(function(c) { return String(c || '').trim().toLowerCase(); });
+      for (var c = 0; c < cells.length; c++) {
+        var v = cells[c];
+        if (v === 'họ và tên' || v === 'họ tên' || v === 'tên học sinh' || v === 'họ và tên học sinh' || v === 'họ tên học sinh') { hIdx = r; cName = c; }
+        else if (v === 'họ và tên đệm' || v === 'họ đệm' || v === 'họ' || v === 'họ và chữ lót') { hIdx = r; cLast = c; }
+        else if (v === 'tên' || v === 'tên hs') { cFirst = c; }
+        else if (v === 'sbd' || v === 'số báo danh' || v === 'mã hs' || v === 'mã học sinh' || v === 'mã định danh') { cSbd = c; }
+        else if (v === 'mã phách' || v === 'số phách' || v === 'phách') { cPhach = c; }
+        else if (v === 'lớp' || v === 'tên lớp') { cCls = c; }
+      }
+      if (hIdx !== -1) break;
+    }
+
+    if (hIdx !== -1) {
+      for (var i = hIdx + 1; i < rawRows.length; i++) {
+        var row = rawRows[i]; if (!row || row.length === 0) continue;
+        var full = '';
+        if (cLast !== -1 && cFirst !== -1) {
+          full = (cleanCell(row[cLast]) + ' ' + cleanCell(row[cFirst])).trim();
+        } else if (cName !== -1) {
+          full = cleanCell(row[cName]);
+          if (cFirst !== -1 && cFirst !== cName) {
+            var ef = cleanCell(row[cFirst]);
+            if (ef && full.indexOf(ef) === -1) full = (full + ' ' + ef).trim();
+          }
+        }
+        if (!full || full.toLowerCase().indexOf('họ và tên') !== -1 || full.length < 2) continue;
+        extracted.push({
+          sbd: cSbd !== -1 ? cleanCell(row[cSbd]) : '',
+          blindCode: cPhach !== -1 ? cleanCell(row[cPhach]) : '',
+          fullName: full,
+          className: cCls !== -1 ? cleanCell(row[cCls]) : ''
+        });
+      }
+    } else {
+      rawRows.forEach(function(row) {
+        if (!row) return;
+        for (var c = 0; c < row.length; c++) {
+          var val = cleanCell(row[c]);
+          if (val.split(/\s+/).length >= 2 && isNaN(val) && val.length > 4 && val.length < 45 && val.toLowerCase().indexOf('họ và tên') === -1 && val.toLowerCase().indexOf('danh sách') === -1) {
+            extracted.push({ sbd: '', blindCode: '', fullName: val, className: '' });
+            break;
+          }
+        }
+      });
+    }
+    return extracted;
+  }
+
+  function parseHtmlTablesToRoster(htmlStr) {
+    try {
+      var doc = new DOMParser().parseFromString(htmlStr, 'text/html');
+      var trs = doc.querySelectorAll('tr');
+      if (trs && trs.length > 0) {
+        var rows = [];
+        Array.from(trs).forEach(function(tr) {
+          var cells = Array.from(tr.querySelectorAll('td, th')).map(function(td) { return cleanCell(td.textContent || ''); });
+          if (cells.some(function(c) { return c !== ''; })) rows.push(cells);
+        });
+        var res = parseRowsToRoster(rows);
+        if (res.length > 0) return res;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  function extractTextFromLegacyDocBuffer(arrayBuffer) {
+    var uint8 = new Uint8Array(arrayBuffer);
+    var utf8Text = '';
+    try { utf8Text = new TextDecoder('utf-8', { fatal: false }).decode(uint8); } catch (e) {}
+
+    if (utf8Text.toLowerCase().indexOf('<table') !== -1 || utf8Text.toLowerCase().indexOf('<tr') !== -1) {
+      return { isHtml: true, content: utf8Text };
+    }
+
+    var utf16Text = '';
+    try { utf16Text = new TextDecoder('utf-16le', { fatal: false }).decode(uint8); } catch (e) {}
+
+    var viRegex = /[A-Za-zÀ-ỹĐđ0-9][A-Za-zÀ-ỹĐđ0-9\s\.\-\,\(\)\/]{3,120}/g;
+    var chunks16 = utf16Text.match(viRegex) || [];
+    var valid16 = chunks16.filter(function(s) {
+      return /[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđĐ]/.test(s) || /\b(Nguyễn|Trần|Lê|Phạm|Hoàng|Huỳnh|Phan|Vũ|Võ|Đặng|Bùi|Đỗ|Hồ|Ngô|Dương|Lý|Trương|Đinh|Đoàn|Lâm|Mai|Trịnh|Đào|Cao|Hà|Lưu|Lương|Thái|Châu|Tạ|Phùng|Tô|Vương|Văn|Thị)\b/.test(s);
+    });
+
+    if (valid16.length >= 3) {
+      return { isHtml: false, content: valid16.join('\n') };
+    }
+
+    var cleanAscii = utf8Text.replace(/[^\x20-\x7E\r\n\tÀ-ỹĐđ]/g, ' ').replace(/\s{3,}/g, '\n');
+    return { isHtml: false, content: cleanAscii.slice(0, 25000) };
+  }
+
+  function processRosterImageFile(file) {
+    return new Promise(function(resolve) {
+      var objUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas'), maxDim = 1024;
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        try { ctx.filter = 'contrast(1.18) brightness(1.02)'; } catch (e) {}
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(objUrl);
+        var du = canvas.toDataURL('image/webp', 0.78);
+        var mimeType = (du.indexOf('data:image/webp') === 0) ? 'image/webp' : 'image/jpeg';
+        if (mimeType === 'image/jpeg') du = canvas.toDataURL('image/jpeg', 0.80);
+        resolve({ mime: mimeType, base64: du.split(',')[1] });
+      };
+      img.onerror = function() { URL.revokeObjectURL(objUrl); resolve(null); };
+      img.src = objUrl;
+    });
+  }
+
+  async function extractRosterWithAI(apiKey, modelName, contentParts) {
+    var prompt = `Đọc danh sách học sinh đính kèm và trích xuất ĐẦY ĐỦ, ĐÚNG THỨ TỰ từ trên xuống dưới thành JSON.
+Mỗi học sinh trong mảng "students" gồm:
+- "sbd": Số báo danh / Mã HS (nếu không có để "", không lấy STT làm SBD).
+- "blindCode": Mã phách / Số phách (nếu không có để "").
+- "fullName": Họ và tên đầy đủ (nếu bảng tách cột Họ đệm và Tên thì ghép lại thành Họ và tên đầy đủ).
+- "className": Lớp (nếu có).
+
+Trả về đúng cấu trúc JSON:
+{"students": [{"sbd": "", "blindCode": "", "fullName": "Nguyễn Văn A", "className": "8A1"}]}`;
+
+    var reqParts = contentParts.concat([{ text: prompt }]);
+    var parsed = await callGeminiAPI(apiKey, modelName, reqParts, 0.0, 4096);
+    var list = parsed.students || parsed.roster || (Array.isArray(parsed) ? parsed : []);
+    var out = [];
+    list.forEach(function(item) {
+      if (!item) return;
+      var name = cleanCell(item.fullName || item.name || item.ho_ten || '');
+      if (!name || name.length < 2) return;
+      out.push({
+        sbd: cleanCell(item.sbd || item.student_id || ''),
+        blindCode: cleanCell(item.blindCode || item.blind_code || item.phach || ''),
+        fullName: name,
+        className: cleanCell(item.className || item.class_name || item.lop || '')
+      });
+    });
+    return out;
+  }
+
+  async function handleRosterFile(event) {
+    var files = event.target.files;
+    if (!files || files.length === 0) return;
+    var fileArr = Array.from(files);
+    event.target.value = '';
+
+    var loadBox = document.getElementById('rosterLoadingBox');
+    loadBox.style.display = 'block';
+    loadBox.innerText = '⏳ Đang đọc và trích xuất Danh sách học sinh mẫu (' + fileArr.length + ' tệp)...';
+
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
+    var hasValidKey = isValidGeminiKeyFormat(apiKey);
+    var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
+
+    var newlyExtracted = [];
+    var mediaPartsForAI = [];
+
+    try {
+      for (var i = 0; i < fileArr.length; i++) {
+        var file = fileArr[i];
+        var fName = file.name.toLowerCase();
+        var fType = (file.type || '').toLowerCase();
+
+        if (fType.indexOf('image/') === 0 || /\.(jpg|jpeg|png|webp|bmp|heic)$/i.test(fName)) {
+          if (!hasValidKey) {
+            throw new Error('Để đọc Danh sách học sinh từ Ảnh chụp, vui lòng dán API Key ở Mục 1 trước!');
+          }
+          loadBox.innerText = '📷 Đang xử lý ảnh danh sách (' + (i + 1) + '/' + fileArr.length + ')...';
+          var imgPart = await processRosterImageFile(file);
+          if (imgPart) {
+            mediaPartsForAI.push({ inline_data: { mime_type: imgPart.mime, data: imgPart.base64 } });
+          }
+        } else if (fName.endsWith('.pdf') || fType === 'application/pdf') {
+          loadBox.innerText = '📄 Đang giải mã trực tiếp file PDF danh sách "' + file.name + '"...';
+          var pdfRosterFound = [];
+          try {
+            var localPdfData = await extractPdfRowsAndTextLocal(file);
+            if (localPdfData.rows && localPdfData.rows.length > 0) {
+              pdfRosterFound = parseRowsToRoster(localPdfData.rows);
+            }
+          } catch (pdfLocalErr) {}
+
+          if (pdfRosterFound.length > 0) {
+            newlyExtracted = newlyExtracted.concat(pdfRosterFound);
+          } else {
+            if (!hasValidKey) {
+              throw new Error('File PDF này là bản scan ảnh. Vui lòng dán API Key ở Mục 1 để AI đọc!');
+            }
+            if (file.size > 14 * 1024 * 1024) {
+              throw new Error('File PDF "' + file.name + '" quá 14MB. Hãy chụp ảnh màn hình danh sách để tải lên nhanh hơn.');
+            }
+            var b64Pdf = await fileToBase64(file);
+            mediaPartsForAI.push({ inline_data: { mime_type: 'application/pdf', data: b64Pdf } });
+          }
+        } else if (/\.(xlsx|xls|csv)$/i.test(fName)) {
+          loadBox.innerText = '📊 Đang đọc bảng Excel "' + file.name + '"...';
+          var data = await file.arrayBuffer();
+          var wb = XLSX.read(data, { type: 'array' });
+          var rawRows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+          var exRows = parseRowsToRoster(rawRows);
+          if (exRows.length > 0) {
+            newlyExtracted = newlyExtracted.concat(exRows);
+          } else if (hasValidKey) {
+            var csvTxt = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+            var aiEx = await extractRosterWithAI(apiKey, selectedModel, [{ text: 'Danh sách học sinh:\n' + csvTxt.slice(0, 20000) }]);
+            newlyExtracted = newlyExtracted.concat(aiEx);
+          }
+        } else if (fName.endsWith('.docx')) {
+          loadBox.innerText = '📝 Đang đọc file Word (.docx) "' + file.name + '"...';
+          var bufDocx = await file.arrayBuffer();
+          var htmlRes = await mammoth.convertToHtml({ arrayBuffer: bufDocx });
+          var fromHtmlTable = parseHtmlTablesToRoster(htmlRes.value);
+          if (fromHtmlTable.length > 0) {
+            newlyExtracted = newlyExtracted.concat(fromHtmlTable);
+          } else {
+            var rawTxtRes = await mammoth.extractRawText({ arrayBuffer: bufDocx });
+            var rawLines = rawTxtRes.value.split(/\r?\n/);
+            var lineExtracted = [];
+            rawLines.forEach(function(line) {
+              var clean = cleanCell(line).replace(/^\d+[\.\)\-\s]+/, '').trim();
+              if (clean.split(/\s+/).length >= 2 && clean.length > 4 && clean.length < 40 && isNaN(clean)) {
+                lineExtracted.push({ sbd: '', blindCode: '', fullName: clean, className: '' });
+              }
+            });
+            if (lineExtracted.length > 0) {
+              newlyExtracted = newlyExtracted.concat(lineExtracted);
+            } else if (hasValidKey) {
+              var aiDocx = await extractRosterWithAI(apiKey, selectedModel, [{ text: 'Danh sách học sinh:\n' + rawTxtRes.value.slice(0, 20000) }]);
+              newlyExtracted = newlyExtracted.concat(aiDocx);
+            }
+          }
+        } else if (fName.endsWith('.doc')) {
+          loadBox.innerText = '📝 Đang giải mã file Word (.doc) "' + file.name + '"...';
+          var bufDoc = await file.arrayBuffer();
+          var parsedDoc = [];
+          try {
+            var wbDoc = XLSX.read(bufDoc, { type: 'array' });
+            if (wbDoc && wbDoc.SheetNames && wbDoc.SheetNames.length > 0) {
+              var rowsDoc = XLSX.utils.sheet_to_json(wbDoc.Sheets[wbDoc.SheetNames[0]], { header: 1, defval: '' });
+              parsedDoc = parseRowsToRoster(rowsDoc);
+            }
+          } catch (e) {}
+
+          if (parsedDoc.length === 0) {
+            var leg = extractTextFromLegacyDocBuffer(bufDoc);
+            if (leg.isHtml) {
+              parsedDoc = parseHtmlTablesToRoster(leg.content);
+            }
+            if (parsedDoc.length === 0 && leg.content) {
+              leg.content.split(/\r?\n/).forEach(function(line) {
+                var clean = cleanCell(line).replace(/^\d+[\.\)\-\s]+/, '').trim();
+                if (clean.split(/\s+/).length >= 2 && clean.length > 4 && clean.length < 40 && isNaN(clean)) {
+                  parsedDoc.push({ sbd: '', blindCode: '', fullName: clean, className: '' });
+                }
+              });
+              if (parsedDoc.length === 0 && hasValidKey) {
+                loadBox.innerText = '🤖 Đang dùng AI lọc danh sách học sinh từ file .doc...';
+                parsedDoc = await extractRosterWithAI(apiKey, selectedModel, [{ text: 'Trích xuất danh sách học sinh từ dữ liệu file .doc sau:\n' + leg.content }]);
+              }
+            }
+          }
+          newlyExtracted = newlyExtracted.concat(parsedDoc);
+        }
+      }
+
+      if (mediaPartsForAI.length > 0) {
+        loadBox.innerText = '🤖 AI đang đọc danh sách học sinh từ ' + mediaPartsForAI.length + ' ảnh/PDF...';
+        var aiMediaRoster = await extractRosterWithAI(apiKey, selectedModel, mediaPartsForAI);
+        newlyExtracted = newlyExtracted.concat(aiMediaRoster);
+      }
+
+      if (newlyExtracted.length === 0) {
+        alert('⚠️ Không tìm thấy danh sách học sinh hợp lệ trong tệp vừa tải lên!');
+        loadBox.style.display = 'none';
+        return;
+      }
+
+      var finalRoster = [];
+      if (masterRoster && masterRoster.length > 0) {
+        var replaceConfirm = confirm(
+          'Hiện đang có sẵn ' + masterRoster.length + ' HS trong Danh sách mẫu.\n\n' +
+          '• Bấm OK để THAY THẾ hoàn toàn bằng danh sách mới (' + newlyExtracted.length + ' HS).\n' +
+          '• Bấm Cancel để NỐI THÊM (' + newlyExtracted.length + ' HS) vào cuối danh sách hiện tại.'
+        );
+        if (replaceConfirm) finalRoster = newlyExtracted;
+        else finalRoster = masterRoster.concat(newlyExtracted);
+      } else {
+        finalRoster = newlyExtracted;
+      }
+
+      masterRoster = finalRoster.map(function(item, idx) {
+        return {
+          order: idx + 1,
+          sbd: item.sbd || '',
+          blindCode: item.blindCode || '',
+          fullName: item.fullName,
+          className: item.className || ''
+        };
+      });
+
+      safeSet('g_roster', JSON.stringify(masterRoster));
+
+      classRecords.forEach(function(rec) {
+        var m = matchStudentInMasterRoster(rec.fullName, rec.sbd, rec.blindCode);
+        if (m) {
+          rec.fullName = m.fullName;
+          if (!rec.sbd && m.sbd) rec.sbd = m.sbd;
+          if (!rec.blindCode && m.blindCode) rec.blindCode = m.blindCode;
+          if (!rec.className && m.className) rec.className = m.className;
+          rec.rosterOrder = m.order;
+        }
+      });
+      safeSet('g_records', JSON.stringify(classRecords));
+      updateRosterUI();
+      document.getElementById('sortOrder').value = 'ROSTER';
+      safeSet('g_sort', 'ROSTER');
+      renderTable();
+      loadBox.style.display = 'none';
+      alert('✅ Đã nạp thành công Danh sách mẫu gồm ' + masterRoster.length + ' học sinh!');
+    } catch (e) {
+      loadBox.style.display = 'none';
+      alert('Lỗi đọc danh sách mẫu: ' + e.message);
+    }
+  }
+
+  function updateRosterUI() {
+    var infoArea = document.getElementById('rosterInfoArea'), optRoster = document.getElementById('optRosterSort');
+    if (masterRoster && masterRoster.length > 0) {
+      infoArea.style.display = 'block'; optRoster.disabled = false;
+      optRoster.innerText = '📋 Theo thứ tự Danh sách mẫu (' + masterRoster.length + ' HS)';
+      document.getElementById('rosterSummaryText').innerText = '✅ Đang dùng DS mẫu: ' + masterRoster.length + ' HS';
+    } else {
+      infoArea.style.display = 'none'; optRoster.disabled = true;
+      optRoster.innerText = '📋 Theo thứ tự Danh sách mẫu (Chưa nạp)';
+      if (document.getElementById('sortOrder').value === 'ROSTER') document.getElementById('sortOrder').value = 'NAME';
+    }
+  }
+
+  function clearMasterRoster() {
+    if (!confirm('Xóa Danh sách học sinh mẫu?')) return;
+    masterRoster = []; safeRemove('g_roster');
+    classRecords.forEach(function(r) { delete r.rosterOrder; });
+    safeSet('g_records', JSON.stringify(classRecords));
+    updateRosterUI(); renderTable();
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var r = new FileReader(); r.onload = function(e) { resolve(e.target.result.split(',')[1]); }; r.onerror = reject; r.readAsDataURL(file);
+    });
+  }
+
+  // ============================================================================
+  // BỘ GIẢI MÃ BẢNG ĐÁP ÁN WORD (.DOCX) & PDF THÔNG MINH CỤC BỘ (0 TỐN HẠN MỨC API)
+  // Tách sạch Trắc nghiệm khỏi Tự luận + Lưu nội dung đáp án TN dự phòng
+  // ============================================================================
+  function extractQuestionNumFromCell(cellStr) {
+    var s = cleanCell(cellStr);
+    var m = s.match(/^(?:câu|bài)?\s*(\d{1,3})[\.\:\)\-]?$/i);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function extractAnswerLetterAndNoteFromCell(cellStr) {
+    var s = cleanCell(cellStr);
+    if (!s) return null;
+    var mPure = s.match(/^([A-D])[\.\)]?$/i);
+    if (mPure) {
+      return { letter: mPure[1].toUpperCase(), note: '' };
+    }
+    var mWithText = s.match(/^([A-D])(?:\s*[\.\-\:\)]\s*|\s+\()(.{1,120})$/i);
+    if (mWithText) {
+      var noteTxt = mWithText[2].replace(/\)$/, '').trim();
+      if (!/\b\d+[\.,]\d+\s*(?:đ|điểm)\b/i.test(noteTxt)) {
+        return { letter: mWithText[1].toUpperCase(), note: noteTxt };
+      }
+    }
+    return null;
+  }
+
+  function extractInlineMcqAndBackup(lineStr, mcqMap, mcqBackupMap) {
+    var count = 0;
+    var s = cleanCell(lineStr);
+    if (!s) return 0;
+
+    var singleDetail = s.match(/^(?:câu\s*)?(\d{1,3})\s*[\.\:\-\)]?\s*([A-D])(?:\s*[\.\-\:\)]\s*|\s+\()(.{1,140})$/i);
+    if (singleDetail) {
+      var qNumSingle = String(parseInt(singleDetail[1], 10));
+      var letSingle = singleDetail[2].toUpperCase();
+      var restSingle = singleDetail[3].replace(/\)$/, '').trim();
+      var moreMcq = parseMcqKey(restSingle);
+      if (Object.keys(moreMcq).length === 0 && !/\b(?:0\.[2575]+|1\.0|1\.5|2\.0)\s*(?:đ|điểm)\b/i.test(restSingle)) {
+        mcqMap[qNumSingle] = letSingle;
+        if (restSingle) mcqBackupMap[qNumSingle] = restSingle;
+        return 1;
+      }
+    }
+
+    var segs = s.split(/[\|\;\,]+/);
+    segs.forEach(function(seg) {
+      var segClean = seg.trim();
+      if (!segClean) return;
+      var mSeg = segClean.match(/^(?:câu\s*)?(\d{1,3})\s*[\.\:\-\)]?\s*([A-D])(?:(?:\s*[\.\-\:\)]\s*|\s*\()([^\)]+)\)?)?$/i);
+      if (mSeg) {
+        var qN = String(parseInt(mSeg[1], 10));
+        var aL = mSeg[2].toUpperCase();
+        var note = cleanCell(mSeg[3] || '');
+        mcqMap[qN] = aL;
+        if (note && !/^(?:câu\s*)?\d+/i.test(note)) {
+          mcqBackupMap[qN] = note;
+        }
+        count++;
+      }
+    });
+
+    if (count === 0) {
+      var r = /(?:câu\s*)?(\d{1,3})\s*[\.\-\:\)\s]?\s*([A-D])\b/gi, x;
+      var tempFound = {};
+      while ((x = r.exec(s)) !== null) {
+        tempFound[String(parseInt(x[1], 10))] = x[2].toUpperCase();
+      }
+      if (Object.keys(tempFound).length >= 2) {
+        Object.keys(tempFound).forEach(function(k) {
+          mcqMap[k] = tempFound[k];
+          count++;
+        });
+      }
+    }
+    return count;
+  }
+
+  function isMcqExplanationOrHeaderLine(txt, mcqMap) {
+    var s = cleanCell(txt);
+    if (!s) return true;
+    if (/^(?:phần\s*(?:I|1|A|một)|I|1|A)[\.\:\-\s]*(?:trắc\s*nghiệm|đúng\s*\/?\s*sai|trả\s*lời\s*ngắn)/i.test(s)) return true;
+    if (/^(?:bảng\s*đáp\s*án|đáp\s*án\s*trắc\s*nghiệm|mỗi\s*câu\s*trả\s*lời\s*đúng)/i.test(s)) return true;
+    if (/^(?:câu(?:\s*hỏi)?|đáp\s*án|lựa\s*chọn|mã\s*đề)(?:\s*\|\s*(?:\d{1,3}|[A-D]|[0-9\.,]+\s*đ?))+$/i.test(s)) return true;
+    return false;
+  }
+
+  function filterCleanEssayLines(rawEssayLines, mcqMap, mcqBackupMap) {
+    var cleanList = [];
+    var mcqCount = Object.keys(mcqMap).length;
+
+    rawEssayLines.forEach(function(line) {
+      var s = cleanCell(line);
+      if (!s) return;
+      if (isMcqExplanationOrHeaderLine(s, mcqMap)) return;
+
+      var mQ = s.match(/^(?:câu\s*)?(\d{1,3})\s*[\.\:\-\)]\s*(.+)$/i);
+      if (mQ && mcqCount > 0) {
+        var qNum = String(parseInt(mQ[1], 10));
+        var rest = mQ[2].trim();
+        var hasEssayScoreTag = /(?:\(\s*\d+[\.,]?\d*\s*(?:đ|điểm)\s*\)|\|\s*\d+[\.,]\d+\s*(?:đ|điểm)?$)/i.test(s);
+        var startsWithMcqLetter = /^([A-D])(?:\b|[\.\:\-\)])/i.test(rest);
+        if (mcqMap[qNum] && startsWithMcqLetter && !hasEssayScoreTag) {
+          var mLet = rest.match(/^([A-D])\s*[\.\:\-\)]?\s*(.*)$/i);
+          if (mLet && mLet[1].toUpperCase() === mcqMap[qNum] && mLet[2]) {
+            if (!mcqBackupMap[qNum]) mcqBackupMap[qNum] = cleanCell(mLet[2]);
+          }
+          return;
+        }
+      }
+
+      var testMcq = parseMcqKey(s);
+      if (Object.keys(testMcq).length >= 3 && !/(?:tự\s*luận|biểu\s*điểm|thang\s*điểm)/i.test(s)) {
+        return;
+      }
+
+      cleanList.push(s);
+    });
+
+    return cleanList;
+  }
+
+  function parseTableRowsSmart(rows, mcqMap, mcqBackupMap, tfMap, saMap, essayLines, stateObj) {
+    if (!stateObj) stateObj = { section: 'AUTO' };
+
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      if (!row || row.length === 0) continue;
+      var rowJoined = row.join(' | ').trim();
+
+      if (/(?:^|\|\s*)(?:phần\s*[IIV2-9]+|II+|IV|B|2|4)[\.\:\-\s]*tự\s*luận\b/i.test(rowJoined) || /^(?:II+\.?\s*)?tự\s*luận\b/i.test(rowJoined)) {
+        stateObj.section = 'ESSAY';
+        if (row.length <= 2 && !/(?:câu|bài)\s*\d+/i.test(rowJoined)) continue;
+      } else if (/trả\s*lời\s*ngắn/i.test(rowJoined) && !/tự\s*luận/i.test(rowJoined)) {
+        stateObj.section = 'SA';
+        if (row.length <= 2) continue;
+      } else if (/đúng\s*\/?\s*sai/i.test(rowJoined) && /^(?:phần|I+|1|2|A|B)/i.test(rowJoined)) {
+        stateObj.section = 'TF';
+        if (row.length <= 2) continue;
+      } else if (/(?:^|\|\s*)(?:phần\s*(?:I|1|A)|I|1|A)[\.\:\-\s]*trắc\s*nghiệm\b/i.test(rowJoined) || /^trắc\s*nghiệm\b/i.test(rowJoined)) {
+        stateObj.section = 'MCQ';
+        if (row.length <= 2) continue;
+      }
+
+      if (stateObj.section !== 'ESSAY') {
+        if (stateObj.section === 'SA') {
+          if (r + 1 < rows.length) {
+            var nextRowSa = rows[r + 1];
+            var saPairs = [];
+            var maxCSa = Math.min(row.length, nextRowSa.length);
+            for (var cSa = 0; cSa < maxCSa; cSa++) {
+              var qNSa = extractQuestionNumFromCell(row[cSa]);
+              var valSa = cleanCell(nextRowSa[cSa]);
+              if (qNSa !== null && /^[\-\+]?\d+(?:[\.,]\d+)?$/.test(valSa)) {
+                saPairs.push({ q: String(qNSa), a: valSa });
+              }
+            }
+            if (saPairs.length >= 1) {
+              saPairs.forEach(function(p) { saMap[p.q] = p.a; });
+              r++;
+              continue;
+            }
+          }
+          var inlineSa = parseSaKey(rowJoined);
+          if (Object.keys(inlineSa).length > 0) {
+            Object.keys(inlineSa).forEach(function(k) { saMap[k] = inlineSa[k]; });
+            continue;
+          }
+        }
+
+        var rowFoundMcq = 0;
+
+        if (r + 1 < rows.length) {
+          var nextRow = rows[r + 1];
+          var pairsInRow = [];
+          var maxC = Math.min(row.length, nextRow.length);
+          for (var c = 0; c < maxC; c++) {
+            var qN = extractQuestionNumFromCell(row[c]);
+            var ansObj = extractAnswerLetterAndNoteFromCell(nextRow[c]);
+            if (qN !== null && ansObj !== null) {
+              pairsInRow.push({ q: String(qN), a: ansObj.letter, note: ansObj.note, colIdx: c });
+            }
+          }
+          if (pairsInRow.length < 2 && Math.abs(row.length - nextRow.length) <= 1) {
+            var numsR = row.map(extractQuestionNumFromCell).filter(function(x) { return x !== null; });
+            var ansNext = nextRow.map(extractAnswerLetterAndNoteFromCell).filter(function(x) { return x !== null; });
+            if (numsR.length >= 2 && numsR.length === ansNext.length) {
+              for (var k = 0; k < numsR.length; k++) {
+                pairsInRow.push({ q: String(numsR[k]), a: ansNext[k].letter, note: ansNext[k].note, colIdx: k });
+              }
+            }
+          }
+          if (pairsInRow.length >= 2) {
+            pairsInRow.forEach(function(p) {
+              mcqMap[p.q] = p.a;
+              if (p.note) mcqBackupMap[p.q] = p.note;
+              rowFoundMcq++;
+            });
+            r++;
+            if (r + 1 < rows.length) {
+              var thirdRow = rows[r + 1];
+              var isScoreRow = thirdRow.every(function(cell) {
+                var sc = cleanCell(cell);
+                return !sc || /^điểm$/i.test(sc) || /^\d+[\.,]\d+\s*(?:đ|điểm)?$/i.test(sc);
+              });
+              if (isScoreRow) r++;
+            }
+            continue;
+          }
+        }
+
+        for (var c2 = 0; c2 < row.length; c2++) {
+          var cellTxt = row[c2];
+          var singleMatch = cellTxt.match(/^(?:câu\s*)?(\d{1,3})\s*[\.\-\:\)]?\s*([A-D])(?:(?:\s*[\.\-\:\)]\s*|\s+\()(.{1,100}))?$/i);
+          if (singleMatch) {
+            var qKey1 = String(parseInt(singleMatch[1], 10));
+            mcqMap[qKey1] = singleMatch[2].toUpperCase();
+            var note1 = cleanCell((singleMatch[3] || '').replace(/\)$/, ''));
+            if (note1 && !/^\d+[\.,]\d+\s*(?:đ|điểm)?$/i.test(note1)) {
+              mcqBackupMap[qKey1] = note1;
+            } else if (c2 + 1 < row.length && row.length <= 4) {
+              var nextCellNote = cleanCell(row[c2 + 1]);
+              if (nextCellNote && !extractQuestionNumFromCell(nextCellNote) && !/^\d+[\.,]\d+\s*(?:đ|điểm)?$/i.test(nextCellNote) && nextCellNote.length <= 120) {
+                mcqBackupMap[qKey1] = nextCellNote;
+                c2++;
+              }
+            }
+            rowFoundMcq++;
+          } else if (c2 + 1 < row.length) {
+            var qN2 = extractQuestionNumFromCell(row[c2]);
+            var ansObj2 = extractAnswerLetterAndNoteFromCell(row[c2 + 1]);
+            if (qN2 !== null && ansObj2 !== null) {
+              var qKey2 = String(qN2);
+              mcqMap[qKey2] = ansObj2.letter;
+              if (ansObj2.note) {
+                mcqBackupMap[qKey2] = ansObj2.note;
+              } else if (c2 + 2 < row.length && row.length <= 4) {
+                var extraCell = cleanCell(row[c2 + 2]);
+                if (extraCell && !extractQuestionNumFromCell(extraCell) && !/^\d+[\.,]\d+\s*(?:đ|điểm)?$/i.test(extraCell) && extraCell.length <= 120) {
+                  mcqBackupMap[qKey2] = extraCell;
+                  c2++;
+                }
+              }
+              rowFoundMcq++;
+              c2++;
+            }
+          }
+        }
+
+        if (rowFoundMcq > 0) continue;
+
+        var inlineTf = parseTfKey(rowJoined);
+        if (Object.keys(inlineTf).length > 0) {
+          Object.keys(inlineTf).forEach(function(k) { tfMap[k] = inlineTf[k]; });
+          continue;
+        }
+
+        var inlineAdded = extractInlineMcqAndBackup(rowJoined, mcqMap, mcqBackupMap);
+        if (inlineAdded > 0) continue;
+
+        if (/(?:^|\|\s*)(?:câu|bài)\s*\d+/i.test(rowJoined) && (/\b\d+[\.,]\d+\b/.test(rowJoined) || row.length >= 2)) {
+          stateObj.section = 'ESSAY';
+          essayLines.push(rowJoined);
+        }
+      } else {
+        if (r + 1 < rows.length) {
+          var nextR = rows[r + 1];
+          var testPairs = 0;
+          for (var cc = 0; cc < Math.min(row.length, nextR.length); cc++) {
+            if (extractQuestionNumFromCell(row[cc]) !== null && extractAnswerLetterAndNoteFromCell(nextR[cc]) !== null) testPairs++;
+          }
+          if (testPairs >= 3) {
+            stateObj.section = 'MCQ';
+            r--;
+            continue;
+          }
+        }
+        var mCheckMcqInEssay = rowJoined.match(/^(?:câu\s*)?(\d{1,3})\s*[\.\:\-\)]\s*([A-D])\s*[\.\:\-\)]\s*(.+)$/i);
+        if (mCheckMcqInEssay && mcqMap[String(parseInt(mCheckMcqInEssay[1], 10))]) {
+          var qIdCheck = String(parseInt(mCheckMcqInEssay[1], 10));
+          if (!mcqBackupMap[qIdCheck]) mcqBackupMap[qIdCheck] = cleanCell(mCheckMcqInEssay[3]);
+          continue;
+        }
+        essayLines.push(rowJoined);
+      }
+    }
+  }
+
+  function formatMcqBackupString(mcqMap, mcqBackupMap) {
+    var keys = Object.keys(mcqBackupMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var parts = [];
+    keys.forEach(function(q) {
+      var note = cleanCell(mcqBackupMap[q]);
+      if (!note) return;
+      var letStr = mcqMap[q] || '';
+      parts.push('Câu ' + q + (letStr ? letStr : '') + ': ' + note);
+    });
+    return parts.join(' | ');
+  }
+
+  function parseDocxHtmlAndTablesSmart(htmlStr, fallbackRawText) {
+    var mcqMap = {};
+    var mcqBackupMap = {};
+    var tfMap = {};
+    var saMap = {};
+    var essayLines = [];
+    var structuredLines = [];
+    var stateObj = { section: 'AUTO' };
+
+    try {
+      var doc = new DOMParser().parseFromString(htmlStr, 'text/html');
+      var elements = doc.body.querySelectorAll('p, h1, h2, h3, h4, li, table');
+
+      Array.from(elements).forEach(function(el) {
+        var tag = el.tagName.toLowerCase();
+        if (tag !== 'table') {
+          if (el.closest && el.closest('table')) return;
+          var txt = cleanCell(el.textContent || '');
+          if (!txt) return;
+          structuredLines.push(txt);
+
+          if (/^(?:phần\s*[IIV2-9]+|II+|IV|B|2|4)[\.\:\-\s]*tự\s*luận\b/i.test(txt) || /^tự\s*luận\s*(?:\([\d\.,]+\s*điểm\))?[\.\:]?$/i.test(txt)) {
+            stateObj.section = 'ESSAY';
+            return;
+          } else if (/trả\s*lời\s*ngắn/i.test(txt) && !/tự\s*luận/i.test(txt)) {
+            stateObj.section = 'SA';
+            return;
+          } else if (/đúng\s*\/?\s*sai/i.test(txt) && /^(?:phần|I+|1|2|A|B)/i.test(txt)) {
+            stateObj.section = 'TF';
+            return;
+          } else if (/^(?:phần\s*(?:I|1|A)|I|1|A)[\.\:\-\s]*trắc\s*nghiệm\b/i.test(txt) || /^trắc\s*nghiệm\b/i.test(txt)) {
+            stateObj.section = 'MCQ';
+            return;
+          }
+
+          if (stateObj.section !== 'ESSAY') {
+            if (stateObj.section === 'SA') {
+              var inlineSa = parseSaKey(txt);
+              if (Object.keys(inlineSa).length > 0) {
+                Object.keys(inlineSa).forEach(function(k) { saMap[k] = inlineSa[k]; });
+                return;
+              }
+            }
+            var inlineTf = parseTfKey(txt);
+            if (Object.keys(inlineTf).length > 0) {
+              Object.keys(inlineTf).forEach(function(k) { tfMap[k] = inlineTf[k]; });
+              return;
+            }
+            var addedMcq = extractInlineMcqAndBackup(txt, mcqMap, mcqBackupMap);
+            if (addedMcq > 0) return;
+
+            if (/^(?:câu|bài)\s*\d+\s*(?:\([\d\.,]+\s*(?:đ|điểm)\)|[\.\:\-])/.test(txt) && /\b\d+[\.,]\d+\s*(?:đ|điểm)\b/i.test(txt)) {
+              stateObj.section = 'ESSAY';
+              essayLines.push(txt);
+            }
+          } else {
+            var mNote = txt.match(/^(?:câu\s*)?(\d{1,3})\s*[\.\:\-\)]?\s*([A-D])\s*[\.\:\-\)\(]\s*(.+)$/i);
+            if (mNote && !/\b\d+[\.,]\d+\s*(?:đ|điểm)\b/i.test(txt)) {
+              var qNNote = String(parseInt(mNote[1], 10));
+              var letNote = mNote[2].toUpperCase();
+              if (!mcqMap[qNNote] || mcqMap[qNNote] === letNote) {
+                mcqMap[qNNote] = letNote;
+                mcqBackupMap[qNNote] = cleanCell(mNote[3].replace(/\)$/, ''));
+                return;
+              }
+            }
+            essayLines.push(txt);
+          }
+        } else {
+          var rows = [];
+          Array.from(el.querySelectorAll('tr')).forEach(function(tr) {
+            var cells = Array.from(tr.querySelectorAll('td, th')).map(function(td) { return cleanCell(td.textContent || ''); });
+            if (cells.some(function(c) { return c !== ''; })) rows.push(cells);
+          });
+          if (rows.length === 0) return;
+
+          rows.forEach(function(r) { structuredLines.push(r.join(' | ')); });
+          parseTableRowsSmart(rows, mcqMap, mcqBackupMap, tfMap, saMap, essayLines, stateObj);
+        }
+      });
+    } catch (e) {}
+
+    var cleanEssayList = filterCleanEssayLines(essayLines, mcqMap, mcqBackupMap);
+
+    var sortedQ = Object.keys(mcqMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var mcqKeyString = sortedQ.map(function(q) { return q + mcqMap[q]; }).join(', ');
+    var mcqBackupString = formatMcqBackupString(mcqMap, mcqBackupMap);
+
+    var tfSorted = Object.keys(tfMap);
+    var tfKeyString = tfSorted.map(function(k) { return k + tfMap[k]; }).join(', ');
+
+    var saSorted = Object.keys(saMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var saKeyString = saSorted.map(function(q) { return q + ': ' + saMap[q]; }).join(' | ');
+
+    var essayTextClean = cleanEssayList.join('\n').trim();
+    var finalStructuredText = structuredLines.join('\n');
+    if (mcqKeyString) {
+      finalStructuredText = '[ĐÁP ÁN TRẮC NGHIỆM ABCD: ' + mcqKeyString + ']\n' + finalStructuredText;
+    }
+
+    return {
+      structuredText: finalStructuredText || fallbackRawText,
+      mcqKey: mcqKeyString,
+      mcqBackup: mcqBackupString,
+      tfKey: tfKeyString,
+      saKey: saKeyString,
+      essayRubric: essayTextClean
+    };
+  }
+
+  function parsePdfLocalRowsSmart(rows, fullText) {
+    var mcqMap = {};
+    var mcqBackupMap = {};
+    var tfMap = {};
+    var saMap = {};
+    var essayLines = [];
+    var stateObj = { section: 'AUTO' };
+
+    parseTableRowsSmart(rows, mcqMap, mcqBackupMap, tfMap, saMap, essayLines, stateObj);
+
+    if (essayLines.length === 0 && rows.length > 0) {
+      var captureEssay = false;
+      rows.forEach(function(row) {
+        var line = row.join(' | ').trim();
+        if (/(?:câu|bài)\s*\d+\s*[\(\:\.\-].*\b\d+[\.,]\d+\s*(?:đ|điểm)?/i.test(line)) {
+          captureEssay = true;
+        }
+        if (captureEssay) {
+          essayLines.push(line);
+        }
+      });
+    }
+
+    var cleanEssayList = filterCleanEssayLines(essayLines, mcqMap, mcqBackupMap);
+
+    var sortedQ = Object.keys(mcqMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var mcqKeyString = sortedQ.map(function(q) { return q + mcqMap[q]; }).join(', ');
+    var mcqBackupString = formatMcqBackupString(mcqMap, mcqBackupMap);
+    var tfKeyString = Object.keys(tfMap).map(function(k) { return k + tfMap[k]; }).join(', ');
+    var saSorted = Object.keys(saMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var saKeyString = saSorted.map(function(q) { return q + ': ' + saMap[q]; }).join(' | ');
+    var essayTextClean = cleanEssayList.join('\n').trim();
+
+    return {
+      structuredText: fullText,
+      mcqKey: mcqKeyString,
+      mcqBackup: mcqBackupString,
+      tfKey: tfKeyString,
+      saKey: saKeyString,
+      essayRubric: essayTextClean
+    };
+  }
+
+  function applyExtractedRubricToUI(mcqStr, tfStr, saStr, essayStr, multiCodesStr, fileName, mcqBackupStr) {
+    var statusBox = document.getElementById('fileStatusBox');
+    statusBox.style.display = 'block';
+
+    var hasMulti = multiCodesStr && String(multiCodesStr).trim() !== '';
+    var hasMcqSingle = mcqStr && String(mcqStr).trim() !== '';
+    var hasMcqBackup = mcqBackupStr && String(mcqBackupStr).trim() !== '';
+    var hasTf = tfStr && String(tfStr).trim() !== '';
+    var hasSa = saStr && String(saStr).trim() !== '';
+    var hasEssay = essayStr && String(essayStr).trim() !== '';
+
+    if (hasMulti) {
+      document.getElementById('useMultiCodeChk').checked = true;
+      toggleMultiCodeUI();
+      document.getElementById('multiCodeData').value = String(multiCodesStr).trim();
+      document.getElementById('mcqKey').value = '';
+    } else {
+      document.getElementById('useMultiCodeChk').checked = false;
+      toggleMultiCodeUI();
+      document.getElementById('mcqKey').value = hasMcqSingle ? String(mcqStr).trim() : '';
+    }
+    if (document.getElementById('mcqBackupText')) {
+      document.getElementById('mcqBackupText').value = hasMcqBackup ? String(mcqBackupStr).trim() : '';
+    }
+    document.getElementById('tfKey').value = hasTf ? String(tfStr).trim() : '';
+    document.getElementById('saKey').value = hasSa ? String(saStr).trim() : '';
+    document.getElementById('essayRubric').value = hasEssay ? String(essayStr).trim() : '';
+
+    autoDetectStructureFromInputs(true);
+    saveConfig();
+
+    var mcqCount = Object.keys(parseMcqKey(document.getElementById('mcqKey').value)).length;
+    var tfCount = Object.keys(parseTfKey(document.getElementById('tfKey').value)).length;
+    var saCount = Object.keys(parseSaKey(document.getElementById('saKey').value)).length;
+    var esList = extractEssayQuestionListFromRubric(document.getElementById('essayRubric').value);
+
+    var summaryParts = [];
+    if (hasMulti) summaryParts.push('Nhiều mã đề TN');
+    else if (mcqCount > 0) summaryParts.push(mcqCount + ' câu TN ABCD' + (hasMcqBackup ? ' (kèm ND dự phòng)' : ''));
+    if (tfCount > 0) summaryParts.push(tfCount + ' ý Đúng/Sai');
+    if (saCount > 0) summaryParts.push(saCount + ' câu TL ngắn');
+    if (hasEssay) summaryParts.push(esList.length > 0 ? (esList.length + ' câu Tự luận (' + esList.join(', ') + ')') : 'Phần Tự luận riêng biệt');
+
+    statusBox.innerText = '✅ Đã nạp "' + fileName + '" — Đã tách sạch: [' + (summaryParts.join(' + ') || 'Trống') + ']!';
+  }
+
+  async function handleAnswerFile(event) {
+    var file = event.target.files[0]; if (!file) return;
+    var statusBox = document.getElementById('fileStatusBox');
+    statusBox.style.display = 'block';
+    statusBox.innerText = '⏳ Đang giải mã & tách riêng Bảng Trắc nghiệm / Tự luận từ "' + file.name + '"...';
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
+    var isValidKey = isValidGeminiKeyFormat(apiKey);
+    var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
+    var fName = file.name.toLowerCase();
+    var fType = (file.type || '').toLowerCase();
+
+    try {
+      if (fName.endsWith('.docx') || fType.indexOf('wordprocessingml') !== -1) {
+        var arrayBuf = await file.arrayBuffer();
+        var htmlRes = await mammoth.convertToHtml({ arrayBuffer: arrayBuf });
+        var rawRes = await mammoth.extractRawText({ arrayBuffer: arrayBuf });
+        var localParsed = parseDocxHtmlAndTablesSmart(htmlRes.value, rawRes.value.trim());
+
+        resetAllAnswerFields();
+        if (localParsed.mcqKey || localParsed.tfKey || localParsed.saKey || localParsed.essayRubric) {
+          applyExtractedRubricToUI(localParsed.mcqKey, localParsed.tfKey, localParsed.saKey, localParsed.essayRubric, '', file.name, localParsed.mcqBackup);
+        } else if (isValidKey) {
+          statusBox.innerText = '🤖 Đang dùng AI phân tích cấu trúc đặc biệt của file Word...';
+          await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm:\n" + localParsed.structuredText }], file.name, localParsed);
+        } else {
+          applyExtractedRubricToUI('', '', '', rawRes.value.trim(), '', file.name, '');
+        }
+      } else if (fName.endsWith('.pdf') || fType === 'application/pdf') {
+        resetAllAnswerFields();
+        var pdfLocal = null;
+        try {
+          pdfLocal = await extractPdfRowsAndTextLocal(file);
+        } catch (pdfErr) {
+          pdfLocal = { pdfDoc: null, rows: [], fullText: '' };
+        }
+
+        if (pdfLocal && pdfLocal.rows && pdfLocal.rows.length > 0 && pdfLocal.fullText.length >= 4) {
+          var parsedPdf = parsePdfLocalRowsSmart(pdfLocal.rows, pdfLocal.fullText);
+          if (parsedPdf.mcqKey || parsedPdf.tfKey || parsedPdf.saKey || parsedPdf.essayRubric) {
+            applyExtractedRubricToUI(parsedPdf.mcqKey, parsedPdf.tfKey, parsedPdf.saKey, parsedPdf.essayRubric, '', file.name, parsedPdf.mcqBackup);
+            event.target.value = '';
+            return;
+          }
+          if (isValidKey) {
+            statusBox.innerText = '🤖 Đang phân tích văn bản PDF với AI...';
+            try {
+              await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm trích xuất từ PDF:\n" + pdfLocal.fullText }], file.name, parsedPdf);
+              event.target.value = '';
+              return;
+            } catch (aiTextErr) {
+              applyExtractedRubricToUI(parsedPdf.mcqKey, parsedPdf.tfKey, parsedPdf.saKey, pdfLocal.fullText, '', file.name, parsedPdf.mcqBackup);
+              event.target.value = '';
+              return;
+            }
+          } else {
+            applyExtractedRubricToUI('', '', '', pdfLocal.fullText, '', file.name, '');
+            event.target.value = '';
+            return;
+          }
+        }
+
+        if (!isValidKey) {
+          alert('File PDF này là bản scan ảnh (không có lớp chữ văn bản). Vui lòng dán API Key ở mục 1 để AI đọc!');
+          statusBox.style.display = 'none';
+          event.target.value = '';
+          return;
+        }
+        statusBox.innerText = '🤖 File PDF dạng ảnh scan — Đang chuyển trang PDF sang ảnh nét cao để AI tách Đáp án TN & Tự luận...';
+        var aiParts = [];
+        if (pdfLocal && pdfLocal.pdfDoc) {
+          try {
+            var pageImgs = await renderPdfPagesToImagesLocal(pdfLocal.pdfDoc, 5);
+            pageImgs.forEach(function(im) {
+              aiParts.push({ inline_data: { mime_type: im.mime, data: im.base64 } });
+            });
+          } catch (renderErr) {}
+        }
+        if (aiParts.length === 0) {
+          var b64Pdf = await fileToBase64(file);
+          aiParts.push({ inline_data: { mime_type: "application/pdf", data: b64Pdf } });
+        }
+        await extractRubricWithAI(apiKey, selectedModel, aiParts, file.name, null);
+      } else {
+        alert('Vui lòng chọn đúng định dạng file Word (.docx) hoặc PDF (.pdf)!');
+      }
+    } catch (e) {
+      alert('Lỗi đọc file: ' + e.message);
+      statusBox.innerText = '❌ Lỗi: ' + e.message;
+    }
+    event.target.value = '';
+  }
+
+  async function extractRubricWithAI(apiKey, modelName, contentParts, fileName, localHint) {
+    var prompt = `Bạn là chuyên gia phân tích Đáp án & Hướng dẫn chấm thi. Hãy đọc kỹ tài liệu đính kèm và TÁCH RIÊNG BIỆT phần TRẮC NGHIỆM và phần TỰ LUẬN thành JSON:
+1. "multi_codes": Nếu có nhiều mã đề trắc nghiệm ABCD (VD: 101, 102...), xuất mỗi mã 1 dòng theo mẫu "101 | 1A, 2B, 3C...". Không có để "".
+2. "mcq_key": Trích xuất TẤT CẢ đáp án chữ cái Trắc nghiệm (A, B, C, D) thành chuỗi "1A, 2B, 3C, ..., 16D". Nếu không có để "".
+3. "mcq_backup": Nếu trong hướng dẫn chấm có kèm theo NỘI DUNG CÂU TRẢ LỜI hoặc CHÚ THÍCH ĐÁP ÁN của từng câu trắc nghiệm ABCD (hoặc phần tự luận có ghi kèm giải thích đáp án câu trắc nghiệm), hãy trích xuất theo mẫu "Câu 1A: <nội dung đáp án> | Câu 2B: <nội dung đáp án>" để làm dữ liệu dự phòng chấm khi học sinh ghi nội dung mà không ghi chữ cái A,B,C,D. Nếu không có để "".
+4. "tf_key": Đáp án Đúng/Sai dạng "1aĐ, 1bS, 1cĐ, 1dS..." (nếu KHÔNG có để "").
+5. "sa_key": Đáp án Trả lời ngắn dạng "1: 12.5 | 2: 4..." (nếu KHÔNG có để "").
+6. "essay_rubric": CHỈ trích xuất hướng dẫn chấm và biểu điểm của phần TỰ LUẬN. TUYỆT ĐỐI KHÔNG đưa bảng đáp án Trắc nghiệm hoặc lời giải chi tiết của các câu Trắc nghiệm ABCD vào "essay_rubric". Nếu đề chỉ có Trắc nghiệm thì để "".
+
+JSON:
+{"multi_codes": "", "mcq_key": "", "mcq_backup": "", "tf_key": "", "sa_key": "", "essay_rubric": ""}`;
+
+    var reqParts = contentParts.concat([{ text: prompt }]);
+    var parsed = await callGeminiAPI(apiKey, modelName, reqParts, 0.0, 2048);
+
+    var aiMulti = (parsed.multi_codes && String(parsed.multi_codes).trim()) || '';
+    var aiMcq = (parsed.mcq_key && String(parsed.mcq_key).trim()) || '';
+    var aiMcqBackup = (parsed.mcq_backup && String(parsed.mcq_backup).trim()) || '';
+    var aiTf = (parsed.tf_key && String(parsed.tf_key).trim()) || '';
+    var aiSa = (parsed.sa_key && String(parsed.sa_key).trim()) || '';
+    var aiEssay = (parsed.essay_rubric && String(parsed.essay_rubric).trim()) || '';
+
+    if (localHint && localHint.mcqKey) {
+      var aiMcqCount = Object.keys(parseMcqKey(aiMcq)).length;
+      var localMcqCount = Object.keys(parseMcqKey(localHint.mcqKey)).length;
+      if (localMcqCount > aiMcqCount) {
+        aiMcq = localHint.mcqKey;
+      }
+    }
+    if (localHint && localHint.mcqBackup && !aiMcqBackup) {
+      aiMcqBackup = localHint.mcqBackup;
+    }
+    if (localHint && localHint.tfKey && !aiTf) {
+      aiTf = localHint.tfKey;
+    }
+
+    if (!aiMcq && aiEssay) {
+      var rescuedMcq = parseMcqKey(aiEssay);
+      if (Object.keys(rescuedMcq).length >= 5) {
+        aiMcq = Object.keys(rescuedMcq).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); }).map(function(k) { return k + rescuedMcq[k]; }).join(', ');
+      }
+    }
+
+    applyExtractedRubricToUI(aiMcq, aiTf, aiSa, aiEssay, aiMulti, fileName, aiMcqBackup);
+  }
+
+  // NẠP ẢNH BÀI LÀM CHUẨN SẮC NÉT 1024PX: TỐN CÙNG 258 TOKENS NHƯ 680PX NHƯNG NÉT CHỮ & VẾT KHOANH RÕ GẤP 2.2 LẦN
+  function processSingleImageFile(file) {
+    return new Promise(function(resolve) {
+      var objUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas'), maxDim = 1024;
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) {
+            h = Math.round(h * (maxDim / w));
+            w = maxDim;
+          } else {
+            w = Math.round(w * (maxDim / h));
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        try { ctx.filter = 'contrast(1.18) brightness(1.02)'; } catch (e) {}
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(objUrl);
+        var du = canvas.toDataURL('image/webp', 0.76);
+        var mimeType = (du.indexOf('data:image/webp') === 0) ? 'image/webp' : 'image/jpeg';
+        if (mimeType === 'image/jpeg') {
+          du = canvas.toDataURL('image/jpeg', 0.76);
+        }
+        resolve({ type: 'image', mime: mimeType, base64: du.split(',')[1], dataUrl: du, name: file.name });
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(objUrl);
+        resolve(null);
+      };
+      img.src = objUrl;
+    });
+  }
+
+  async function addPages(event) {
+    var files = event.target.files; if (!files || files.length === 0) return;
+    var fileArr = Array.from(files);
+    event.target.value = '';
+    var processed = await Promise.all(fileArr.map(processSingleImageFile));
+    processed.forEach(function(item) {
+      if (item) pagesData.push(item);
+    });
+    renderImagePacket();
+  }
+
+  async function addStudentPdf(event) {
+    var file = event.target.files[0]; if (!file) return;
+    try {
+      if (file.size > 14 * 1024 * 1024) {
+        throw new Error('File PDF bài làm nặng quá 14MB. Vui lòng nén nhỏ hoặc chụp ảnh từng trang.');
+      }
+      var cleanPdfName = file.name.replace(/\.pdf$/i, '');
+      if (!document.getElementById('mergedImgName').value) document.getElementById('mergedImgName').value = cleanPdfName;
+      try {
+        var buf = await file.arrayBuffer();
+        var pdfDoc = await loadPdfDocumentSafe(buf);
+        var renderedImgs = await renderPdfPagesToImagesLocal(pdfDoc, 8);
+        if (renderedImgs.length > 0) {
+          renderedImgs.forEach(function(im, idx) {
+            pagesData.push({
+              type: 'image',
+              mime: im.mime,
+              base64: im.base64,
+              dataUrl: 'data:' + im.mime + ';base64,' + im.base64,
+              name: file.name + ' (Trang ' + (idx + 1) + ')'
+            });
+          });
+          renderImagePacket();
+          event.target.value = '';
+          return;
+        }
+      } catch (eRender) {}
+      pagesData.push({ type: 'pdf', mime: 'application/pdf', base64: await fileToBase64(file), dataUrl: '', name: file.name });
+      renderImagePacket();
+    } catch (e) { alert('Lỗi PDF: ' + e.message); }
+    event.target.value = '';
+  }
+
+  function renderImagePacket() {
+    var list = document.getElementById('imgList');
+    document.getElementById('pageCountLbl').innerText = pagesData.length + ' tệp';
+    var hasImg = pagesData.some(function(p) { return p.type === 'image'; });
+    if (pagesData.length === 0) {
+      list.innerHTML = '';
+      document.getElementById('clearBtn').style.display = 'none';
+      document.getElementById('clearTopBtn').style.display = 'none';
+      document.getElementById('gradeBtn').style.display = 'none';
+      document.getElementById('saveMergedImgArea').style.display = 'none';
+      return;
+    }
+    document.getElementById('clearBtn').style.display = 'block';
+    document.getElementById('clearTopBtn').style.display = 'inline-block';
+    document.getElementById('clearTopBtn').innerText = '🗑️ Xóa tất cả (' + pagesData.length + ')';
+    document.getElementById('gradeBtn').style.display = 'block';
+    document.getElementById('saveMergedImgArea').style.display = hasImg ? 'block' : 'none';
+    document.getElementById('gradeBtn').innerText = '⚡ Bắt đầu chấm siêu tốc (' + pagesData.length + ' tệp bài làm)';
+    list.innerHTML = pagesData.map(function(p, i) {
+      if (p.type === 'pdf') return '<div class="img-card"><div class="pdf-card">📄 PDF<br>' + escapeHtml(p.name) + '</div><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
+      return '<div class="img-card"><img src="' + p.dataUrl + '"><span class="img-badge">Trang ' + (i+1) + '</span><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
+    }).join('');
+  }
+
+  function removePage(i) { pagesData.splice(i, 1); renderImagePacket(); }
+
+  function clearImages(scrollToCam) {
+    pagesData = [];
+    currentMcqState = [];
+    currentTfState = [];
+    currentSaState = [];
+    currentEssayState = [];
+    currentDetectedExamCode = '';
+    currentPageWarning = '';
+    document.getElementById('mergedImgName').value = '';
+    document.getElementById('camInput').value = '';
+    document.getElementById('galleryInput').value = '';
+    document.getElementById('stuPdfInput').value = '';
+    renderImagePacket();
+    document.getElementById('resCard').style.display = 'none';
+    if (scrollToCam) {
+      var sec2 = document.getElementById('sec2Card');
+      if (sec2) sec2.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  function discardAndRetake() { clearImages(true); }
+
+  async function downloadMergedStudentImage() {
+    var imgP = pagesData.filter(function(p) { return p.type === 'image'; });
+    if (imgP.length === 0) { alert('Chỉ ghép được khi có ảnh chụp trong túi bài làm!'); return; }
+    var stuNameInput = document.getElementById('curStuName') ? document.getElementById('curStuName').value.trim() : '';
+    var stuClsInput = document.getElementById('curStuClass') ? document.getElementById('curStuClass').value.trim() : '';
+    var stuPhachInput = document.getElementById('curBlindCode') ? document.getElementById('curBlindCode').value.trim() : '';
+    var customName = document.getElementById('mergedImgName').value.trim();
+    var fallbackTitle = stuNameInput ? (stuNameInput + (stuClsInput ? '_' + stuClsInput : '')) : (stuPhachInput ? ('Phach_' + stuPhachInput) : 'Bai_Lam_HS');
+    var title = customName || fallbackTitle;
+    var safeFile = title.replace(/[\\/:*?"<>|]/g, '_') + '.jpg';
+
+    var canvas = document.createElement('canvas'), maxW = 900, H = 52, GAP = 12, totH = H;
+    var ims = await Promise.all(imgP.map(function(p) { return new Promise(function(res) { var im = new Image(); im.onload = function() { res(im); }; im.src = p.dataUrl; }); }));
+    ims.forEach(function(im) { totH += Math.round(im.height * (maxW / im.width)) + GAP; });
+    canvas.width = maxW; canvas.height = totH; var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, maxW, totH);
+    ctx.fillStyle = '#0f52ba'; ctx.fillRect(0, 0, maxW, H);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('Bài làm: ' + title + ' (' + ims.length + ' trang)', 16, 34);
+    var y = H;
+    ims.forEach(function(im, idx) {
+      var dh = Math.round(im.height * (maxW / im.width));
+      ctx.drawImage(im, 0, y, maxW, dh);
+      ctx.fillStyle = 'rgba(15,82,186,0.85)'; ctx.fillRect(10, y + 10, 95, 28);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.fillText('Trang ' + (idx + 1), 18, y + 29);
+      y += dh + GAP;
+    });
+    var mergedUrl = canvas.toDataURL('image/jpeg', 0.82);
+    try {
+      var blob = await (await fetch(mergedUrl)).blob();
+      var file = new File([blob], safeFile, { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: title }); return; }
+    } catch (e) {}
+    var link = document.createElement('a'); link.href = mergedUrl; link.download = safeFile;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }
+
+  function parseMultiCodeKeys(raw) {
+    var map = {};
+    String(raw || '').split(/\r?\n/).forEach(function(line) {
+      var p = line.split('|');
+      if (p.length >= 2) map[p[0].trim().toUpperCase()] = parseMcqKey(p.slice(1).join('|').trim());
+    });
+    return map;
+  }
+
+  function parseMcqKey(str) {
+    var m = {};
+    if (!str) return m;
+    // Loại bỏ phần nội dung trong ngoặc đơn (...) trước khi lấy chữ cái A,B,C,D để không bắt nhầm chữ trong chú thích
+    var s = String(str).replace(/\([^\)]*\)/g, ' ');
+    var r = /(?:câu\s*)?(\d{1,3})\s*[\.\-\:\)\s]?\s*([A-Da-d_])(?![a-zA-ZÀ-ỹ])/gi, x;
+    while ((x = r.exec(s)) !== null) {
+      m[String(parseInt(x[1], 10))] = x[2].toUpperCase();
+    }
+    if (Object.keys(m).length === 0 && /^[A-Da-d\s\,\;\.\-|]+$/.test(s.trim())) {
+      var letters = s.toUpperCase().match(/[A-D]/g) || [];
+      letters.forEach(function(L, idx) { m[String(idx + 1)] = L; });
+    }
+    return m;
+  }
+
+  function parseMcqBackupMapFromUI() {
+    var map = {};
+    var rawKey = document.getElementById('mcqKey') ? document.getElementById('mcqKey').value : '';
+    // Bắt dạng 1A (Nội dung) ngay trên ô mcqKey
+    var rInline = /(?:câu\s*)?(\d{1,3})\s*[\.\-\:\)]?\s*([A-Da-d])\s*\(([^\)]+)\)/gi, m1;
+    while ((m1 = rInline.exec(rawKey)) !== null) {
+      map[String(parseInt(m1[1], 10))] = cleanCell(m1[3]);
+    }
+    var rawBackup = document.getElementById('mcqBackupText') ? document.getElementById('mcqBackupText').value : '';
+    if (rawBackup) {
+      rawBackup.split(/[\|\n\;]+/).forEach(function(seg) {
+        var s = seg.trim();
+        if (!s) return;
+        var m2 = s.match(/^(?:câu\s*)?(\d{1,3})\s*([A-Da-d])?\s*[\.\:\-\)]\s*(.+)$/i);
+        if (m2) {
+          map[String(parseInt(m2[1], 10))] = cleanCell(m2[3]);
+        }
+      });
+    }
+    return map;
+  }
+
+  function parseTfKey(str) {
+    var m = {};
+    if (!str) return m;
+    var r = /(\d{1,3})\s*([a-dA-D])\s*[\.\-\:\=\)]?\s*([ĐđDdSsTtFf])/g, x;
+    while ((x = r.exec(str)) !== null) {
+      var ch = x[3].toUpperCase();
+      m[x[1] + x[2].toLowerCase()] = (ch === 'Đ' || ch === 'D' || ch === 'T') ? 'Đ' : 'S';
+    }
+    return m;
+  }
+
+  function parseSaKey(str) {
+    var m = {};
+    if (!str) return m;
+    String(str).split(/[\|\;\n]+/).forEach(function(p) {
+      var x = p.match(/(?:Câu\s*)?(\d{1,3})\s*[\:\=\-\.]\s*(.+)/i);
+      if (x) m[String(parseInt(x[1].trim(), 10))] = x[2].trim();
+    });
+    return m;
+  }
+
+  function normalizeSaVal(v) { return String(v||'').trim().toLowerCase().replace(/,/g, '.').replace(/\s+/g, ''); }
+
+  function normalizeQuestionLabel(l) {
+    var raw = cleanCell(l);
+    if (!raw) return 'Câu ?';
+    var m = raw.match(/^(?:câu|bài|question|q)?\s*(\d+\s*[a-z]?)$/i);
+    if (m) return 'Câu ' + m[1].replace(/\s+/g, '');
+    return raw;
+  }
+
+  function normalizeAiChoiceMap(rawVal, isTf) {
+    var out = {};
+    if (!rawVal) return out;
+    if (typeof rawVal === 'string') {
+      if (isTf) return parseTfKey(rawVal);
+      if (rawVal.indexOf(':') !== -1 || rawVal.indexOf('|') !== -1) {
+        var saParsed = parseSaKey(rawVal);
+        if (Object.keys(saParsed).length > 0) return saParsed;
+      }
+      return parseMcqKey(rawVal);
+    }
+    if (typeof rawVal === 'object') {
+      Object.keys(rawVal).forEach(function(k) {
+        var cleanK = String(k).trim();
+        if (isTf) {
+          var mTf = cleanK.match(/(\d+)\s*([a-dA-D])/);
+          if (mTf) out[mTf[1] + mTf[2].toLowerCase()] = rawVal[k];
+          else out[cleanK.toLowerCase()] = rawVal[k];
+        } else {
+          var mNum = cleanK.match(/(\d+)/);
+          if (mNum) out[String(parseInt(mNum[1], 10))] = rawVal[k];
+          else out[cleanK] = rawVal[k];
+        }
+      });
+    }
+    return out;
+  }
+
+  function parseCompactEssayScores(rawEs) {
+    var arr = [];
+    if (!rawEs) return arr;
+    if (typeof rawEs === 'string') {
+      rawEs.split(/[\|\;\n]+/).forEach(function(part) {
+        var p = part.trim();
+        if (!p) return;
+        var m = p.match(/^([^:\=]+?)[\:\=]\s*([\d\.,]+)/);
+        if (m) {
+          arr.push({
+            question: normalizeQuestionLabel(m[1]),
+            score: parseNum(m[2], 0)
+          });
+        }
+      });
+      return arr;
+    }
+    if (Array.isArray(rawEs)) {
+      rawEs.forEach(function(item, idx) {
+        if (!item) return;
+        var qLabel = item.question || item.cau || item.q || ('Câu ' + (idx + 1));
+        var sScore = item.score !== undefined ? item.score : (item.diem !== undefined ? item.diem : 0);
+        arr.push({
+          question: normalizeQuestionLabel(qLabel),
+          score: parseNum(sScore, 0)
+        });
+      });
+      return arr;
+    }
+    if (typeof rawEs === 'object') {
+      Object.keys(rawEs).forEach(function(k) {
+        var val = rawEs[k];
+        var sc = (val !== null && typeof val === 'object') ? (val.score !== undefined ? val.score : val.diem) : val;
+        arr.push({
+          question: normalizeQuestionLabel(k),
+          score: parseNum(sc, 0)
+        });
+      });
+    }
+    return arr;
+  }
+
+  function buildPacketCacheSignature(promptText) {
+    var sigParts = pagesData.map(function(p) {
+      var b = p.base64 || '';
+      return p.type + ':' + b.length + ':' + b.slice(0, 48) + ':' + b.slice(-48);
+    });
+    return sigParts.join('|') + '||' + promptText;
+  }
+
+  // ============================================================================
+  // 3. CHẤM BÀI ĐỘNG TỐI ĐA CÂU TRẮC NGHIỆM & TỰ LUẬN THEO HƯỚNG DẪN CHẤM VÀ BÀI LÀM
+  // ============================================================================
+  async function runGrading() {
+    saveConfig();
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
+    var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
+    var isMulti = document.getElementById('useMultiCodeChk').checked;
+    var manualCode = document.getElementById('manualExamCode').value.trim().toUpperCase();
+    var rubric = document.getElementById('essayRubric').value.trim();
+    var targetQ = document.getElementById('targetQuestions').value.trim();
+
+    if (!isValidGeminiKeyFormat(apiKey)) {
+      alert('⚠️ Vui lòng dán đầy đủ API Key ở mục 1 trước khi chấm!');
+      return;
+    }
+    if (pagesData.length === 0) { alert('Vui lòng đưa ảnh hoặc PDF bài làm học sinh lên trước!'); return; }
+
+    var preMultiMap = isMulti ? parseMultiCodeKeys(document.getElementById('multiCodeData').value) : {};
+    var preSingleMcq = parseMcqKey(document.getElementById('mcqKey').value);
+    var sampleMcqMap = isMulti ? (preMultiMap[manualCode] || preMultiMap[Object.keys(preMultiMap)[0]] || preSingleMcq) : preSingleMcq;
+    var expectedMcqNums = Object.keys(sampleMcqMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var stdTf = parseTfKey(document.getElementById('tfKey').value);
+    var expectedTfIds = Object.keys(stdTf);
+    var stdSa = parseSaKey(document.getElementById('saKey').value);
+    var expectedSaNums = Object.keys(stdSa).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var rubricEssayQList = extractEssayQuestionListFromRubric(rubric);
+
+    var configHasMcq = (examStructureMode !== 'ESSAY_ONLY') && (expectedMcqNums.length > 0 || expectedTfIds.length > 0 || expectedSaNums.length > 0);
+    var configHasEssay = (examStructureMode !== 'MCQ_ONLY') && (rubric !== '');
+
+    if (!configHasMcq && !configHasEssay) {
+      alert('⚠️ Bạn chưa có Đáp án Trắc nghiệm hoặc Hướng dẫn chấm Tự luận phù hợp với chế độ đang chọn ở Mục 1!');
+      return;
+    }
+
+    var startTime = performance.now();
+    var btn = document.getElementById('gradeBtn');
+    btn.disabled = true;
+    var timerInterval = setInterval(function() {
+      var elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+      btn.innerText = '⏳ Đang chấm siêu tốc... (' + elapsed + 's)';
+    }, 150);
+
+    var parts = [];
+    pagesData.forEach(function(p) {
+      parts.push({ inline_data: { mime_type: p.mime, data: p.base64 } });
+    });
+
+    var promptLines = [
+      'Đọc kỹ bài làm học sinh trên ảnh/PDF và trả về đúng 1 JSON gọn (KHÔNG giải thích):',
+      '- "name": Họ tên HS (trống để "")',
+      '- "cls": Lớp',
+      '- "sbd": SBD',
+      '- "phach": Mã phách'
+    ];
+
+    var jsonSchemaExample = { name: "", cls: "", sbd: "", phach: "" };
+
+    if (pagesData.length > 1) {
+      promptLines.push('- "warn": Cảnh báo nếu các trang khác tên HS, cùng 1 HS để ""');
+      jsonSchemaExample.warn = "";
+    }
+
+    if (configHasMcq) {
+      promptLines.push('- "code": Mã đề');
+      jsonSchemaExample.code = "";
+
+      if (expectedMcqNums.length > 0) {
+        var backupMap = parseMcqBackupMapFromUI();
+        var backupKeys = Object.keys(backupMap);
+        var backupInstruction = '';
+        if (backupKeys.length > 0) {
+          var backupSummary = backupKeys.map(function(q) {
+            return 'Câu ' + q + '(' + (sampleMcqMap[q] || '') + '): ' + backupMap[q];
+          }).join(' | ');
+          backupInstruction = '. ĐẶC BIỆT (CHẤM DỰ PHÒNG NỘI DUNG): Nếu ở câu trắc nghiệm nào học sinh KHÔNG ghi chữ cái A,B,C,D mà chỉ viết nội dung câu trả lời ra bài làm, hãy đối chiếu nội dung học sinh viết với DỮ LIỆU ĐÁP ÁN DỰ PHÒNG [' + backupSummary + ']: nếu nội dung học sinh viết khớp đúng ý với đáp án dự phòng của câu đó thì quy đổi và trả về chữ cái đáp án đúng (' + 'VD: khớp Câu 1 thì xuất 1' + (sampleMcqMap[backupKeys[0]] || 'A') + '), nếu viết nội dung sai thì xuất "1X"';
+        } else {
+          backupInstruction = '. Nếu ở câu trắc nghiệm nào học sinh không ghi chữ cái A,B,C,D mà chỉ viết nội dung đáp án đúng bản chất khoa học của câu đó thì quy đổi về chữ cái đáp án đúng tương ứng';
+        }
+        promptLines.push('- "mcq": Nhận diện CHÍNH XÁC TỐI ĐA toàn bộ các câu trắc nghiệm ABCD học sinh làm trên bài thi theo danh sách câu [' + expectedMcqNums.join(',') + '] (' +
+          ((examMode === 'CIRCLE') ? 'lấy chữ cái A,B,C,D có nét khoanh tròn/đánh dấu hoặc điền vào ô đáp án; nếu gạch bỏ đáp án cũ và khoanh đáp án mới thì lấy đáp án mới' : 'đọc chữ cái A,B,C,D hoặc nội dung trả lời viết tay theo từng số câu') + backupInstruction + '), ghi chuỗi liền "1A 2B 3C...". Câu bỏ trống ghi "1_". Nếu ảnh hoàn toàn KHÔNG có bài làm trắc nghiệm ABCD thì để ""');
+        jsonSchemaExample.mcq = "";
+      }
+      if (expectedTfIds.length > 0) {
+        promptLines.push('- "tf": Đọc chính xác các ý Đúng/Sai [' + expectedTfIds.join(',') + '] trên bài làm theo mẫu "1aĐ 1bS". Không có để ""');
+        jsonSchemaExample.tf = "";
+      }
+      if (expectedSaNums.length > 0) {
+        promptLines.push('- "sa": Đọc chính xác các câu trả lời ngắn [' + expectedSaNums.join(',') + '] trên bài làm theo mẫu "1:12.5|2:4". Không có để ""');
+        jsonSchemaExample.sa = "";
+      }
+    }
+
+    if (configHasEssay) {
+      var qHintStr = targetQ
+        ? ('chỉ chấm các câu [' + targetQ + ']')
+        : (rubricEssayQList.length > 0
+            ? ('nhận diện và chấm chuẩn xác tất cả các câu tự luận theo HDC [' + rubricEssayQList.join(', ') + '] và các câu tự luận học sinh thực tế làm trên bài')
+            : 'nhận diện và chấm chuẩn xác mọi câu tự luận học sinh làm trên bài theo HDC');
+      var essayRule = (gradingStyle === 'FLEX') ? 'hiểu ý/cách giải đúng bản chất đạt điểm tối đa từng ý' : 'chấm sát biểu điểm từng ý';
+      promptLines.push('- "essay": Đối chiếu từng bước lời giải tự luận trên ảnh với BIỂU ĐIỂM TỰ LUẬN (' + qHintStr + '; ' + essayRule + '), xuất chuỗi điểm ngăn cách bởi dấu "|" theo mẫu "TênCâu:Điểm|TênCâu:Điểm" (VD: "Câu 18:1.5" hoặc "Câu 1:2.0|Câu 2:1.5"). Tuyệt đối KHÔNG đưa các câu Trắc nghiệm ABCD vào "essay". Nếu ảnh chỉ có Trắc nghiệm (không có bài làm Tự luận) thì để "".');
+      promptLines.push('\nBIỂU ĐIỂM TỰ LUẬN:\n' + rubric);
+      jsonSchemaExample.essay = "";
+    }
+
+    promptLines.push('\nJSON:\n' + JSON.stringify(jsonSchemaExample));
+    var fullPromptText = promptLines.join('\n');
+    parts.push({ text: fullPromptText });
+
+    var cacheSig = buildPacketCacheSignature(fullPromptText);
+
+    try {
+      var aiData = null;
+      var fromCache = false;
+      if (gradingCacheMap[cacheSig]) {
+        aiData = JSON.parse(JSON.stringify(gradingCacheMap[cacheSig]));
+        fromCache = true;
+      } else {
+        aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.0, 1024);
+        gradingCacheMap[cacheSig] = JSON.parse(JSON.stringify(aiData));
+      }
+
+      var totalSec = ((performance.now() - startTime) / 1000).toFixed(1);
+      var timeBadge = document.getElementById('gradeTimeBadge');
+      if (timeBadge) {
+        timeBadge.innerText = fromCache
+          ? '⚡ Phản hồi tức thì từ Bộ nhớ đệm (0 tốn lượt API)'
+          : ('⚡ Hoàn tất trong ' + totalSec + ' giây');
+      }
+
+      currentPageWarning = aiData.warn || aiData.page_mismatch_warning || '';
+      var rawCode = aiData.code !== undefined ? aiData.code : aiData.exam_code;
+      currentDetectedExamCode = manualCode || (rawCode ? String(rawCode).trim().toUpperCase() : '');
+
+      currentMcqState = [];
+      currentTfState = [];
+      currentSaState = [];
+      currentEssayState = [];
+
+      var stuM = normalizeAiChoiceMap(aiData.mcq !== undefined ? aiData.mcq : aiData.mcq_choices, false);
+      var stuTf = normalizeAiChoiceMap(aiData.tf !== undefined ? aiData.tf : aiData.tf_choices, true);
+      var stuSa = normalizeAiChoiceMap(aiData.sa !== undefined ? aiData.sa : aiData.sa_choices, false);
+
+      var detectedAnyMcqOnPaper = Object.keys(stuM).some(function(k) { return stuM[k] && stuM[k] !== '_'; }) ||
+                                  Object.keys(stuTf).length > 0 ||
+                                  Object.keys(stuSa).length > 0;
+
+      if (configHasEssay) {
+        var rawEs = aiData.essay !== undefined ? aiData.essay : (aiData.essay_scores || aiData.essay_results);
+        currentEssayState = parseCompactEssayScores(rawEs);
+        currentEssayState.sort(function(a, b) {
+          return (parseInt(a.question.replace(/\D/g, '')) || 0) - (parseInt(b.question.replace(/\D/g, '')) || 0);
+        });
+      }
+      var detectedAnyEssayOnPaper = currentEssayState.length > 0;
+
+      if (examStructureMode === 'MCQ_ONLY') {
+        currentStuHasMcq = true;
+        currentStuHasEssay = false;
+      } else if (examStructureMode === 'ESSAY_ONLY') {
+        currentStuHasMcq = false;
+        currentStuHasEssay = true;
+      } else {
+        currentStuHasMcq = configHasMcq && (detectedAnyMcqOnPaper || !detectedAnyEssayOnPaper);
+        currentStuHasEssay = configHasEssay && (detectedAnyEssayOnPaper || !detectedAnyMcqOnPaper);
+      }
+
+      if (currentStuHasMcq) {
+        var activeMcq = isMulti
+          ? (preMultiMap[currentDetectedExamCode] || preMultiMap[Object.keys(preMultiMap)[0]] || preSingleMcq)
+          : preSingleMcq;
+
+        var allMcqKeysMap = {};
+        Object.keys(activeMcq).forEach(function(q) { allMcqKeysMap[q] = true; });
+        Object.keys(stuM).forEach(function(q) {
+          if (activeMcq[q] !== undefined) allMcqKeysMap[q] = true;
+        });
+
+        var sortedAllMcq = Object.keys(allMcqKeysMap).sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+        sortedAllMcq.forEach(function(q) {
+          var sAns = String(stuM[q] || '_').trim().toUpperCase();
+          if (sAns !== 'A' && sAns !== 'B' && sAns !== 'C' && sAns !== 'D') sAns = '_';
+          var rAns = activeMcq[q] || '?';
+          currentMcqState.push({ qNum: q, stuAns: sAns, rightAns: rAns, isCorrect: (sAns === rAns) });
+        });
+
+        expectedTfIds.forEach(function(qId) {
+          var rawS = String(stuTf[qId] || '_').trim().toUpperCase();
+          var s = (rawS === 'Đ' || rawS === 'D' || rawS === 'T') ? 'Đ' : ((rawS === 'S' || rawS === 'F') ? 'S' : '_');
+          currentTfState.push({ qId: qId, qGroup: qId.replace(/[a-d]/i, ''), stuAns: s, rightAns: stdTf[qId], isCorrect: (s === stdTf[qId]) });
+        });
+
+        expectedSaNums.forEach(function(q) {
+          var v = (stuSa[q] !== undefined && stuSa[q] !== null && String(stuSa[q]).trim() !== '') ? String(stuSa[q]).trim() : '_';
+          currentSaState.push({ qNum: q, stuAns: v, rightAns: stdSa[q], isCorrect: (v !== '_' && normalizeSaVal(v) === normalizeSaVal(stdSa[q])) });
+        });
+      }
+
+      if (currentStuHasEssay && !targetQ && rubricEssayQList.length > 0 && currentEssayState.length > 0) {
+        var existingEsMap = {};
+        currentEssayState.forEach(function(e) { existingEsMap[e.question.toLowerCase()] = true; });
+        rubricEssayQList.forEach(function(qLabel) {
+          if (!existingEsMap[qLabel.toLowerCase()]) {
+            var numOnly = qLabel.replace(/\D/g, '');
+            if (!sampleMcqMap[numOnly] || parseInt(numOnly, 10) > expectedMcqNums.length) {
+              currentEssayState.push({ question: qLabel, score: 0 });
+            }
+          }
+        });
+        currentEssayState.sort(function(a, b) {
+          return (parseInt(a.question.replace(/\D/g, '')) || 0) - (parseInt(b.question.replace(/\D/g, '')) || 0);
+        });
+      }
+
+      var name = cleanCell(aiData.name !== undefined ? aiData.name : (aiData.student_name || ''));
+      var cls = cleanCell(aiData.cls !== undefined ? aiData.cls : (aiData.student_class || ''));
+      var sbd = cleanCell(aiData.sbd !== undefined ? aiData.sbd : (aiData.student_id || ''));
+      var blindCode = cleanCell(aiData.phach !== undefined ? aiData.phach : (aiData.blind_code || ''));
+
+      var rm = matchStudentInMasterRoster(name, sbd, blindCode);
+      if (rm) {
+        name = rm.fullName;
+        if (!sbd && rm.sbd) sbd = rm.sbd;
+        if (!blindCode && rm.blindCode) blindCode = rm.blindCode;
+        if (!cls && rm.className) cls = rm.className;
+      }
+
+      if (name) document.getElementById('mergedImgName').value = name + (cls ? '_' + cls : '');
+      else if (blindCode) document.getElementById('mergedImgName').value = 'Phach_' + blindCode;
+
+      document.getElementById('configArea').style.display = 'none';
+      document.getElementById('cfgToggleBtn').innerText = 'Mở rộng ▼';
+      renderResults(name, cls, sbd, blindCode, currentDetectedExamCode);
+      document.getElementById('resCard').scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      alert('Lỗi khi chấm: ' + e.message);
+    } finally {
+      clearInterval(timerInterval);
+      btn.innerText = '⚡ Bắt đầu chấm siêu tốc (' + pagesData.length + ' tệp bài làm)';
+      btn.disabled = false;
+    }
+  }
+
+  function calculateTfScore() {
+    if (currentTfState.length === 0) return 0;
+    if (document.getElementById('tfRule').value === 'EVEN') return +(currentTfState.filter(function(x) { return x.isCorrect; }).length * 0.25).toFixed(2);
+    var g = {}; currentTfState.forEach(function(x) { if (!g[x.qGroup]) g[x.qGroup] = 0; if (x.isCorrect) g[x.qGroup]++; });
+    var tot = 0, pm = {0:0, 1:0.1, 2:0.25, 3:0.5, 4:1.0};
+    Object.keys(g).forEach(function(k) { tot += (pm[g[k]] !== undefined ? pm[g[k]] : (g[k]*0.25)); });
+    return +tot.toFixed(2);
+  }
+
+  function applyRosterStudentSelection(val) {
+    if (!val) return;
+    var f = masterRoster.find(function(m) { return String(m.order) === String(val); });
+    if (f) {
+      document.getElementById('curStuName').value = f.fullName;
+      if (f.className) document.getElementById('curStuClass').value = f.className;
+      if (f.sbd) document.getElementById('curStuId').value = f.sbd;
+      if (f.blindCode) document.getElementById('curBlindCode').value = f.blindCode;
+      refreshCurrentView();
+    }
+  }
+
+  function addManualEssayQuestion() {
+    var nextNum = currentEssayState.length + 1;
+    currentEssayState.push({ question: 'Câu ' + nextNum, score: 0 });
+    currentStuHasEssay = true;
+    refreshCurrentView();
+  }
+
+  function removeEssayQuestion(idx) {
+    currentEssayState.splice(idx, 1);
+    refreshCurrentView();
+  }
+
+  function renderResults(name, cls, sbd, blindCode, eCode) {
+    var doMcq = currentStuHasMcq;
+    var doEssay = currentStuHasEssay;
+
+    var pm = parseNum(document.getElementById('mcqPoint').value, 0.25);
+    var ps = parseNum(document.getElementById('saPoint').value, 0.25);
+    var mcqOk = currentMcqState.filter(function(x) { return x.isCorrect; }).length;
+    var mcqS = doMcq ? +(mcqOk * pm).toFixed(2) : 0;
+    var tfS = doMcq ? calculateTfScore() : 0;
+    var saOk = currentSaState.filter(function(x) { return x.isCorrect; }).length;
+    var saS = doMcq ? +(saOk * ps).toFixed(2) : 0;
+    var esS = doEssay ? +currentEssayState.reduce(function(a, b) { return a + parseNum(b.score, 0); }, 0).toFixed(2) : 0;
+    var tot = +(mcqS + tfS + saS + esS).toFixed(2);
+
+    var warnHtml = currentPageWarning ? '<div class="warn-banner">⚠️ CẢNH BÁO LẪN BÀI: ' + escapeHtml(currentPageWarning) + '</div>' : '';
+    var rm = matchStudentInMasterRoster(name, sbd, blindCode);
+    var rosterOpts = '';
+    if (masterRoster && masterRoster.length > 0) {
+      var badge = rm ? '<span class="badge-match">✓ Khớp STT ' + rm.order + ' trong DS mẫu</span>' : '<span class="badge-outside">⚠️ Chưa khớp trong DS mẫu</span>';
+      rosterOpts = '<div style="margin-bottom:8px;"><div style="font-size:12px;margin-bottom:4px;">Đối chiếu DS mẫu: ' + badge + '</div>' +
+        '<select id="rosterPickerSel" onchange="applyRosterStudentSelection(this.value)" style="background:#fff; font-size:13px; padding:7px;">' +
+        '<option value="">-- Chạm để chọn nhanh HS từ Danh sách mẫu --</option>' +
+        masterRoster.map(function(m) {
+          var extraInfo = (m.sbd ? ' - SBD:' + m.sbd : '') + (m.blindCode ? ' - Phách:' + m.blindCode : '');
+          return '<option value="' + m.order + '" ' + (rm && rm.order === m.order ? 'selected' : '') + '>STT ' + m.order + ': ' + escapeHtml(m.fullName + extraInfo) + '</option>';
+        }).join('') +
+        '</select></div>';
+    }
+
+    var existIdx = findExistingStudent(name, sbd, blindCode);
+    var mergeHtml = existIdx !== -1 ? '<div class="merge-notice">🔗 Bài của HS / Mã phách này đã có trong danh sách. Bấm Lưu sẽ tự động ghép/cập nhật điểm!</div>' : '';
+
+    var mcqHtml = (doMcq && currentMcqState.length > 0) ? '<div><b>I. Trắc nghiệm ABCD (' + mcqS + 'đ — Đúng ' + mcqOk + '/' + currentMcqState.length + ' câu):</b></div><div class="hint">* Chạm vào từng ô câu bên dưới nếu muốn bật/tắt Đúng/Sai.</div><div class="mcq-grid">' +
+      currentMcqState.map(function(x, i) { return '<div class="mcq-item ' + (x.isCorrect ? 'mcq-ok' : 'mcq-err') + '" onclick="toggleMcq(' + i + ')">Câu ' + escapeHtml(x.qNum) + ': ' + escapeHtml(x.stuAns) + ' ' + (x.isCorrect ? '✓' : '(' + escapeHtml(x.rightAns) + ')') + '</div>'; }).join('') + '</div>' : '';
+
+    var tfHtml = (doMcq && currentTfState.length > 0) ? '<div><b>II. Đúng/Sai (' + tfS + 'đ — ' + currentTfState.length + ' ý):</b></div><div class="mcq-grid">' +
+      currentTfState.map(function(x, i) { return '<div class="mcq-item ' + (x.isCorrect ? 'mcq-ok' : 'mcq-err') + '" onclick="toggleTf(' + i + ')">' + escapeHtml(x.qId) + ': ' + escapeHtml(x.stuAns) + ' ' + (x.isCorrect ? '✓' : '(' + escapeHtml(x.rightAns) + ')') + '</div>'; }).join('') + '</div>' : '';
+
+    var saHtml = (doMcq && currentSaState.length > 0) ? '<div><b>III. Trả lời ngắn (' + saS + 'đ — ' + currentSaState.length + ' câu):</b></div><div class="mcq-grid">' +
+      currentSaState.map(function(x, i) { return '<div class="mcq-item ' + (x.isCorrect ? 'mcq-ok' : 'mcq-err') + '" onclick="toggleSa(' + i + ')">Câu ' + escapeHtml(x.qNum) + ': ' + escapeHtml(x.stuAns) + ' ' + (x.isCorrect ? '✓' : '(' + escapeHtml(x.rightAns) + ')') + '</div>'; }).join('') + '</div>' : '';
+
+    var essaySectionHtml = '';
+    if (doEssay) {
+      var essayItems = currentEssayState.map(function(item, idx) {
+        return '<div class="essay-chip">' +
+          '<input type="text" value="' + escapeHtml(item.question) + '" style="width:65px; font-weight:bold; color:#0f52ba; padding:2px; margin:0; border:none; background:transparent;" onchange="updateEssayQName(' + idx + ', this.value)">' +
+          '<div style="display:flex; align-items:center; gap:4px;"><input type="number" class="essay-score-input" step="0.25" value="' + item.score + '" onchange="updateEssayScore(' + idx + ', this.value)"> <b>đ</b> <span onclick="removeEssayQuestion(' + idx + ')" style="color:#dc2626; cursor:pointer; font-weight:bold; padding-left:3px;">✕</span></div>' +
+        '</div>';
+      }).join('');
+      essaySectionHtml = (doMcq ? '<hr style="border:0; border-top:1px solid #e2e8f0; margin:10px 0;">' : '') +
+        '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<b>IV. Điểm từng câu Tự luận (' + esS + 'đ — ' + currentEssayState.length + ' câu):</b>' +
+          '<button type="button" class="toggle-btn" onclick="addManualEssayQuestion()">+ Thêm câu</button>' +
+        '</div>' +
+        (essayItems ? ('<div class="essay-grid">' + essayItems + '</div>') : '<div class="hint">Không phát hiện bài làm tự luận trên ảnh này (Bấm "+ Thêm câu" nếu muốn nhập điểm tay).</div>');
+    }
+
+    var scoreBreakdownText = '';
+    if (doMcq && doEssay) {
+      scoreBreakdownText = '(Trắc nghiệm: <b>' + (+(mcqS + tfS + saS).toFixed(2)) + '</b>đ | Tự luận: <b>' + esS + '</b>đ)';
+    } else if (doMcq) {
+      scoreBreakdownText = '(Chỉ chấm Trắc nghiệm — ABCD: <b>' + mcqS + '</b>đ | Đ/S: <b>' + tfS + '</b>đ | TLN: <b>' + saS + '</b>đ)';
+    } else {
+      scoreBreakdownText = '(Chỉ chấm Tự luận: <b>' + esS + '</b>đ)';
+    }
+
+    document.getElementById('resCard').style.display = 'block';
+    document.getElementById('resBody').innerHTML = warnHtml +
+      '<div class="total-banner">' + rosterOpts +
+      '<div class="row">' +
+        '<div style="flex:2.2;"><label style="margin-top:0">Họ và tên HS (AI tự đọc):</label><input type="text" id="curStuName" placeholder="Trống nếu cắt phách" value="' + escapeHtml(name || '') + '"></div>' +
+        '<div style="flex:0.9;"><label style="margin-top:0">Lớp:</label><input type="text" id="curStuClass" value="' + escapeHtml(cls || '') + '"></div>' +
+      '</div>' +
+      '<div class="row" style="margin-top:4px;">' +
+        '<div><label style="margin-top:2px">Số báo danh (SBD):</label><input type="text" id="curStuId" value="' + escapeHtml(sbd || '') + '"></div>' +
+        '<div><label style="margin-top:2px">Mã phách (Nếu có):</label><input type="text" id="curBlindCode" value="' + escapeHtml(blindCode || '') + '"></div>' +
+        '<div style="' + (doMcq ? '' : 'display:none;') + '"><label style="margin-top:2px">Mã đề:</label><input type="text" id="curExamCode" value="' + escapeHtml(eCode || '') + '" onchange="onChangeDetectedExamCode(this.value)"></div>' +
+      '</div>' +
+      '<div id="liveMcqScore" style="display:none">' + mcqS + '</div>' +
+      '<div id="liveTfScore" style="display:none">' + tfS + '</div>' +
+      '<div id="liveSaScore" style="display:none">' + saS + '</div>' +
+      '<div id="liveEssayScore" style="display:none">' + esS + '</div>' +
+      '<div class="total-score" id="liveTotalScore">' + tot + ' điểm</div>' +
+      '<div style="font-size:12px; color:#475569; text-align:center;">' + scoreBreakdownText + '</div>' +
+      mergeHtml + '</div>' +
+      mcqHtml + tfHtml + saHtml + essaySectionHtml;
+  }
+
+  function onChangeDetectedExamCode(newCode) {
+    var code = String(newCode || '').trim().toUpperCase();
+    currentDetectedExamCode = code;
+    if (document.getElementById('useMultiCodeChk').checked) {
+      var mm = parseMultiCodeKeys(document.getElementById('multiCodeData').value);
+      if (mm[code]) {
+        var newKeyMap = mm[code];
+        currentMcqState.forEach(function(item) {
+          if (newKeyMap[item.qNum]) {
+            item.rightAns = newKeyMap[item.qNum];
+            item.isCorrect = (item.stuAns === item.rightAns);
+          }
+        });
+      }
+    }
+    refreshCurrentView();
+  }
+
+  function refreshCurrentView() {
+    renderResults(
+      document.getElementById('curStuName').value,
+      document.getElementById('curStuClass').value,
+      document.getElementById('curStuId').value,
+      document.getElementById('curBlindCode').value,
+      document.getElementById('curExamCode').value
+    );
+  }
+
+  function toggleMcq(i) { currentMcqState[i].isCorrect = !currentMcqState[i].isCorrect; refreshCurrentView(); }
+  function toggleTf(i) { currentTfState[i].isCorrect = !currentTfState[i].isCorrect; refreshCurrentView(); }
+  function toggleSa(i) { currentSaState[i].isCorrect = !currentSaState[i].isCorrect; refreshCurrentView(); }
+  function updateEssayScore(i, v) { currentEssayState[i].score = parseNum(v, 0); refreshCurrentView(); }
+  function updateEssayQName(i, v) { currentEssayState[i].question = normalizeQuestionLabel(v); refreshCurrentView(); }
+
+  function saveStudentRecord() {
+    var doMcq = currentStuHasMcq;
+    var doEssay = currentStuHasEssay;
+
+    var nameInput = document.getElementById('curStuName');
+    var classInput = document.getElementById('curStuClass');
+    var codeInput = document.getElementById('curExamCode');
+    var idInput = document.getElementById('curStuId');
+    var phachInput = document.getElementById('curBlindCode');
+
+    var name = cleanCell(nameInput ? nameInput.value : '');
+    var cls = cleanCell(classInput ? classInput.value : '');
+    var sbd = cleanCell(idInput ? idInput.value : '');
+    var blindCode = cleanCell(phachInput ? phachInput.value : '');
+    var eCode = doMcq ? cleanCell(codeInput ? codeInput.value.toUpperCase() : '') : '';
+
+    var rm = matchStudentInMasterRoster(name, sbd, blindCode);
+    var rosterOrder = null;
+    if (rm) {
+      name = rm.fullName;
+      if (!sbd && rm.sbd) sbd = rm.sbd;
+      if (!blindCode && rm.blindCode) blindCode = rm.blindCode;
+      if (!cls && rm.className) cls = rm.className;
+      rosterOrder = rm.order;
+    }
+
+    if (!name) {
+      name = blindCode ? ('Phách: ' + blindCode) : (sbd ? ('SBD: ' + sbd) : ('Chưa rõ tên #' + (classRecords.length + 1)));
+    }
+
+    var mcqScore = doMcq ? parseNum(document.getElementById('liveMcqScore') ? document.getElementById('liveMcqScore').innerText : 0, 0) : '';
+    var tfScore = doMcq ? parseNum(document.getElementById('liveTfScore') ? document.getElementById('liveTfScore').innerText : 0, 0) : '';
+    var saScore = doMcq ? parseNum(document.getElementById('liveSaScore') ? document.getElementById('liveSaScore').innerText : 0, 0) : '';
+
+    var newEssayMap = {};
+    if (doEssay && Array.isArray(currentEssayState)) {
+      currentEssayState.forEach(function(e) {
+        var qKey = normalizeQuestionLabel(e.question);
+        newEssayMap[qKey] = +parseNum(e.score, 0).toFixed(2);
+      });
+    }
+
+    var existIdx = findExistingStudent(name, sbd, blindCode);
+    if (existIdx !== -1) {
+      var ex = classRecords[existIdx];
+      if (confirm('Bài của "' + ex.fullName + '" đã có trong danh sách.\n• Bấm OK để GHÉP / CẬP NHẬT điểm vào học sinh này.\n• Bấm Cancel để tạo dòng mới.')) {
+        if (doMcq) {
+          ex.hasMcq = true;
+          ex.mcqScore = mcqScore;
+          ex.tfScore = tfScore;
+          ex.saScore = saScore;
+          if (eCode) ex.examCode = eCode;
+        }
+        if (doEssay) {
+          ex.hasEssay = true;
+          if (!ex.essayMap) ex.essayMap = {};
+          Object.keys(newEssayMap).forEach(function(qKey) {
+            ex.essayMap[qKey] = newEssayMap[qKey];
+          });
+        }
+        if (blindCode) ex.blindCode = blindCode;
+        if (rosterOrder !== null) ex.rosterOrder = rosterOrder;
+        recalculateStudentTotals(ex);
+        if (!ex.className && cls) ex.className = cls;
+        if (!ex.sbd && sbd) ex.sbd = sbd;
+        safeSet('g_records', JSON.stringify(classRecords));
+        renderTable(); clearImages(true);
+        return;
+      }
+    }
+
+    var newRec = {
+      timestamp: Date.now(),
+      rosterOrder: rosterOrder,
+      sbd: sbd,
+      blindCode: blindCode,
+      examCode: eCode,
+      fullName: name,
+      className: cls,
+      hasMcq: doMcq,
+      hasEssay: doEssay,
+      mcqScore: mcqScore,
+      tfScore: tfScore,
+      saScore: saScore,
+      essayMap: newEssayMap,
+      notesMap: {},
+      essayScore: doEssay ? 0 : '',
+      totalScore: 0,
+      notes: ''
+    };
+    recalculateStudentTotals(newRec);
+    classRecords.push(newRec);
+
+    safeSet('g_records', JSON.stringify(classRecords));
+    renderTable();
+    clearImages(true);
+  }
+
+  function recalculateStudentTotals(rec) {
+    var hasM = (rec.hasMcq !== undefined) ? rec.hasMcq : (rec.mcqScore !== '' || rec.tfScore !== '' || rec.saScore !== '');
+    var qKeys = Object.keys(rec.essayMap || {}).sort(function(a, b) {
+      return (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0);
+    });
+    var hasE = (rec.hasEssay !== undefined) ? rec.hasEssay : (qKeys.length > 0);
+
+    var mTotal = hasM ? +(parseNum(rec.mcqScore, 0) + parseNum(rec.tfScore, 0) + parseNum(rec.saScore, 0)).toFixed(2) : '';
+    rec.tnTotal = mTotal;
+
+    var eSum = 0;
+    qKeys.forEach(function(k) {
+      eSum += parseNum(rec.essayMap[k], 0);
+    });
+    rec.essayScore = hasE ? +eSum.toFixed(2) : '';
+
+    var numericM = hasM ? parseNum(mTotal, 0) : 0;
+    var numericE = hasE ? parseNum(rec.essayScore, 0) : 0;
+    rec.totalScore = +(numericM + numericE).toFixed(2);
+    rec.notes = '';
+  }
+
+  function getAllEssayCols() {
+    var s = {};
+    classRecords.forEach(function(r) { Object.keys(r.essayMap || {}).forEach(function(k) { s[k] = true; }); });
+    return Object.keys(s).sort(function(a, b) { return (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0); });
+  }
+
+  async function mergeExternalExcel(event) {
+    var files = event.target.files; if (!files || files.length === 0) return;
+    var merged = 0, added = 0;
+    for (var i = 0; i < files.length; i++) {
+      var wb = XLSX.read(await files[i].arrayBuffer(), { type: 'array' });
+      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      rows.forEach(function(row) {
+        var rName = cleanCell(row['Họ và tên'] || row['Họ tên'] || '');
+        var rSbd = cleanCell(row['Số báo danh'] || row['SBD'] || '');
+        var rPhach = cleanCell(row['Mã phách'] || row['Số phách'] || '');
+        var rCls = cleanCell(row['Lớp'] || '');
+        var rCode = cleanCell(row['Mã đề'] || '');
+        if (!rName && !rSbd && !rPhach) return;
+
+        var rawMcq = row['Điểm TN ABCD'] !== undefined ? row['Điểm TN ABCD'] : (row['Điểm TN'] !== undefined ? row['Điểm TN'] : (row['TN'] !== undefined ? row['TN'] : ''));
+        var hasRowMcq = (rawMcq !== '' && rawMcq !== undefined);
+        var rMcq = hasRowMcq ? parseNum(rawMcq, 0) : '';
+        var rTf = hasRowMcq ? parseNum(row['Điểm TN Đúng/Sai'], 0) : '';
+        var rSa = hasRowMcq ? parseNum(row['Điểm Trả lời ngắn'], 0) : '';
+
+        var rowEssayMap = {};
+        Object.keys(row).forEach(function(col) {
+          var m = col.match(/^(?:TL\s*)?(Câu\s*\d+[a-z]?)$/i);
+          if (m && row[col] !== '' && row[col] !== undefined) rowEssayMap[normalizeQuestionLabel(m[1])] = parseNum(row[col], 0);
+        });
+        var hasRowEssay = Object.keys(rowEssayMap).length > 0 || (row['Tổng TL'] !== '' && row['Tổng TL'] !== undefined) || (row['Tổng điểm TL'] !== '' && row['Tổng điểm TL'] !== undefined);
+
+        if (!hasRowMcq && !hasRowEssay && (row['Tổng điểm'] === '' || row['Tổng điểm'] === undefined) && (row['Tổng cộng'] === '' || row['Tổng cộng'] === undefined)) return;
+
+        var rm = matchStudentInMasterRoster(rName, rSbd, rPhach);
+        if (rm) {
+          rName = rm.fullName;
+          if (!rSbd && rm.sbd) rSbd = rm.sbd;
+          if (!rPhach && rm.blindCode) rPhach = rm.blindCode;
+          if (!rCls && rm.className) rCls = rm.className;
+        }
+
+        var existIdx = findExistingStudent(rName, rSbd, rPhach);
+        if (existIdx !== -1) {
+          var ex = classRecords[existIdx];
+          if (hasRowMcq) { ex.hasMcq = true; ex.mcqScore = rMcq; ex.tfScore = rTf; ex.saScore = rSa; }
+          if (hasRowEssay) {
+            ex.hasEssay = true;
+            if (!ex.essayMap) ex.essayMap = {};
+            Object.keys(rowEssayMap).forEach(function(k) { ex.essayMap[k] = rowEssayMap[k]; });
+          }
+          if (rCode) ex.examCode = rCode;
+          if (rPhach) ex.blindCode = rPhach;
+          recalculateStudentTotals(ex);
+          merged++;
+        } else {
+          var nr = {
+            timestamp: Date.now() + Math.random(), rosterOrder: rm ? rm.order : null,
+            sbd: rSbd, blindCode: rPhach, examCode: rCode, fullName: rName || ('Phách: ' + rPhach), className: rCls,
+            hasMcq: hasRowMcq, hasEssay: hasRowEssay,
+            mcqScore: rMcq, tfScore: rTf, saScore: rSa, essayMap: rowEssayMap, notesMap: {},
+            essayScore: hasRowEssay ? 0 : '', totalScore: 0, notes: ''
+          };
+          recalculateStudentTotals(nr);
+          classRecords.push(nr);
+          added++;
+        }
+      });
+    }
+    safeSet('g_records', JSON.stringify(classRecords));
+    renderTable();
+    alert('✅ Đã gộp file Excel thành công!\n• Ghép câu cho: ' + merged + ' HS\n• Thêm mới: ' + added + ' HS');
+    event.target.value = '';
+  }
+
+  function getFirstName(fullName) {
+    var p = String(fullName || '').trim().split(/\s+/);
+    return p[p.length - 1] || '';
+  }
+
+  function getSortedRecords() {
+    var mode = document.getElementById('sortOrder').value;
+    if (mode === 'ROSTER' && masterRoster && masterRoster.length > 0) {
+      var showUngraded = document.getElementById('showUngradedChk') ? document.getElementById('showUngradedChk').checked : true;
+      var usedTs = {}, res = [];
+      masterRoster.forEach(function(m) {
+        var f = classRecords.find(function(r) {
+          if (usedTs[r.timestamp]) return false;
+          if (r.rosterOrder === m.order) return true;
+          var matched = matchStudentInMasterRoster(r.fullName, r.sbd, r.blindCode);
+          return matched && matched.order === m.order;
+        });
+        if (f) {
+          usedTs[f.timestamp] = true;
+          var c = Object.assign({}, f);
+          c.displayOrder = m.order; c.isMatchedRoster = true;
+          res.push(c);
+        } else if (showUngraded) {
+          res.push({
+            timestamp: null, displayOrder: m.order, sbd: m.sbd || '', blindCode: m.blindCode || '', examCode: '',
+            fullName: m.fullName, className: m.className || '', essayMap: {}, totalScore: '', isUngradedPlaceholder: true
+          });
+        }
+      });
+      classRecords.forEach(function(r) {
+        if (!usedTs[r.timestamp]) {
+          var c = Object.assign({}, r); c.displayOrder = 'Ngoài DS'; c.isOutsideRoster = true; res.push(c);
+        }
+      });
+      return res;
+    }
+
+    var copy = classRecords.slice();
+    if (mode === 'NAME') {
+      copy.sort(function(a, b) {
+        var cmp = getFirstName(a.fullName).localeCompare(getFirstName(b.fullName), 'vi');
+        return cmp !== 0 ? cmp : a.fullName.localeCompare(b.fullName, 'vi');
+      });
+    } else if (mode === 'SBD') {
+      copy.sort(function(a, b) { return (parseInt(a.sbd) || 9999) - (parseInt(b.sbd) || 9999); });
+    } else if (mode === 'PHACH') {
+      copy.sort(function(a, b) { return String(a.blindCode || 'ZZZZ').localeCompare(String(b.blindCode || 'ZZZZ'), 'vi', { numeric: true }); });
+    }
+    return copy;
+  }
+
+  function getStudentTnString(r) {
+    if (r.isUngradedPlaceholder) return '';
+    var hasM = (r.hasMcq !== undefined) ? r.hasMcq : (r.mcqScore !== '' || r.tfScore !== '' || r.saScore !== '');
+    if (!hasM) return '';
+    return +(parseNum(r.mcqScore, 0) + parseNum(r.tfScore, 0) + parseNum(r.saScore, 0)).toFixed(2);
+  }
+
+  function getStudentEssaySummaryString(r) {
+    if (r.isUngradedPlaceholder) return '';
+    var qKeys = Object.keys(r.essayMap || {}).sort(function(a, b) {
+      return (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0);
+    });
+    if (qKeys.length === 0) return '';
+    return qKeys.map(function(k) { return k + ': ' + r.essayMap[k] + 'đ'; }).join(', ');
+  }
+
+  function getStudentEssayTotalString(r) {
+    if (r.isUngradedPlaceholder) return '';
+    var hasE = (r.hasEssay !== undefined) ? r.hasEssay : (Object.keys(r.essayMap || {}).length > 0);
+    if (!hasE || r.essayScore === '') return '';
+    return r.essayScore;
+  }
+
+  function renderTable() {
+    document.getElementById('countBadge').innerText = classRecords.length;
+    var sorted = getSortedRecords(), tbody = document.getElementById('tableBody');
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:#64748b;">Chưa có bài chấm.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = sorted.map(function(r, idx) {
+      var stt = r.displayOrder !== undefined ? r.displayOrder : (idx + 1);
+      if (r.isUngradedPlaceholder) {
+        return '<tr class="row-ungraded"><td>' + escapeHtml(stt) + '</td><td>' + escapeHtml(r.sbd || '') + '</td><td>' + escapeHtml(r.blindCode || '') + '</td><td></td><td>' + escapeHtml(r.fullName) + ' <small>(Chưa chấm)</small></td><td>' + escapeHtml(r.className || '') + '</td><td></td><td></td><td></td><td></td><td></td></tr>';
+      }
+      var tnVal = getStudentTnString(r);
+      var qKeys = Object.keys(r.essayMap || {}).sort(function(a, b) {
+        return (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0);
+      });
+      var qBadges = qKeys.map(function(k) { return '<span class="q-tag">' + escapeHtml(k) + ': ' + escapeHtml(r.essayMap[k]) + 'đ</span>'; }).join(' ');
+      var tlTotalVal = getStudentEssayTotalString(r);
+      var badge = r.isMatchedRoster ? '<span class="badge-match">✓</span>' : (r.isOutsideRoster ? '<span class="badge-outside">Ngoài DS</span>' : '');
+
+      return '<tr class="' + (r.isOutsideRoster ? 'row-unmatched' : '') + '">' +
+        '<td>' + escapeHtml(stt) + '</td>' +
+        '<td>' + escapeHtml(r.sbd || '') + '</td>' +
+        '<td><b>' + escapeHtml(r.blindCode || '') + '</b></td>' +
+        '<td><b>' + escapeHtml(r.examCode || '') + '</b></td>' +
+        '<td><b>' + escapeHtml(r.fullName) + '</b>' + badge + '</td>' +
+        '<td>' + escapeHtml(r.className || '') + '</td>' +
+        '<td><b>' + (tnVal !== '' ? (tnVal + 'đ') : '') + '</b></td>' +
+        '<td>' + qBadges + '</td>' +
+        '<td><b>' + (tlTotalVal !== '' ? tlTotalVal : '') + '</b></td>' +
+        '<td style="color:#dc2626; font-weight:bold;">' + escapeHtml(r.totalScore) + '</td>' +
+        '<td class="del-row" onclick="delRec(' + r.timestamp + ')">✕</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function delRec(ts) {
+    if (!ts || !confirm('Xóa học sinh này khỏi bảng điểm?')) return;
+    classRecords = classRecords.filter(function(r) { return r.timestamp !== ts; });
+    safeSet('g_records', JSON.stringify(classRecords));
+    renderTable();
+  }
+
+  function clearAllRecords() {
+    if (classRecords.length === 0 || !confirm('Xóa TOÀN BỘ danh sách điểm hiện tại?')) return;
+    classRecords = []; safeRemove('g_records'); renderTable();
+  }
+
+  async function exportExcelAPK() {
+    var sorted = getSortedRecords(); if (sorted.length === 0) { alert('Danh sách trống!'); return; }
+    var qCols = getAllEssayCols();
+    var excelData = sorted.map(function(r, idx) {
+      var blank = r.isUngradedPlaceholder;
+      var hasM = !blank && ((r.hasMcq !== undefined) ? r.hasMcq : (r.mcqScore !== '' || r.tfScore !== '' || r.saScore !== ''));
+      var hasE = !blank && ((r.hasEssay !== undefined) ? r.hasEssay : (Object.keys(r.essayMap || {}).length > 0));
+      var tnVal = getStudentTnString(r);
+
+      var obj = {
+        "STT": r.displayOrder !== undefined ? r.displayOrder : (idx + 1),
+        "Số báo danh": r.sbd || "",
+        "Mã phách": r.blindCode || "",
+        "Mã đề": hasM ? (r.examCode || "") : "",
+        "Họ và tên": r.fullName || "",
+        "Lớp": r.className || "",
+        "Điểm TN": hasM ? tnVal : "",
+        "TL từng câu": hasE ? getStudentEssaySummaryString(r) : ""
+      };
+      qCols.forEach(function(k) {
+        obj["TL " + k] = (hasE && r.essayMap && r.essayMap[k] !== undefined) ? r.essayMap[k] : "";
+      });
+      obj["Tổng TL"] = hasE ? getStudentEssayTotalString(r) : "";
+      obj["Tổng cộng"] = blank ? "" : (r.totalScore !== undefined ? r.totalScore : "");
+      return obj;
+    });
+
+    var ws = XLSX.utils.json_to_sheet(excelData), wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "BangDiem");
+    var fileName = 'Bang_Diem_KHTN_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+
+    var wbArr = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    var blob = new Blob([wbArr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    if (lastExportedBlobUrl) URL.revokeObjectURL(lastExportedBlobUrl);
+    lastExportedBlobUrl = URL.createObjectURL(blob);
+
+    var statusBox = document.getElementById('excelExportBox');
+    statusBox.style.display = 'block';
+    statusBox.innerHTML =
+      '<div>✅ <b>Đã tạo xong file Excel:</b> <code>' + escapeHtml(fileName) + '</code></div>' +
+      '<div style="margin-top:4px;">📂 <b>Vị trí lưu trên máy:</b> Thư mục <b>Download (Tệp đã tải xuống)</b> của điện thoại / máy tính.</div>' +
+      '<div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">' +
+        '<a href="' + lastExportedBlobUrl + '" download="' + escapeHtml(fileName) + '" style="flex:1; background:#15803d; color:#fff; text-decoration:none; padding:9px; border-radius:6px; text-align:center; font-weight:bold;">📥 Bấm vào đây để Tải / Mở lại file .xlsx</a>' +
+      '</div>';
+
+    try {
+      var file = new File([blob], fileName, { type: blob.type });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName, text: 'Bảng điểm chấm thi KHTN' });
+        return;
+      }
+    } catch (e) {}
+
+    var link = document.createElement('a');
+    link.href = lastExportedBlobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function copyForExcel(copyMode) {
+    var sorted = getSortedRecords();
+    if (sorted.length === 0) { alert('Danh sách trống!'); return; }
+
+    var headers = [];
+    var tsvRows = [];
+
+    if (copyMode === 'SHORT') {
+      headers = ["STT", "Số báo danh", "Mã phách", "Họ và tên", "Lớp", "Tổng điểm"];
+      tsvRows.push(headers.join("\t"));
+      sorted.forEach(function(r, idx) {
+        var blank = r.isUngradedPlaceholder;
+        var rowArr = [
+          cleanCell(r.displayOrder !== undefined ? r.displayOrder : (idx + 1)),
+          cleanCell(r.sbd || ""),
+          cleanCell(r.blindCode || ""),
+          cleanCell(r.fullName || ""),
+          cleanCell(r.className || ""),
+          blank ? "" : cleanCell(r.totalScore !== undefined ? r.totalScore : "")
+        ];
+        tsvRows.push(rowArr.join("\t"));
+      });
+    } else {
+      var qCols = getAllEssayCols();
+      headers = ["STT", "SBD", "Mã phách", "Mã đề", "Họ và tên", "Lớp", "TN", "TL từng câu"];
+      qCols.forEach(function(k) { headers.push("TL " + k); });
+      headers.push("Tổng TL", "Tổng cộng");
+      tsvRows.push(headers.join("\t"));
+
+      sorted.forEach(function(r, idx) {
+        var blank = r.isUngradedPlaceholder;
+        var hasM = !blank && ((r.hasMcq !== undefined) ? r.hasMcq : (r.mcqScore !== '' || r.tfScore !== '' || r.saScore !== ''));
+        var hasE = !blank && ((r.hasEssay !== undefined) ? r.hasEssay : (Object.keys(r.essayMap || {}).length > 0));
+
+        var rowArr = [
+          cleanCell(r.displayOrder !== undefined ? r.displayOrder : (idx + 1)),
+          cleanCell(r.sbd || ""),
+          cleanCell(r.blindCode || ""),
+          hasM ? cleanCell(r.examCode || "") : "",
+          cleanCell(r.fullName || ""),
+          cleanCell(r.className || ""),
+          hasM ? cleanCell(getStudentTnString(r)) : "",
+          hasE ? cleanCell(getStudentEssaySummaryString(r)) : ""
+        ];
+        qCols.forEach(function(k) {
+          rowArr.push((hasE && r.essayMap && r.essayMap[k] !== undefined) ? cleanCell(r.essayMap[k]) : "");
+        });
+        rowArr.push(
+          hasE ? cleanCell(getStudentEssayTotalString(r)) : "",
+          blank ? "" : cleanCell(r.totalScore !== undefined ? r.totalScore : "")
+        );
+        tsvRows.push(rowArr.join("\t"));
+      });
+    }
+
+    var tsvText = tsvRows.join("\n");
+    var msg = (copyMode === 'SHORT')
+      ? '✅ Đã copy Bảng điểm Rút gọn (STT, SBD, Mã phách, Họ tên, Lớp, Tổng điểm)!\nBạn hãy mở Excel / Google Sheets và bấm Dán (Ctrl + V) — Đảm bảo khớp 100% từng dòng.'
+      : '✅ Đã copy Đầy đủ tất cả các trường giống hệt bảng lưu trên App!\nBạn hãy mở Excel / Google Sheets và bấm Dán (Ctrl + V) — Đảm bảo không lệch bất kỳ cột nào.';
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(tsvText).then(function() { alert(msg); }).catch(function() { fallbackCopyText(tsvText, msg); });
+    } else {
+      fallbackCopyText(tsvText, msg);
+    }
+  }
+
+  function fallbackCopyText(text, msg) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert(msg);
+  }
+</script>
+</body>
+</html>
