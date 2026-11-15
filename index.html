@@ -161,9 +161,9 @@
       </div>
 
       <!-- KHU VỰC NẠP FILE HƯỚNG DẪN CHẤM -->
-      <label>Nạp tự động từ file Word (.docx) hoặc PDF hướng dẫn chấm (0 tốn hạn mức API):</label>
-      <input type="file" id="ansFileInput" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleAnswerFile(event)">
-      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án / Hướng dẫn chấm (.docx / .pdf) — Tự tách Bảng TN & Tự luận</button>
+      <label>Nạp tự động từ file Word (.doc, .docx) hoặc PDF hướng dẫn chấm (0 tốn hạn mức API):</label>
+      <input type="file" id="ansFileInput" accept=".doc,.docx,.pdf,application/msword,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleAnswerFile(event)">
+      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án / Hướng dẫn chấm (.doc / .docx / .pdf) — Tự tách 4 Mã đề TN & Tự luận</button>
       <button type="button" class="btn btn-clear-ans" onclick="clearAnswerKeysManual()">🗑️ Xóa trắng toàn bộ Đáp án & Biểu điểm hiện tại</button>
       <div id="fileStatusBox" class="file-status"></div>
 
@@ -1694,7 +1694,12 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
           } else {
             var prev = mergedCells[mergedCells.length - 1];
             var gap = cur.x - prev.xEnd;
-            if (gap < 11) {
+            var prevT = prev.text.trim();
+            var curT = cur.text.trim();
+            // Không gộp nếu ô trước và ô sau là các cột độc lập trong bảng nhiều mã đề (Mã đề | Câu | Đáp án)
+            var isDistinctTableToken = (/^(\d{1,4}|[A-Da-d]|mã\s*đề|câu|đáp\s*án)$/i.test(prevT) && /^(\d{1,4}|[A-Da-d]|mã\s*đề|câu|đáp\s*án)$/i.test(curT));
+            var maxMergeGap = isDistinctTableToken ? 1.8 : 8.5;
+            if (gap < maxMergeGap) {
               prev.text = (prev.text + ' ' + cur.text).replace(/\s+/g, ' ').trim();
               prev.xEnd = Math.max(prev.xEnd, cur.x + cur.width);
             } else {
@@ -1816,6 +1821,258 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
 
     var cleanAscii = utf8Text.replace(/[^\x20-\x7E\r\n\tÀ-ỹĐđ]/g, ' ').replace(/\s{3,}/g, '\n');
     return { isHtml: false, content: cleanAscii.slice(0, 25000) };
+  }
+
+  // Bộ giải mã trực tiếp cấu trúc bảng & văn bản từ file Word 97-2003 (.doc OLE2 Binary) 0 tốn API
+  function parseBinaryWordDocRowsAndText(arrayBuffer) {
+    try {
+      var buf = new Uint8Array(arrayBuffer);
+      if (buf.length < 512) return null;
+      // Kiểm tra chữ ký OLE2 Compound Document: D0 CF 11 E0 A1 B1 1A E1
+      if (buf[0] !== 0xD0 || buf[1] !== 0xCF || buf[2] !== 0x11 || buf[3] !== 0xE0) return null;
+
+      var dv = new DataView(arrayBuffer);
+      var sectorShift = dv.getUint16(30, true);
+      var miniSectorShift = dv.getUint16(32, true);
+      var sectorSize = 1 << sectorShift;
+      var miniSectorSize = 1 << miniSectorShift;
+
+      var firstDirSector = dv.getUint32(48, true);
+      var miniStreamCutoff = dv.getUint32(56, true);
+      var firstMiniFatSector = dv.getUint32(60, true);
+      var numMiniFatSectors = dv.getUint32(64, true);
+      var firstDifatSector = dv.getUint32(68, true);
+      var numDifatSectors = dv.getUint32(72, true);
+
+      var difat = [];
+      for (var i = 0; i < 109; i++) {
+        var sec = dv.getUint32(76 + i * 4, true);
+        if (sec < 0xFFFFFFFE) difat.push(sec);
+      }
+      var curDifat = firstDifatSector;
+      for (var d = 0; d < numDifatSectors; d++) {
+        if (curDifat >= 0xFFFFFFFE) break;
+        var dOff = (curDifat + 1) * sectorSize;
+        if (dOff + sectorSize > buf.length) break;
+        var entriesPerSec = (sectorSize >> 2) - 1;
+        for (var j = 0; j < entriesPerSec; j++) {
+          var s = dv.getUint32(dOff + j * 4, true);
+          if (s < 0xFFFFFFFE) difat.push(s);
+        }
+        curDifat = dv.getUint32(dOff + entriesPerSec * 4, true);
+      }
+
+      var fat = [];
+      for (var fIdx = 0; fIdx < difat.length; fIdx++) {
+        var fOff = (difat[fIdx] + 1) * sectorSize;
+        if (fOff + sectorSize <= buf.length) {
+          var cnt = sectorSize >> 2;
+          for (var k = 0; k < cnt; k++) {
+            fat.push(dv.getUint32(fOff + k * 4, true));
+          }
+        }
+      }
+
+      function getChainBytes(startSec, maxLen) {
+        var chunks = [];
+        var total = 0;
+        var sec = startSec;
+        var visited = {};
+        while (sec < 0xFFFFFFFE && !visited[sec]) {
+          visited[sec] = true;
+          var off = (sec + 1) * sectorSize;
+          if (off + sectorSize > buf.length) break;
+          chunks.push(buf.subarray(off, off + sectorSize));
+          total += sectorSize;
+          if (maxLen !== undefined && total >= maxLen) break;
+          sec = (sec < fat.length) ? fat[sec] : 0xFFFFFFFF;
+        }
+        var finalLen = (maxLen !== undefined) ? Math.min(total, maxLen) : total;
+        var out = new Uint8Array(finalLen);
+        var pos = 0;
+        for (var c = 0; c < chunks.length && pos < finalLen; c++) {
+          var slice = chunks[c];
+          var copyLen = Math.min(slice.length, finalLen - pos);
+          out.set(slice.subarray(0, copyLen), pos);
+          pos += copyLen;
+        }
+        return out;
+      }
+
+      var dirBytes = getChainBytes(firstDirSector);
+      var dirDv = new DataView(dirBytes.buffer, dirBytes.byteOffset, dirBytes.byteLength);
+      var miniFat = [];
+      if (firstMiniFatSector < 0xFFFFFFFE && numMiniFatSectors > 0) {
+        var mfBytes = getChainBytes(firstMiniFatSector);
+        var mfDv = new DataView(mfBytes.buffer, mfBytes.byteOffset, mfBytes.byteLength);
+        var mfCnt = mfBytes.byteLength >> 2;
+        for (var m = 0; m < mfCnt; m++) miniFat.push(mfDv.getUint32(m * 4, true));
+      }
+
+      var entries = [];
+      var utf16Dec = new TextDecoder('utf-16le', { fatal: false });
+      for (var p = 0; p + 128 <= dirBytes.length; p += 128) {
+        var nameLen = dirDv.getUint16(p + 64, true);
+        var objType = dirBytes[p + 66];
+        if (objType === 0 || nameLen < 2) continue;
+        var nameStr = utf16Dec.decode(dirBytes.subarray(p, p + nameLen - 2));
+        var startSec = dirDv.getUint32(p + 116, true);
+        var streamSize = dirDv.getUint32(p + 120, true);
+        entries.push({ name: nameStr, type: objType, start: startSec, size: streamSize });
+      }
+
+      var rootStream = null;
+      for (var eIdx = 0; eIdx < entries.length; eIdx++) {
+        if (entries[eIdx].type === 5) {
+          rootStream = getChainBytes(entries[eIdx].start, entries[eIdx].size);
+          break;
+        }
+      }
+
+      function getMiniChainBytes(startSec, size) {
+        if (!rootStream) return new Uint8Array(0);
+        var out = new Uint8Array(size);
+        var pos = 0;
+        var sec = startSec;
+        var visited = {};
+        while (sec < 0xFFFFFFFE && !visited[sec] && pos < size) {
+          visited[sec] = true;
+          var off = sec * miniSectorSize;
+          if (off + miniSectorSize > rootStream.length) break;
+          var copyLen = Math.min(miniSectorSize, size - pos);
+          out.set(rootStream.subarray(off, off + copyLen), pos);
+          pos += copyLen;
+          sec = (sec < miniFat.length) ? miniFat[sec] : 0xFFFFFFFF;
+        }
+        return out;
+      }
+
+      var streams = {};
+      for (var sIdx = 0; sIdx < entries.length; sIdx++) {
+        var ent = entries[sIdx];
+        if (ent.type === 2) {
+          if (ent.size < miniStreamCutoff && rootStream) {
+            streams[ent.name] = getMiniChainBytes(ent.start, ent.size);
+          } else {
+            streams[ent.name] = getChainBytes(ent.start, ent.size);
+          }
+        }
+      }
+
+      var wordDoc = streams['WordDocument'];
+      if (!wordDoc || wordDoc.length < 0x01AA) return null;
+      var wDv = new DataView(wordDoc.buffer, wordDoc.byteOffset, wordDoc.byteLength);
+      var flags = wDv.getUint16(10, true);
+      var tblName = (flags & 0x0200) ? '1Table' : '0Table';
+      var tblStream = streams[tblName] || streams['1Table'] || streams['0Table'];
+      if (!tblStream) return null;
+
+      var ccpText = wDv.getUint32(76, true);
+      var fcClx = wDv.getUint32(0x01A2, true);
+      var lcbClx = wDv.getUint32(0x01A6, true);
+      if (lcbClx === 0 || fcClx + lcbClx > tblStream.length) return null;
+
+      var clx = tblStream.subarray(fcClx, fcClx + lcbClx);
+      var cDv = new DataView(clx.buffer, clx.byteOffset, clx.byteLength);
+      var posClx = 0;
+      var fullText = '';
+      var win1252Dec = new TextDecoder('windows-1252', { fatal: false });
+
+      while (posClx < clx.length) {
+        var clxType = clx[posClx];
+        if (clxType === 1) {
+          if (posClx + 3 > clx.length) break;
+          var cb = cDv.getUint16(posClx + 1, true);
+          posClx += 3 + cb;
+        } else if (clxType === 2) {
+          if (posClx + 5 > clx.length) break;
+          var lcb = cDv.getUint32(posClx + 1, true);
+          var pcdtStart = posClx + 5;
+          if (pcdtStart + lcb > clx.length) break;
+          var nPieces = Math.floor((lcb - 4) / 12);
+          var cps = [];
+          for (var cpIdx = 0; cpIdx <= nPieces; cpIdx++) {
+            cps.push(cDv.getUint32(pcdtStart + cpIdx * 4, true));
+          }
+          var textParts = [];
+          for (var pIdx = 0; pIdx < nPieces; pIdx++) {
+            var pcdOff = pcdtStart + 4 * (nPieces + 1) + pIdx * 8;
+            var fcRaw = cDv.getUint32(pcdOff + 2, true);
+            var charCount = cps[pIdx + 1] - cps[pIdx];
+            if (charCount <= 0) continue;
+            var isAnsi = (fcRaw & 0x40000000) !== 0;
+            var fc = fcRaw & 0x3FFFFFFF;
+            if (isAnsi) {
+              fc = fc >>> 1;
+              if (fc + charCount <= wordDoc.length) {
+                textParts.push(win1252Dec.decode(wordDoc.subarray(fc, fc + charCount)));
+              }
+            } else {
+              var byteLen = charCount * 2;
+              if (fc + byteLen <= wordDoc.length) {
+                textParts.push(utf16Dec.decode(wordDoc.subarray(fc, fc + byteLen)));
+              }
+            }
+          }
+          fullText = textParts.join('').slice(0, ccpText);
+          break;
+        } else {
+          break;
+        }
+      }
+
+      if (!fullText) return null;
+
+      // Chuyển đổi ký tự phân cách ô bảng (\x07) và dòng bảng (\x07\x07) của Word sang mảng rows chuẩn
+      var rows = [];
+      var linesText = [];
+      var rawBlocks = fullText.split(/\x07\r?\x07/);
+
+      for (var b = 0; b < rawBlocks.length; b++) {
+        var block = rawBlocks[b];
+        if (!block) continue;
+        if (block.indexOf('\x07') !== -1) {
+          var cellsRaw = block.split('\x07');
+          var firstCellLines = cellsRaw[0].split(/[\r\n\x0c]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+          if (firstCellLines.length > 1 && cellsRaw.length >= 3) {
+            for (var pl = 0; pl < firstCellLines.length - 1; pl++) {
+              var cleanPre = cleanCell(firstCellLines[pl].replace(/[\x00-\x1f]+/g, ' '));
+              if (cleanPre) {
+                rows.push([cleanPre]);
+                linesText.push(cleanPre);
+              }
+            }
+            cellsRaw[0] = firstCellLines[firstCellLines.length - 1];
+          }
+          var rowCells = [];
+          for (var cIdx = 0; cIdx < cellsRaw.length; cIdx++) {
+            var cleanC = cleanCell(cellsRaw[cIdx].replace(/[\x00-\x1f]+/g, ' '));
+            if (cleanC) rowCells.push(cleanC);
+          }
+          if (rowCells.length > 0) {
+            rows.push(rowCells);
+            linesText.push(rowCells.join(' | '));
+          }
+        } else {
+          var paraLines = block.split(/[\r\n\x0b\x0c]+/);
+          for (var l = 0; l < paraLines.length; l++) {
+            var cleanL = cleanCell(paraLines[l].replace(/[\x00-\x1f]+/g, ' '));
+            if (cleanL) {
+              rows.push([cleanL]);
+              linesText.push(cleanL);
+            }
+          }
+        }
+      }
+
+      if (rows.length === 0) return null;
+      return {
+        rows: rows,
+        fullText: linesText.join('\n').trim()
+      };
+    } catch (err) {
+      return null;
+    }
   }
 
   function processRosterImageFile(file) {
@@ -2317,6 +2574,7 @@ Trả về đúng cấu trúc JSON:
     if (/^(?:bảng\s*đáp\s*án|đáp\s*án\s*trắc\s*nghiệm|mỗi\s*câu\s*trả\s*lời\s*đúng)/i.test(s)) return true;
     if (/^(?:câu(?:\s*hỏi)?|đáp\s*án|lựa\s*chọn|mã\s*đề)(?:\s*\|\s*(?:\d{1,4}|[A-D]|[0-9\.,]+\s*đ?))+$/i.test(s)) return true;
     if (extractSingleExamCodeBanner(s)) return true;
+    if (/^[\-\=\_\*\s]*hết[\-\=\_\*\s]*$/i.test(s)) return true;
     return false;
   }
 
@@ -2372,6 +2630,48 @@ Trả về đúng cấu trúc JSON:
     }).join('\n');
   }
 
+  // Tách dòng bảng 12 cột dạng lặp bộ 3: [Mã đề | Câu | Đáp án | Mã đề | Câu | Đáp án ...] (như HDC kiem tra.doc / PDF)
+  function extractRepeatedTripletsFromRow(row) {
+    if (!row || row.length === 0) return null;
+    var tokens = [];
+    for (var i = 0; i < row.length; i++) {
+      var c = cleanCell(row[i]);
+      if (!c) continue;
+      var sub = c.split(/\s+/);
+      var allSimpleTokens = sub.length >= 2 && sub.every(function(tok) {
+        return /^(?:\d{1,4}|[A-Da-d][\.\)]?)$/.test(tok);
+      });
+      if (allSimpleTokens) {
+        for (var j = 0; j < sub.length; j++) tokens.push(sub[j]);
+      } else {
+        tokens.push(c);
+      }
+    }
+    if (tokens.length < 6) return null;
+    var triplets = [];
+    var idx = 0;
+    while (idx + 2 < tokens.length) {
+      var codeCand = extractExamCodeFromCell(tokens[idx], true);
+      var qCand = extractQuestionNumFromCell(tokens[idx + 1]);
+      var ansCand = extractAnswerLetterAndNoteFromCell(tokens[idx + 2]);
+      if (codeCand && qCand !== null && ansCand && ansCand.letter) {
+        triplets.push({
+          code: codeCand,
+          q: String(qCand),
+          letter: ansCand.letter,
+          note: ansCand.note || ''
+        });
+        idx += 3;
+      } else {
+        return null;
+      }
+    }
+    if (triplets.length >= 2 && idx === tokens.length) {
+      return triplets;
+    }
+    return null;
+  }
+
   function parseTableRowsSmart(rows, mcqMap, mcqBackupMap, tfMap, saMap, essayLines, stateObj, multiCodeMap) {
     if (!stateObj) stateObj = { section: 'AUTO', currentCode: '' };
     if (!multiCodeMap) multiCodeMap = {};
@@ -2396,6 +2696,28 @@ Trả về đúng cấu trúc JSON:
       }
 
       if (stateObj.section !== 'ESSAY') {
+        // Bỏ qua dòng tiêu đề bảng lặp lại kiểu: ["mã đề", "Câu", "Đáp án", "mã đề", "Câu", "Đáp án"...]
+        var isPureTableHeader = row.every(function(c) {
+          return /^(?:mã\s*đề|mđ|câu(?:\s*hỏi)?|đáp\s*án|điểm|stt|lựa\s*chọn)$/i.test(cleanCell(c));
+        });
+        if (isPureTableHeader) {
+          stateObj.section = 'MCQ';
+          continue;
+        }
+
+        // ƯU TIÊN SỐ 1: Nhận diện dòng bảng lặp bộ 3 cột (Mã đề | Câu | Đáp án × N mã đề trên cùng 1 dòng)
+        var rowTriplets = extractRepeatedTripletsFromRow(row);
+        if (rowTriplets && rowTriplets.length >= 2) {
+          for (var tIdx = 0; tIdx < rowTriplets.length; tIdx++) {
+            var tr = rowTriplets[tIdx];
+            if (!multiCodeMap[tr.code]) multiCodeMap[tr.code] = {};
+            multiCodeMap[tr.code][tr.q] = tr.letter;
+            if (!mcqMap[tr.q]) mcqMap[tr.q] = tr.letter;
+            if (tr.note && !mcqBackupMap[tr.q]) mcqBackupMap[tr.q] = tr.note;
+          }
+          continue;
+        }
+
         // Kiểm tra xem dòng hiện tại có phải là tiêu đề báo hiệu 1 Mã đề mới không (VD: ["Mã đề: 101"] hoặc ["Mã đề", "101"])
         if (row.length <= 3) {
           var singleCodeInRow = extractSingleExamCodeBanner(rowJoined);
@@ -2410,36 +2732,57 @@ Trả về đúng cấu trúc JSON:
           }
         }
 
-        // Kiểm tra trường hợp 2 bảng Mã đề đặt song song ngang nhau (VD: ["Mã đề 101", "Mã đề 102"])
+        // Kiểm tra trường hợp nhiều Mã đề đặt làm tiêu đề cột trên cùng 1 dòng (VD: ["Mã đề 132", "Mã đề 209", "Mã đề 357", "Mã đề 485"])
         var headerCodesInRow = [];
         for (var hc = 0; hc < row.length; hc++) {
           var ecHdr = extractExamCodeFromCell(row[hc], false);
           if (ecHdr) headerCodesInRow.push({ col: hc, code: ecHdr });
         }
 
-        // TRƯỜNG HỢP BẢNG DỌC NHIỀU MÃ ĐỀ (Cột 0 là Câu, các cột sau là Mã đề 101, 102, 103, 104...)
+        // TRƯỜNG HỢP BẢNG DỌC NHIỀU MÃ ĐỀ (Cột 0 là Câu, các cột sau là Mã đề, HOẶC mỗi Mã đề chiếm 2 cột Câu | Đáp án)
         if (headerCodesInRow.length >= 2 && r + 1 < rows.length) {
-          // Kiểm tra dòng kế tiếp xem có phải dạng dòng Câu hỏi | Đáp án Mã 1 | Đáp án Mã 2... không
-          var nextCheck = rows[r + 1];
-          var firstCellQ = extractQuestionNumFromCell(nextCheck[0]);
-          var firstCellInline = extractAnswerLetterAndNoteFromCell(nextCheck[0]);
-          if (firstCellQ !== null || (firstCellInline && firstCellInline.qNum)) {
-            var vRowIdx = r + 1;
-            while (vRowIdx < rows.length) {
-              var vRow = rows[vRowIdx];
-              if (!vRow || vRow.length === 0) { vRowIdx++; continue; }
-              var vRowJoined = vRow.join(' | ').trim();
-              if (/(?:tự\s*luận|đúng\s*\/?\s*sai|trả\s*lời\s*ngắn)/i.test(vRowJoined)) break;
+          var vRowIdx = r + 1;
+          var parsedVerticalRows = 0;
 
+          while (vRowIdx < rows.length) {
+            var vRow = rows[vRowIdx];
+            if (!vRow || vRow.length === 0) { vRowIdx++; continue; }
+            var vRowJoined = vRow.join(' | ').trim();
+            if (/(?:tự\s*luận|đúng\s*\/?\s*sai|trả\s*lời\s*ngắn)/i.test(vRowJoined)) break;
+
+            // Bỏ qua dòng phụ kiểu ["Câu", "Đáp án", "Câu", "Đáp án"...] ngay dưới dòng tên Mã đề
+            var isSubHeader = vRow.every(function(c) {
+              return /^(?:câu(?:\s*hỏi)?|đáp\s*án|stt|điểm)$/i.test(cleanCell(c));
+            });
+            if (isSubHeader) {
+              vRowIdx++;
+              continue;
+            }
+
+            var matchedInVRow = 0;
+            // Dạng A: Mỗi mã đề chiếm 2 cột (Câu | Đáp án) => tổng số cột = 2 * số mã đề
+            if (vRow.length === headerCodesInRow.length * 2) {
+              for (var hA = 0; hA < headerCodesInRow.length; hA++) {
+                var qCA = extractQuestionNumFromCell(vRow[hA * 2]);
+                var aCA = extractAnswerLetterAndNoteFromCell(vRow[hA * 2 + 1]);
+                if (qCA !== null && aCA && aCA.letter) {
+                  var cNameA = headerCodesInRow[hA].code;
+                  if (!multiCodeMap[cNameA]) multiCodeMap[cNameA] = {};
+                  multiCodeMap[cNameA][String(qCA)] = aCA.letter;
+                  if (!mcqMap[String(qCA)]) mcqMap[String(qCA)] = aCA.letter;
+                  matchedInVRow++;
+                }
+              }
+            }
+
+            // Dạng B: Cột 0 là số thứ tự Câu, các cột 1..K là Đáp án của từng Mã đề
+            if (matchedInVRow === 0) {
               var qNumRow = extractQuestionNumFromCell(vRow[0]);
-              var matchedInVRow = 0;
-
               if (qNumRow !== null) {
                 for (var hIdx = 0; hIdx < headerCodesInRow.length; hIdx++) {
                   var colPos = headerCodesInRow[hIdx].col;
                   var codeName = headerCodesInRow[hIdx].code;
-                  // Nếu dòng tiêu đề có ít ô hơn dòng dữ liệu (do gộp ô), dò vị trí tương ứng
-                  var targetCell = vRow[colPos !== undefined && colPos < vRow.length ? colPos : (hIdx + 1)];
+                  var targetCell = vRow[(colPos !== undefined && colPos > 0 && colPos < vRow.length) ? colPos : (hIdx + 1)];
                   var ansV = extractAnswerLetterAndNoteFromCell(targetCell);
                   if (ansV && ansV.letter) {
                     if (!multiCodeMap[codeName]) multiCodeMap[codeName] = {};
@@ -2450,11 +2793,11 @@ Trả về đúng cấu trúc JSON:
                   }
                 }
               } else {
-                // Trường hợp mỗi cột ghi liền "1.A | 1.B | 1.C | 1.D"
+                // Dạng C: Mỗi cột ghi liền "1.A | 1.B | 1.C | 1.D"
                 for (var hIdx2 = 0; hIdx2 < headerCodesInRow.length; hIdx2++) {
                   var colPos2 = headerCodesInRow[hIdx2].col;
                   var codeName2 = headerCodesInRow[hIdx2].code;
-                  var cellV2 = vRow[colPos2 !== undefined && colPos2 < vRow.length ? colPos2 : hIdx2];
+                  var cellV2 = vRow[(colPos2 !== undefined && colPos2 < vRow.length) ? colPos2 : hIdx2];
                   var ansV2 = extractAnswerLetterAndNoteFromCell(cellV2);
                   if (ansV2 && ansV2.qNum && ansV2.letter) {
                     if (!multiCodeMap[codeName2]) multiCodeMap[codeName2] = {};
@@ -2464,14 +2807,15 @@ Trả về đúng cấu trúc JSON:
                   }
                 }
               }
+            }
 
-              if (matchedInVRow === 0) break;
-              vRowIdx++;
-            }
-            if (vRowIdx > r + 1) {
-              r = vRowIdx - 1;
-              continue;
-            }
+            if (matchedInVRow === 0) break;
+            parsedVerticalRows++;
+            vRowIdx++;
+          }
+          if (parsedVerticalRows > 0) {
+            r = vRowIdx - 1;
+            continue;
           }
         }
 
@@ -2608,8 +2952,8 @@ Trả về đúng cấu trúc JSON:
 
         for (var c2 = (rowSpecificCode ? 1 : 0); c2 < row.length; c2++) {
           var cellTxt = row[c2];
-          var cellBannerCode = extractSingleExamCodeBanner(cellTxt);
-          if (cellBannerCode) {
+          var cellBannerCode = extractSingleExamCodeBanner(cellTxt) || extractExamCodeFromCell(cellTxt, false);
+          if (cellBannerCode && extractQuestionNumFromCell(cellTxt) === null) {
             stateObj.currentCode = cellBannerCode;
             stateObj.justSetExplicitCode = true;
             continue;
@@ -2985,7 +3329,40 @@ Trả về đúng cấu trúc JSON:
     var fType = (file.type || '').toLowerCase();
 
     try {
-      if (fName.endsWith('.docx') || fType.indexOf('wordprocessingml') !== -1) {
+      if (fName.endsWith('.doc') || (fType === 'application/msword' && !fName.endsWith('.docx'))) {
+        resetAllAnswerFields();
+        var bufDoc = await file.arrayBuffer();
+        var binDoc = parseBinaryWordDocRowsAndText(bufDoc);
+        if (binDoc && binDoc.rows && binDoc.rows.length > 0) {
+          var parsedBinDoc = parsePdfLocalRowsSmart(binDoc.rows, binDoc.fullText);
+          if (parsedBinDoc.multiCodes || parsedBinDoc.mcqKey || parsedBinDoc.tfKey || parsedBinDoc.saKey || parsedBinDoc.essayRubric) {
+            applyExtractedRubricToUI(parsedBinDoc.mcqKey, parsedBinDoc.tfKey, parsedBinDoc.saKey, parsedBinDoc.essayRubric, parsedBinDoc.multiCodes || '', file.name, parsedBinDoc.mcqBackup);
+            event.target.value = '';
+            return;
+          }
+        }
+        // Fallback nếu file .doc thực chất là HTML đổi đuôi hoặc định dạng văn bản khác
+        var legDoc = extractTextFromLegacyDocBuffer(bufDoc);
+        if (legDoc.isHtml) {
+          var parsedHtmlDoc = parseDocxHtmlAndTablesSmart(legDoc.content, '');
+          if (parsedHtmlDoc.multiCodes || parsedHtmlDoc.mcqKey || parsedHtmlDoc.tfKey || parsedHtmlDoc.saKey || parsedHtmlDoc.essayRubric) {
+            applyExtractedRubricToUI(parsedHtmlDoc.mcqKey, parsedHtmlDoc.tfKey, parsedHtmlDoc.saKey, parsedHtmlDoc.essayRubric, parsedHtmlDoc.multiCodes || '', file.name, parsedHtmlDoc.mcqBackup);
+            event.target.value = '';
+            return;
+          }
+        }
+        var fallbackTextDoc = (binDoc && binDoc.fullText) ? binDoc.fullText : (legDoc.content || '');
+        if (fallbackTextDoc && isValidKey) {
+          statusBox.innerText = '🤖 Đang dùng AI phân tích nội dung file .doc...';
+          await extractRubricWithAI(apiKey, selectedModel, [{ text: "Nội dung Hướng dẫn chấm (.doc):\n" + fallbackTextDoc }], file.name, null);
+        } else if (fallbackTextDoc) {
+          var textLinesRows = fallbackTextDoc.split(/\r?\n/).map(function(l) { return [cleanCell(l)]; }).filter(function(r) { return r[0] !== ''; });
+          var parsedFallbackDoc = parsePdfLocalRowsSmart(textLinesRows, fallbackTextDoc);
+          applyExtractedRubricToUI(parsedFallbackDoc.mcqKey, parsedFallbackDoc.tfKey, parsedFallbackDoc.saKey, parsedFallbackDoc.essayRubric || fallbackTextDoc, parsedFallbackDoc.multiCodes || '', file.name, parsedFallbackDoc.mcqBackup);
+        } else {
+          alert('Không đọc được cấu trúc văn bản từ file .doc này. Vui lòng lưu sang .docx hoặc .pdf!');
+        }
+      } else if (fName.endsWith('.docx') || fType.indexOf('wordprocessingml') !== -1) {
         var arrayBuf = await file.arrayBuffer();
         var htmlRes = await mammoth.convertToHtml({ arrayBuffer: arrayBuf });
         var rawRes = await mammoth.extractRawText({ arrayBuffer: arrayBuf });
@@ -3081,7 +3458,7 @@ Trả về đúng cấu trúc JSON:
         }
         await extractRubricWithAI(apiKey, selectedModel, aiParts, file.name, null);
       } else {
-        alert('Vui lòng chọn đúng định dạng file Word (.docx) hoặc PDF (.pdf)!');
+        alert('Vui lòng chọn đúng định dạng file Word (.doc, .docx) hoặc PDF (.pdf)!');
       }
     } catch (e) {
       alert('Lỗi đọc file: ' + e.message);
