@@ -37,6 +37,11 @@
   .btn-roster { background: #0f766e; font-size: 13px; padding: 10px; margin-top: 6px; }
   .btn-roster-cam { background: #16a34a; font-size: 13px; padding: 10px; margin-top: 6px; }
   .btn-merge { background: #6366f1; margin-top: 8px; font-size: 14px; }
+  .part-score-box { background: #eef2ff; border: 1.5px solid #6366f1; border-radius: 10px; padding: 12px; margin-top: 10px; }
+  .part-score-title { font-size: 13.5px; font-weight: 700; color: #3730a3; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .part-inline-input { width: 58px !important; padding: 4px 5px !important; margin: 0 !important; text-align: center; font-weight: 700; font-size: 12px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: #1e293b; }
+  .part-inline-input:focus { border-color: #4f46e5; outline: none; background: #fefce8; }
+  .p1-sum-badge { display: inline-block; background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; font-weight: 800; padding: 3px 7px; border-radius: 6px; font-size: 12px; }
   .btn-copy-full { background: #0284c7; margin-top: 8px; font-size: 13px; }
   .btn-copy-short { background: #0369a1; margin-top: 6px; font-size: 13px; }
   .btn-clear { background: #dc2626; margin-top: 8px; padding: 10px; font-size: 13px; }
@@ -377,15 +382,53 @@
       <table id="gradeTable">
         <thead>
           <tr>
-            <th>STT</th><th>SBD</th><th>Mã phách</th><th>Mã đề</th><th>Họ và tên</th><th>Lớp</th><th>TN</th><th>TL từng câu</th><th>Tổng TL</th><th>Tổng cộng</th><th>Xóa</th>
+            <th>STT</th><th>SBD</th><th>Mã phách</th><th>Mã đề</th><th>Họ và tên</th><th>Lớp</th><th>TN</th><th>TL từng câu</th><th>Tổng TL</th><th>Phần 1</th><th>P1 + Điểm chấm</th><th>Phần 2</th><th>Tổng cộng</th><th>Xóa</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
 
-    <input type="file" id="mergeExcelInput" accept=".xlsx,.xls" multiple style="display:none" onchange="mergeExternalExcel(event)">
-    <button type="button" class="btn btn-merge" onclick="document.getElementById('mergeExcelInput').click()">🔗 Gộp file Excel từ GV khác (Tự động ghép các câu TL & TN)</button>
+    <div class="part-score-box" id="partScoreInputArea">
+      <div class="part-score-title">
+        <span>➕ Nhập điểm Phần 1 & Phần 2 (Cộng vào Điểm chấm & Tổng điểm)</span>
+      </div>
+      <div class="hint" style="margin-top:0; margin-bottom:6px; color:#4338ca; font-style:normal;">
+        💡 Bạn có thể gõ trực tiếp vào ô <b>Phần 1</b>, <b>Phần 2</b> trên từng dòng của Bảng tổng hợp phía trên, hoặc chọn Học sinh bên dưới để nhập nhanh:
+      </div>
+      <label style="margin-top:4px;">Chọn Học sinh trong danh sách (hoặc nhập mới bên dưới):</label>
+      <select id="partTargetStudentSel" onchange="onSelectStudentForPartScore(this.value)" style="background:#fff;">
+        <option value="">-- Chọn học sinh để nhập điểm Phần 1, Phần 2 --</option>
+      </select>
+      <div class="row" style="margin-top:6px;">
+        <div style="flex:1.6;">
+          <label style="margin-top:0;">Họ và tên HS:</label>
+          <input type="text" id="partStuName" placeholder="Tên học sinh..." oninput="updatePartScoreLivePreview()">
+        </div>
+        <div style="flex:0.8;">
+          <label style="margin-top:0;">SBD / Phách:</label>
+          <input type="text" id="partStuCode" placeholder="SBD hoặc Phách" oninput="updatePartScoreLivePreview()">
+        </div>
+        <div style="flex:0.7;">
+          <label style="margin-top:0;">Lớp:</label>
+          <input type="text" id="partStuClass" placeholder="Lớp">
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <div>
+          <label style="margin-top:0; color:#1d4ed8;">Điểm Phần 1:</label>
+          <input type="number" id="part1ScoreInput" step="0.25" placeholder="Nhập điểm P1..." oninput="updatePartScoreLivePreview()">
+        </div>
+        <div>
+          <label style="margin-top:0; color:#047857;">Điểm Phần 2:</label>
+          <input type="number" id="part2ScoreInput" step="0.25" placeholder="Nhập điểm P2..." oninput="updatePartScoreLivePreview()">
+        </div>
+      </div>
+      <div id="partScorePreviewBanner" style="margin-top:8px; background:#fff; border:1px dashed #6366f1; border-radius:8px; padding:8px 10px; font-size:12.5px; color:#1e293b;">
+        📌 Điểm chấm hiện tại: <b id="prevGradedVal">0</b>đ &nbsp;|&nbsp; Cột riêng (<b>P1 + Điểm chấm</b>): <b id="prevP1PlusVal" style="color:#1d4ed8;">—</b> &nbsp;|&nbsp; <b>Tổng điểm mới</b>: <b id="prevFinalTotalVal" style="color:#dc2626;">0</b>đ
+      </div>
+      <button type="button" class="btn btn-merge" onclick="applyPart1Part2ScoreFromBox()">💾 Lưu điểm Phần 1 & Phần 2 vào Bảng tổng hợp</button>
+    </div>
 
     <button type="button" class="btn btn-excel" onclick="exportExcelAPK()">📤 Xuất / Chia sẻ File Excel (.xlsx đủ cột từng câu)</button>
     <div id="excelExportBox" class="excel-status-box"></div>
@@ -4128,6 +4171,8 @@ JSON:
     refreshCurrentView();
   }
 
+  var currentPart1Temp = '', currentPart2Temp = '';
+
   function renderResults(name, cls, sbd, blindCode, eCode) {
     var doMcq = currentStuHasMcq;
     var doEssay = currentStuHasEssay;
@@ -4140,7 +4185,19 @@ JSON:
     var saOk = currentSaState.filter(function(x) { return x.isCorrect; }).length;
     var saS = doMcq ? +(saOk * ps).toFixed(2) : 0;
     var esS = doEssay ? +currentEssayState.reduce(function(a, b) { return a + parseNum(b.score, 0); }, 0).toFixed(2) : 0;
-    var tot = +(mcqS + tfS + saS + esS).toFixed(2);
+    var gradedTot = +(mcqS + tfS + saS + esS).toFixed(2);
+
+    var existIdx = findExistingStudent(name, sbd, blindCode);
+    var existingRec = existIdx !== -1 ? classRecords[existIdx] : null;
+    var p1Raw = (currentPart1Temp !== '') ? currentPart1Temp : (existingRec && existingRec.part1Score !== undefined && existingRec.part1Score !== '' ? existingRec.part1Score : '');
+    var p2Raw = (currentPart2Temp !== '') ? currentPart2Temp : (existingRec && existingRec.part2Score !== undefined && existingRec.part2Score !== '' ? existingRec.part2Score : '');
+
+    var hasP1 = (p1Raw !== '' && p1Raw !== null && p1Raw !== undefined);
+    var hasP2 = (p2Raw !== '' && p2Raw !== null && p2Raw !== undefined);
+    var p1Num = hasP1 ? parseNum(p1Raw, 0) : 0;
+    var p2Num = hasP2 ? parseNum(p2Raw, 0) : 0;
+    var p1PlusGraded = hasP1 ? +(p1Num + gradedTot).toFixed(2) : '';
+    var tot = +(gradedTot + p1Num + p2Num).toFixed(2);
 
     var warnHtml = currentPageWarning ? '<div class="warn-banner">⚠️ CẢNH BÁO LẪN BÀI: ' + escapeHtml(currentPageWarning) + '</div>' : '';
     var rm = matchStudentInMasterRoster(name, sbd, blindCode);
@@ -4157,7 +4214,6 @@ JSON:
         '</select></div>';
     }
 
-    var existIdx = findExistingStudent(name, sbd, blindCode);
     var mergeHtml = existIdx !== -1 ? '<div class="merge-notice">🔗 Bài của HS / Mã phách này đã có trong danh sách. Bấm Lưu sẽ tự động ghép/cập nhật điểm!</div>' : '';
 
     var mcqHtml = (doMcq && currentMcqState.length > 0) ? '<div><b>I. Trắc nghiệm ABCD (' + mcqS + 'đ — Đúng ' + mcqOk + '/' + currentMcqState.length + ' câu):</b></div><div class="hint">* Chạm vào từng ô câu bên dưới nếu muốn bật/tắt Đúng/Sai.</div><div class="mcq-grid">' +
@@ -4187,11 +4243,17 @@ JSON:
 
     var scoreBreakdownText = '';
     if (doMcq && doEssay) {
-      scoreBreakdownText = '(Trắc nghiệm: <b>' + (+(mcqS + tfS + saS).toFixed(2)) + '</b>đ | Tự luận: <b>' + esS + '</b>đ)';
+      scoreBreakdownText = '(Điểm chấm: <b>' + gradedTot + '</b>đ [TN: <b>' + (+(mcqS + tfS + saS).toFixed(2)) + '</b>đ | TL: <b>' + esS + '</b>đ]' +
+        (hasP1 ? ' | P1 + Điểm chấm: <b>' + p1PlusGraded + '</b>đ' : '') +
+        (hasP2 ? ' | Phần 2: <b>' + p2Num + '</b>đ' : '') + ')';
     } else if (doMcq) {
-      scoreBreakdownText = '(Chỉ chấm Trắc nghiệm — ABCD: <b>' + mcqS + '</b>đ | Đ/S: <b>' + tfS + '</b>đ | TLN: <b>' + saS + '</b>đ)';
+      scoreBreakdownText = '(Điểm chấm TN: <b>' + gradedTot + '</b>đ' +
+        (hasP1 ? ' | P1 + Điểm chấm: <b>' + p1PlusGraded + '</b>đ' : '') +
+        (hasP2 ? ' | Phần 2: <b>' + p2Num + '</b>đ' : '') + ')';
     } else {
-      scoreBreakdownText = '(Chỉ chấm Tự luận: <b>' + esS + '</b>đ)';
+      scoreBreakdownText = '(Điểm chấm TL: <b>' + esS + '</b>đ' +
+        (hasP1 ? ' | P1 + Điểm chấm: <b>' + p1PlusGraded + '</b>đ' : '') +
+        (hasP2 ? ' | Phần 2: <b>' + p2Num + '</b>đ' : '') + ')';
     }
 
     document.getElementById('resCard').style.display = 'block';
@@ -4206,6 +4268,10 @@ JSON:
         '<div><label style="margin-top:2px">Mã phách (Nếu có):</label><input type="text" id="curBlindCode" value="' + escapeHtml(blindCode || '') + '"></div>' +
         '<div style="' + (doMcq ? '' : 'display:none;') + '"><label style="margin-top:2px">Mã đề:</label><input type="text" id="curExamCode" value="' + escapeHtml(eCode || '') + '" onchange="onChangeDetectedExamCode(this.value)"></div>' +
       '</div>' +
+      '<div class="row" style="margin-top:6px; background:#fffbeb; padding:6px 8px; border-radius:8px; border:1px dashed #f59e0b;">' +
+        '<div><label style="margin-top:0; color:#1d4ed8;">Điểm Phần 1 (Tùy chọn):</label><input type="number" id="curPart1Score" step="0.25" placeholder="Nhập điểm P1..." value="' + escapeHtml(p1Raw) + '" onchange="onChangeCurPartScores()"></div>' +
+        '<div><label style="margin-top:0; color:#047857;">Điểm Phần 2 (Tùy chọn):</label><input type="number" id="curPart2Score" step="0.25" placeholder="Nhập điểm P2..." value="' + escapeHtml(p2Raw) + '" onchange="onChangeCurPartScores()"></div>' +
+      '</div>' +
       '<div id="liveMcqScore" style="display:none">' + mcqS + '</div>' +
       '<div id="liveTfScore" style="display:none">' + tfS + '</div>' +
       '<div id="liveSaScore" style="display:none">' + saS + '</div>' +
@@ -4214,6 +4280,14 @@ JSON:
       '<div style="font-size:12px; color:#475569; text-align:center;">' + scoreBreakdownText + '</div>' +
       mergeHtml + '</div>' +
       mcqHtml + tfHtml + saHtml + essaySectionHtml;
+  }
+
+  function onChangeCurPartScores() {
+    var p1El = document.getElementById('curPart1Score');
+    var p2El = document.getElementById('curPart2Score');
+    currentPart1Temp = p1El ? p1El.value.trim() : '';
+    currentPart2Temp = p2El ? p2El.value.trim() : '';
+    refreshCurrentView();
   }
 
   function onChangeDetectedExamCode(newCode) {
@@ -4259,12 +4333,16 @@ JSON:
     var codeInput = document.getElementById('curExamCode');
     var idInput = document.getElementById('curStuId');
     var phachInput = document.getElementById('curBlindCode');
+    var p1Input = document.getElementById('curPart1Score');
+    var p2Input = document.getElementById('curPart2Score');
 
     var name = cleanCell(nameInput ? nameInput.value : '');
     var cls = cleanCell(classInput ? classInput.value : '');
     var sbd = cleanCell(idInput ? idInput.value : '');
     var blindCode = cleanCell(phachInput ? phachInput.value : '');
     var eCode = doMcq ? cleanCell(codeInput ? codeInput.value.toUpperCase() : '') : '';
+    var p1ValStr = p1Input ? p1Input.value.trim() : '';
+    var p2ValStr = p2Input ? p2Input.value.trim() : '';
 
     var rm = matchStudentInMasterRoster(name, sbd, blindCode);
     var rosterOrder = null;
@@ -4310,11 +4388,15 @@ JSON:
             ex.essayMap[qKey] = newEssayMap[qKey];
           });
         }
+        if (p1ValStr !== '') ex.part1Score = +parseNum(p1ValStr, 0).toFixed(2);
+        if (p2ValStr !== '') ex.part2Score = +parseNum(p2ValStr, 0).toFixed(2);
         if (blindCode) ex.blindCode = blindCode;
         if (rosterOrder !== null) ex.rosterOrder = rosterOrder;
         recalculateStudentTotals(ex);
         if (!ex.className && cls) ex.className = cls;
         if (!ex.sbd && sbd) ex.sbd = sbd;
+        currentPart1Temp = '';
+        currentPart2Temp = '';
         safeSet('g_records', JSON.stringify(classRecords));
         renderTable(); clearImages(true);
         return;
@@ -4335,6 +4417,9 @@ JSON:
       tfScore: tfScore,
       saScore: saScore,
       essayMap: newEssayMap,
+      part1Score: p1ValStr !== '' ? +parseNum(p1ValStr, 0).toFixed(2) : '',
+      part1PlusGraded: '',
+      part2Score: p2ValStr !== '' ? +parseNum(p2ValStr, 0).toFixed(2) : '',
       notesMap: {},
       essayScore: doEssay ? 0 : '',
       totalScore: 0,
@@ -4342,6 +4427,8 @@ JSON:
     };
     recalculateStudentTotals(newRec);
     classRecords.push(newRec);
+    currentPart1Temp = '';
+    currentPart2Temp = '';
 
     safeSet('g_records', JSON.stringify(classRecords));
     renderTable();
@@ -4366,7 +4453,22 @@ JSON:
 
     var numericM = hasM ? parseNum(mTotal, 0) : 0;
     var numericE = hasE ? parseNum(rec.essayScore, 0) : 0;
-    rec.totalScore = +(numericM + numericE).toFixed(2);
+    var gradedSum = +(numericM + numericE).toFixed(2);
+    rec.gradedScore = gradedSum;
+
+    var hasP1 = (rec.part1Score !== undefined && rec.part1Score !== null && String(rec.part1Score).trim() !== '');
+    var hasP2 = (rec.part2Score !== undefined && rec.part2Score !== null && String(rec.part2Score).trim() !== '');
+
+    var p1Num = hasP1 ? +parseNum(rec.part1Score, 0).toFixed(2) : 0;
+    var p2Num = hasP2 ? +parseNum(rec.part2Score, 0).toFixed(2) : 0;
+
+    rec.part1Score = hasP1 ? p1Num : '';
+    // Khi nhập điểm vào ô Phần 1 thì cộng với điểm chấm để lưu thành 1 cột riêng trong tổng hợp
+    rec.part1PlusGraded = hasP1 ? +(p1Num + gradedSum).toFixed(2) : '';
+    rec.part2Score = hasP2 ? p2Num : '';
+
+    // Đồng thời cộng điểm Phần 1 và Phần 2 vào cột Tổng điểm
+    rec.totalScore = +(gradedSum + p1Num + p2Num).toFixed(2);
     rec.notes = '';
   }
 
@@ -4376,74 +4478,259 @@ JSON:
     return Object.keys(s).sort(function(a, b) { return (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0); });
   }
 
-  async function mergeExternalExcel(event) {
-    var files = event.target.files; if (!files || files.length === 0) return;
-    var merged = 0, added = 0;
-    for (var i = 0; i < files.length; i++) {
-      var wb = XLSX.read(await files[i].arrayBuffer(), { type: 'array' });
-      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      rows.forEach(function(row) {
-        var rName = cleanCell(row['Họ và tên'] || row['Họ tên'] || '');
-        var rSbd = cleanCell(row['Số báo danh'] || row['SBD'] || '');
-        var rPhach = cleanCell(row['Mã phách'] || row['Số phách'] || '');
-        var rCls = cleanCell(row['Lớp'] || '');
-        var rCode = cleanCell(row['Mã đề'] || '');
-        if (!rName && !rSbd && !rPhach) return;
+  // ============================================================================
+  // KHU VỰC NHẬP ĐIỂM PHẦN 1 & PHẦN 2 (TRỰC TIẾP TRÊN BẢNG & KHUNG NHẬP NHANH)
+  // ============================================================================
+  function populatePartTargetStudentSelect() {
+    var sel = document.getElementById('partTargetStudentSel');
+    if (!sel) return;
+    var curVal = sel.value;
+    var sorted = getSortedRecords();
+    var opts = ['<option value="">-- Chọn học sinh trong bảng để nhập điểm Phần 1, Phần 2 --</option>'];
 
-        var rawMcq = row['Điểm TN ABCD'] !== undefined ? row['Điểm TN ABCD'] : (row['Điểm TN'] !== undefined ? row['Điểm TN'] : (row['TN'] !== undefined ? row['TN'] : ''));
-        var hasRowMcq = (rawMcq !== '' && rawMcq !== undefined);
-        var rMcq = hasRowMcq ? parseNum(rawMcq, 0) : '';
-        var rTf = hasRowMcq ? parseNum(row['Điểm TN Đúng/Sai'], 0) : '';
-        var rSa = hasRowMcq ? parseNum(row['Điểm Trả lời ngắn'], 0) : '';
+    sorted.forEach(function(r, idx) {
+      var stt = r.displayOrder !== undefined ? r.displayOrder : (idx + 1);
+      var keyVal = r.isUngradedPlaceholder ? ('ROSTER_' + r.displayOrder) : ('REC_' + r.timestamp);
+      var extra = [];
+      if (r.sbd) extra.push('SBD: ' + r.sbd);
+      if (r.blindCode) extra.push('Phách: ' + r.blindCode);
+      var graded = r.isUngradedPlaceholder ? 0 : +(parseNum(r.tnTotal, 0) + parseNum(r.essayScore, 0)).toFixed(2);
+      extra.push('Điểm chấm: ' + graded + 'đ');
+      if (r.part1Score !== undefined && r.part1Score !== '') extra.push('P1: ' + r.part1Score + 'đ');
+      if (r.part2Score !== undefined && r.part2Score !== '') extra.push('P2: ' + r.part2Score + 'đ');
+      opts.push('<option value="' + escapeHtml(keyVal) + '">' + 'STT ' + stt + ' - ' + escapeHtml(r.fullName) + ' (' + escapeHtml(extra.join(' | ')) + ')</option>');
+    });
 
-        var rowEssayMap = {};
-        Object.keys(row).forEach(function(col) {
-          var m = col.match(/^(?:TL\s*)?(Câu\s*\d+[a-z]?)$/i);
-          if (m && row[col] !== '' && row[col] !== undefined) rowEssayMap[normalizeQuestionLabel(m[1])] = parseNum(row[col], 0);
-        });
-        var hasRowEssay = Object.keys(rowEssayMap).length > 0 || (row['Tổng TL'] !== '' && row['Tổng TL'] !== undefined) || (row['Tổng điểm TL'] !== '' && row['Tổng điểm TL'] !== undefined);
-
-        if (!hasRowMcq && !hasRowEssay && (row['Tổng điểm'] === '' || row['Tổng điểm'] === undefined) && (row['Tổng cộng'] === '' || row['Tổng cộng'] === undefined)) return;
-
-        var rm = matchStudentInMasterRoster(rName, rSbd, rPhach);
-        if (rm) {
-          rName = rm.fullName;
-          if (!rSbd && rm.sbd) rSbd = rm.sbd;
-          if (!rPhach && rm.blindCode) rPhach = rm.blindCode;
-          if (!rCls && rm.className) rCls = rm.className;
-        }
-
-        var existIdx = findExistingStudent(rName, rSbd, rPhach);
-        if (existIdx !== -1) {
-          var ex = classRecords[existIdx];
-          if (hasRowMcq) { ex.hasMcq = true; ex.mcqScore = rMcq; ex.tfScore = rTf; ex.saScore = rSa; }
-          if (hasRowEssay) {
-            ex.hasEssay = true;
-            if (!ex.essayMap) ex.essayMap = {};
-            Object.keys(rowEssayMap).forEach(function(k) { ex.essayMap[k] = rowEssayMap[k]; });
-          }
-          if (rCode) ex.examCode = rCode;
-          if (rPhach) ex.blindCode = rPhach;
-          recalculateStudentTotals(ex);
-          merged++;
-        } else {
-          var nr = {
-            timestamp: Date.now() + Math.random(), rosterOrder: rm ? rm.order : null,
-            sbd: rSbd, blindCode: rPhach, examCode: rCode, fullName: rName || ('Phách: ' + rPhach), className: rCls,
-            hasMcq: hasRowMcq, hasEssay: hasRowEssay,
-            mcqScore: rMcq, tfScore: rTf, saScore: rSa, essayMap: rowEssayMap, notesMap: {},
-            essayScore: hasRowEssay ? 0 : '', totalScore: 0, notes: ''
-          };
-          recalculateStudentTotals(nr);
-          classRecords.push(nr);
-          added++;
-        }
-      });
+    sel.innerHTML = opts.join('');
+    if (curVal && Array.from(sel.options).some(function(o) { return o.value === curVal; })) {
+      sel.value = curVal;
     }
+  }
+
+  function onSelectStudentForPartScore(val) {
+    var nameInp = document.getElementById('partStuName');
+    var codeInp = document.getElementById('partStuCode');
+    var clsInp = document.getElementById('partStuClass');
+    var p1Inp = document.getElementById('part1ScoreInput');
+    var p2Inp = document.getElementById('part2ScoreInput');
+
+    if (!val) {
+      updatePartScoreLivePreview();
+      return;
+    }
+
+    if (val.indexOf('REC_') === 0) {
+      var ts = parseFloat(val.replace('REC_', ''));
+      var rec = classRecords.find(function(r) { return r.timestamp === ts; });
+      if (rec) {
+        nameInp.value = rec.fullName || '';
+        codeInp.value = rec.sbd || rec.blindCode || '';
+        clsInp.value = rec.className || '';
+        p1Inp.value = (rec.part1Score !== undefined && rec.part1Score !== '') ? rec.part1Score : '';
+        p2Inp.value = (rec.part2Score !== undefined && rec.part2Score !== '') ? rec.part2Score : '';
+      }
+    } else if (val.indexOf('ROSTER_') === 0) {
+      var orderNum = parseInt(val.replace('ROSTER_', ''), 10);
+      var m = masterRoster.find(function(x) { return x.order === orderNum; });
+      if (m) {
+        nameInp.value = m.fullName || '';
+        codeInp.value = m.sbd || m.blindCode || '';
+        clsInp.value = m.className || '';
+        p1Inp.value = '';
+        p2Inp.value = '';
+      }
+    }
+    updatePartScoreLivePreview();
+  }
+
+  function updatePartScoreLivePreview() {
+    var selVal = document.getElementById('partTargetStudentSel') ? document.getElementById('partTargetStudentSel').value : '';
+    var nameVal = cleanCell(document.getElementById('partStuName') ? document.getElementById('partStuName').value : '');
+    var codeVal = cleanCell(document.getElementById('partStuCode') ? document.getElementById('partStuCode').value : '');
+    var p1Str = document.getElementById('part1ScoreInput') ? document.getElementById('part1ScoreInput').value.trim() : '';
+    var p2Str = document.getElementById('part2ScoreInput') ? document.getElementById('part2ScoreInput').value.trim() : '';
+
+    var rec = null;
+    if (selVal && selVal.indexOf('REC_') === 0) {
+      var ts = parseFloat(selVal.replace('REC_', ''));
+      rec = classRecords.find(function(r) { return r.timestamp === ts; });
+    } else if (nameVal || codeVal) {
+      var idx = findExistingStudent(nameVal, codeVal, codeVal);
+      if (idx !== -1) rec = classRecords[idx];
+    }
+
+    var gradedScore = 0;
+    if (rec) {
+      recalculateStudentTotals(rec);
+      gradedScore = parseNum(rec.gradedScore, 0);
+    }
+
+    var hasP1 = p1Str !== '';
+    var hasP2 = p2Str !== '';
+    var p1Num = hasP1 ? parseNum(p1Str, 0) : 0;
+    var p2Num = hasP2 ? parseNum(p2Str, 0) : 0;
+
+    var p1PlusGradedText = hasP1 ? (+(p1Num + gradedScore).toFixed(2) + 'đ') : '—';
+    var finalTotal = +(gradedScore + p1Num + p2Num).toFixed(2);
+
+    var elGraded = document.getElementById('prevGradedVal');
+    var elP1Plus = document.getElementById('prevP1PlusVal');
+    var elTotal = document.getElementById('prevFinalTotalVal');
+    if (elGraded) elGraded.innerText = gradedScore;
+    if (elP1Plus) elP1Plus.innerText = p1PlusGradedText;
+    if (elTotal) elTotal.innerText = finalTotal;
+  }
+
+  function applyPart1Part2ScoreFromBox() {
+    var sel = document.getElementById('partTargetStudentSel');
+    var selVal = sel ? sel.value : '';
+    var nameVal = cleanCell(document.getElementById('partStuName').value);
+    var codeVal = cleanCell(document.getElementById('partStuCode').value);
+    var clsVal = cleanCell(document.getElementById('partStuClass').value);
+    var p1Str = document.getElementById('part1ScoreInput').value.trim();
+    var p2Str = document.getElementById('part2ScoreInput').value.trim();
+
+    if (!selVal && !nameVal && !codeVal) {
+      alert('Vui lòng chọn một Học sinh trong danh sách hoặc nhập Họ tên / SBD / Mã phách!');
+      return;
+    }
+
+    var targetRec = null;
+    if (selVal && selVal.indexOf('REC_') === 0) {
+      var ts = parseFloat(selVal.replace('REC_', ''));
+      targetRec = classRecords.find(function(r) { return r.timestamp === ts; });
+    } else if (selVal && selVal.indexOf('ROSTER_') === 0) {
+      var orderNum = parseInt(selVal.replace('ROSTER_', ''), 10);
+      var m = masterRoster.find(function(x) { return x.order === orderNum; });
+      if (m) {
+        var exIdx = findExistingStudent(m.fullName, m.sbd, m.blindCode);
+        if (exIdx !== -1) {
+          targetRec = classRecords[exIdx];
+        } else {
+          targetRec = {
+            timestamp: Date.now() + Math.random(),
+            rosterOrder: m.order,
+            sbd: m.sbd || '',
+            blindCode: m.blindCode || '',
+            examCode: '',
+            fullName: m.fullName,
+            className: m.className || clsVal || '',
+            hasMcq: false,
+            hasEssay: false,
+            mcqScore: '',
+            tfScore: '',
+            saScore: '',
+            essayMap: {},
+            part1Score: '',
+            part1PlusGraded: '',
+            part2Score: '',
+            notesMap: {},
+            essayScore: '',
+            totalScore: 0,
+            notes: ''
+          };
+          classRecords.push(targetRec);
+        }
+      }
+    } else {
+      var idx = findExistingStudent(nameVal, codeVal, codeVal);
+      if (idx !== -1) {
+        targetRec = classRecords[idx];
+      } else {
+        var rm = matchStudentInMasterRoster(nameVal, codeVal, codeVal);
+        targetRec = {
+          timestamp: Date.now() + Math.random(),
+          rosterOrder: rm ? rm.order : null,
+          sbd: (rm && rm.sbd) ? rm.sbd : codeVal,
+          blindCode: (rm && rm.blindCode) ? rm.blindCode : '',
+          examCode: '',
+          fullName: (rm && rm.fullName) ? rm.fullName : (nameVal || ('SBD/Phách: ' + codeVal)),
+          className: clsVal || (rm && rm.className ? rm.className : ''),
+          hasMcq: false,
+          hasEssay: false,
+          mcqScore: '',
+          tfScore: '',
+          saScore: '',
+          essayMap: {},
+          part1Score: '',
+          part1PlusGraded: '',
+          part2Score: '',
+          notesMap: {},
+          essayScore: '',
+          totalScore: 0,
+          notes: ''
+        };
+        classRecords.push(targetRec);
+      }
+    }
+
+    if (!targetRec) return;
+
+    if (nameVal) targetRec.fullName = nameVal;
+    if (clsVal) targetRec.className = clsVal;
+    targetRec.part1Score = (p1Str !== '') ? +parseNum(p1Str, 0).toFixed(2) : '';
+    targetRec.part2Score = (p2Str !== '') ? +parseNum(p2Str, 0).toFixed(2) : '';
+
+    recalculateStudentTotals(targetRec);
     safeSet('g_records', JSON.stringify(classRecords));
     renderTable();
-    alert('✅ Đã gộp file Excel thành công!\n• Ghép câu cho: ' + merged + ' HS\n• Thêm mới: ' + added + ' HS');
-    event.target.value = '';
+    sel.value = 'REC_' + targetRec.timestamp;
+    updatePartScoreLivePreview();
+  }
+
+  function onInlinePartScoreChange(tsOrRosterKey, partNum, rawVal) {
+    var valStr = String(rawVal || '').trim();
+    var targetRec = null;
+
+    if (String(tsOrRosterKey).indexOf('ROSTER_') === 0) {
+      var orderNum = parseInt(String(tsOrRosterKey).replace('ROSTER_', ''), 10);
+      var m = masterRoster.find(function(x) { return x.order === orderNum; });
+      if (!m) return;
+      var exIdx = findExistingStudent(m.fullName, m.sbd, m.blindCode);
+      if (exIdx !== -1) {
+        targetRec = classRecords[exIdx];
+      } else {
+        targetRec = {
+          timestamp: Date.now() + Math.random(),
+          rosterOrder: m.order,
+          sbd: m.sbd || '',
+          blindCode: m.blindCode || '',
+          examCode: '',
+          fullName: m.fullName,
+          className: m.className || '',
+          hasMcq: false,
+          hasEssay: false,
+          mcqScore: '',
+          tfScore: '',
+          saScore: '',
+          essayMap: {},
+          part1Score: '',
+          part1PlusGraded: '',
+          part2Score: '',
+          notesMap: {},
+          essayScore: '',
+          totalScore: 0,
+          notes: ''
+        };
+        classRecords.push(targetRec);
+      }
+    } else {
+      var ts = parseFloat(tsOrRosterKey);
+      targetRec = classRecords.find(function(r) { return r.timestamp === ts; });
+    }
+
+    if (!targetRec) return;
+
+    if (partNum === 1) {
+      targetRec.part1Score = (valStr !== '') ? +parseNum(valStr, 0).toFixed(2) : '';
+    } else if (partNum === 2) {
+      targetRec.part2Score = (valStr !== '') ? +parseNum(valStr, 0).toFixed(2) : '';
+    }
+
+    recalculateStudentTotals(targetRec);
+    safeSet('g_records', JSON.stringify(classRecords));
+    renderTable();
+    updatePartScoreLivePreview();
   }
 
   function getFirstName(fullName) {
@@ -4471,7 +4758,7 @@ JSON:
         } else if (showUngraded) {
           res.push({
             timestamp: null, displayOrder: m.order, sbd: m.sbd || '', blindCode: m.blindCode || '', examCode: '',
-            fullName: m.fullName, className: m.className || '', essayMap: {}, totalScore: '', isUngradedPlaceholder: true
+            fullName: m.fullName, className: m.className || '', essayMap: {}, part1Score: '', part1PlusGraded: '', part2Score: '', totalScore: '', isUngradedPlaceholder: true
           });
         }
       });
@@ -4522,15 +4809,30 @@ JSON:
 
   function renderTable() {
     document.getElementById('countBadge').innerText = classRecords.length;
+    classRecords.forEach(function(rec) { recalculateStudentTotals(rec); });
     var sorted = getSortedRecords(), tbody = document.getElementById('tableBody');
+    populatePartTargetStudentSelect();
     if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:#64748b;">Chưa có bài chấm.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; color:#64748b;">Chưa có bài chấm.</td></tr>';
       return;
     }
     tbody.innerHTML = sorted.map(function(r, idx) {
       var stt = r.displayOrder !== undefined ? r.displayOrder : (idx + 1);
       if (r.isUngradedPlaceholder) {
-        return '<tr class="row-ungraded"><td>' + escapeHtml(stt) + '</td><td>' + escapeHtml(r.sbd || '') + '</td><td>' + escapeHtml(r.blindCode || '') + '</td><td></td><td>' + escapeHtml(r.fullName) + ' <small>(Chưa chấm)</small></td><td>' + escapeHtml(r.className || '') + '</td><td></td><td></td><td></td><td></td><td></td></tr>';
+        var rKey = 'ROSTER_' + r.displayOrder;
+        return '<tr class="row-ungraded">' +
+          '<td>' + escapeHtml(stt) + '</td>' +
+          '<td>' + escapeHtml(r.sbd || '') + '</td>' +
+          '<td>' + escapeHtml(r.blindCode || '') + '</td>' +
+          '<td></td>' +
+          '<td>' + escapeHtml(r.fullName) + ' <small>(Chưa chấm)</small></td>' +
+          '<td>' + escapeHtml(r.className || '') + '</td>' +
+          '<td></td><td></td><td></td>' +
+          '<td><input type="number" step="0.25" class="part-inline-input" placeholder="P1" value="" onchange="onInlinePartScoreChange(\'' + rKey + '\', 1, this.value)"></td>' +
+          '<td></td>' +
+          '<td><input type="number" step="0.25" class="part-inline-input" placeholder="P2" value="" onchange="onInlinePartScoreChange(\'' + rKey + '\', 2, this.value)"></td>' +
+          '<td></td><td></td>' +
+        '</tr>';
       }
       var tnVal = getStudentTnString(r);
       var qKeys = Object.keys(r.essayMap || {}).sort(function(a, b) {
@@ -4539,6 +4841,10 @@ JSON:
       var qBadges = qKeys.map(function(k) { return '<span class="q-tag">' + escapeHtml(k) + ': ' + escapeHtml(r.essayMap[k]) + 'đ</span>'; }).join(' ');
       var tlTotalVal = getStudentEssayTotalString(r);
       var badge = r.isMatchedRoster ? '<span class="badge-match">✓</span>' : (r.isOutsideRoster ? '<span class="badge-outside">Ngoài DS</span>' : '');
+
+      var p1Val = (r.part1Score !== undefined && r.part1Score !== null && r.part1Score !== '') ? r.part1Score : '';
+      var p1PlusVal = (r.part1PlusGraded !== undefined && r.part1PlusGraded !== null && r.part1PlusGraded !== '') ? r.part1PlusGraded : '';
+      var p2Val = (r.part2Score !== undefined && r.part2Score !== null && r.part2Score !== '') ? r.part2Score : '';
 
       return '<tr class="' + (r.isOutsideRoster ? 'row-unmatched' : '') + '">' +
         '<td>' + escapeHtml(stt) + '</td>' +
@@ -4550,7 +4856,10 @@ JSON:
         '<td><b>' + (tnVal !== '' ? (tnVal + 'đ') : '') + '</b></td>' +
         '<td>' + qBadges + '</td>' +
         '<td><b>' + (tlTotalVal !== '' ? tlTotalVal : '') + '</b></td>' +
-        '<td style="color:#dc2626; font-weight:bold;">' + escapeHtml(r.totalScore) + '</td>' +
+        '<td><input type="number" step="0.25" class="part-inline-input" placeholder="P1" value="' + escapeHtml(p1Val) + '" onchange="onInlinePartScoreChange(' + r.timestamp + ', 1, this.value)"></td>' +
+        '<td style="text-align:center;">' + (p1PlusVal !== '' ? ('<span class="p1-sum-badge">' + escapeHtml(p1PlusVal) + '</span>') : '<span style="color:#94a3b8;">—</span>') + '</td>' +
+        '<td><input type="number" step="0.25" class="part-inline-input" placeholder="P2" value="' + escapeHtml(p2Val) + '" onchange="onInlinePartScoreChange(' + r.timestamp + ', 2, this.value)"></td>' +
+        '<td style="color:#dc2626; font-weight:bold; text-align:center;">' + escapeHtml(r.totalScore) + '</td>' +
         '<td class="del-row" onclick="delRec(' + r.timestamp + ')">✕</td>' +
       '</tr>';
     }).join('');
@@ -4576,6 +4885,9 @@ JSON:
       var hasM = !blank && ((r.hasMcq !== undefined) ? r.hasMcq : (r.mcqScore !== '' || r.tfScore !== '' || r.saScore !== ''));
       var hasE = !blank && ((r.hasEssay !== undefined) ? r.hasEssay : (Object.keys(r.essayMap || {}).length > 0));
       var tnVal = getStudentTnString(r);
+      var p1Val = (!blank && r.part1Score !== undefined && r.part1Score !== '') ? r.part1Score : "";
+      var p1PlusVal = (!blank && r.part1PlusGraded !== undefined && r.part1PlusGraded !== '') ? r.part1PlusGraded : "";
+      var p2Val = (!blank && r.part2Score !== undefined && r.part2Score !== '') ? r.part2Score : "";
 
       var obj = {
         "STT": r.displayOrder !== undefined ? r.displayOrder : (idx + 1),
@@ -4591,6 +4903,9 @@ JSON:
         obj["TL " + k] = (hasE && r.essayMap && r.essayMap[k] !== undefined) ? r.essayMap[k] : "";
       });
       obj["Tổng TL"] = hasE ? getStudentEssayTotalString(r) : "";
+      obj["Phần 1"] = p1Val;
+      obj["P1 + Điểm chấm"] = p1PlusVal;
+      obj["Phần 2"] = p2Val;
       obj["Tổng cộng"] = blank ? "" : (r.totalScore !== undefined ? r.totalScore : "");
       return obj;
     });
@@ -4637,16 +4952,22 @@ JSON:
     var tsvRows = [];
 
     if (copyMode === 'SHORT') {
-      headers = ["STT", "Số báo danh", "Mã phách", "Họ và tên", "Lớp", "Tổng điểm"];
+      headers = ["STT", "Số báo danh", "Mã phách", "Họ và tên", "Lớp", "Phần 1", "P1 + Điểm chấm", "Phần 2", "Tổng điểm"];
       tsvRows.push(headers.join("\t"));
       sorted.forEach(function(r, idx) {
         var blank = r.isUngradedPlaceholder;
+        var p1Val = (!blank && r.part1Score !== undefined && r.part1Score !== '') ? r.part1Score : "";
+        var p1PlusVal = (!blank && r.part1PlusGraded !== undefined && r.part1PlusGraded !== '') ? r.part1PlusGraded : "";
+        var p2Val = (!blank && r.part2Score !== undefined && r.part2Score !== '') ? r.part2Score : "";
         var rowArr = [
           cleanCell(r.displayOrder !== undefined ? r.displayOrder : (idx + 1)),
           cleanCell(r.sbd || ""),
           cleanCell(r.blindCode || ""),
           cleanCell(r.fullName || ""),
           cleanCell(r.className || ""),
+          cleanCell(p1Val),
+          cleanCell(p1PlusVal),
+          cleanCell(p2Val),
           blank ? "" : cleanCell(r.totalScore !== undefined ? r.totalScore : "")
         ];
         tsvRows.push(rowArr.join("\t"));
@@ -4655,13 +4976,16 @@ JSON:
       var qCols = getAllEssayCols();
       headers = ["STT", "SBD", "Mã phách", "Mã đề", "Họ và tên", "Lớp", "TN", "TL từng câu"];
       qCols.forEach(function(k) { headers.push("TL " + k); });
-      headers.push("Tổng TL", "Tổng cộng");
+      headers.push("Tổng TL", "Phần 1", "P1 + Điểm chấm", "Phần 2", "Tổng cộng");
       tsvRows.push(headers.join("\t"));
 
       sorted.forEach(function(r, idx) {
         var blank = r.isUngradedPlaceholder;
         var hasM = !blank && ((r.hasMcq !== undefined) ? r.hasMcq : (r.mcqScore !== '' || r.tfScore !== '' || r.saScore !== ''));
         var hasE = !blank && ((r.hasEssay !== undefined) ? r.hasEssay : (Object.keys(r.essayMap || {}).length > 0));
+        var p1Val = (!blank && r.part1Score !== undefined && r.part1Score !== '') ? r.part1Score : "";
+        var p1PlusVal = (!blank && r.part1PlusGraded !== undefined && r.part1PlusGraded !== '') ? r.part1PlusGraded : "";
+        var p2Val = (!blank && r.part2Score !== undefined && r.part2Score !== '') ? r.part2Score : "";
 
         var rowArr = [
           cleanCell(r.displayOrder !== undefined ? r.displayOrder : (idx + 1)),
@@ -4678,6 +5002,9 @@ JSON:
         });
         rowArr.push(
           hasE ? cleanCell(getStudentEssayTotalString(r)) : "",
+          cleanCell(p1Val),
+          cleanCell(p1PlusVal),
+          cleanCell(p2Val),
           blank ? "" : cleanCell(r.totalScore !== undefined ? r.totalScore : "")
         );
         tsvRows.push(rowArr.join("\t"));
@@ -4686,7 +5013,7 @@ JSON:
 
     var tsvText = tsvRows.join("\n");
     var msg = (copyMode === 'SHORT')
-      ? '✅ Đã copy Bảng điểm Rút gọn (STT, SBD, Mã phách, Họ tên, Lớp, Tổng điểm)!\nBạn hãy mở Excel / Google Sheets và bấm Dán (Ctrl + V) — Đảm bảo khớp 100% từng dòng.'
+      ? '✅ Đã copy Bảng điểm Rút gọn (STT, SBD, Mã phách, Họ tên, Lớp, Phần 1, P1 + Điểm chấm, Phần 2, Tổng điểm)!\nBạn hãy mở Excel / Google Sheets và bấm Dán (Ctrl + V) — Đảm bảo khớp 100% từng dòng.'
       : '✅ Đã copy Đầy đủ tất cả các trường giống hệt bảng lưu trên App!\nBạn hãy mở Excel / Google Sheets và bấm Dán (Ctrl + V) — Đảm bảo không lệch bất kỳ cột nào.';
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
