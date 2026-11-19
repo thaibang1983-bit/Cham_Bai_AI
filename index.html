@@ -102,6 +102,33 @@
   .badge-match { display: inline-block; background: #dcfce7; color: #166534; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; }
   .badge-outside { display: inline-block; background: #fee2e2; color: #991b1b; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; }
   .count-pill { background: #dbeafe; color: #1e40af; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+
+  /* === SIÊU DOCUMENT SCANNER & PERSPECTIVE FLATTENER === */
+  .superdoc-opt-bar { background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 8px; padding: 8px 10px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .superdoc-opt-bar label { margin: 0; font-size: 12.5px; color: #065f46; display: flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 700; }
+  .superdoc-opt-bar input[type="checkbox"] { width: 17px; height: 17px; margin: 0; accent-color: #16a34a; flex-shrink: 0; }
+  .img-edit-btn { background: #0284c7; color: #fff; border: none; border-radius: 5px; padding: 2px 5px; font-size: 11px; font-weight: bold; position: absolute; bottom: 4px; right: 4px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .doc-modal { position: fixed; inset: 0; z-index: 99999; background: #0f172a; display: none; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .doc-modal.open { display: flex; }
+  .doc-scan-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #1e293b; color: #fff; border-bottom: 1px solid #334155; gap: 6px; flex-wrap: wrap; }
+  .doc-scan-title { font-size: 14px; font-weight: 700; color: #38bdf8; }
+  .doc-top-tools { display: flex; gap: 6px; }
+  .doc-tool-btn { background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 6px; padding: 6px 9px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .doc-tool-btn:active { background: #475569; }
+  .doc-scan-stage { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px; background: #020617; }
+  .doc-scan-stage canvas { max-width: 100%; max-height: 100%; display: block; touch-action: none; border-radius: 4px; }
+  .doc-scan-hint { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.85); color: #e2e8f0; font-size: 11.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.35); pointer-events: none; white-space: nowrap; }
+  .doc-scan-bottom { background: #1e293b; padding: 10px 12px 14px; border-top: 1px solid #334155; display: flex; flex-direction: column; gap: 8px; }
+  .doc-filter-row { display: flex; gap: 6px; }
+  .doc-filter-btn { flex: 1; background: #0f172a; color: #cbd5e1; border: 1px solid #475569; border-radius: 7px; padding: 8px 4px; font-size: 11.5px; font-weight: 700; cursor: pointer; text-align: center; }
+  .doc-filter-btn.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
+  .doc-action-row { display: flex; gap: 8px; }
+  .doc-act-btn { flex: 1; border: none; border-radius: 8px; padding: 11px 8px; font-size: 13px; font-weight: 700; cursor: pointer; color: #fff; }
+  .doc-act-cancel { flex: 0.7; background: #475569; }
+  .doc-act-preview { flex: 0.95; background: #7c3aed; }
+  .doc-act-apply { flex: 1.45; background: #16a34a; }
+  .doc-act-btn:disabled { opacity: 0.6; }
+
 </style>
 </head>
 <body>
@@ -303,7 +330,14 @@
       </div>
     </div>
 
-    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="addPages(event)">
+    <div class="superdoc-opt-bar">
+      <label>
+        <input type="checkbox" id="autoSuperDocChk" checked onchange="saveSuperDocPref()">
+        <span>📐 Làm phẳng Siêu Document tự động khi chụp Camera (Khử bóng, nắn thẳng 4 góc)</span>
+      </label>
+    </div>
+
+    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="addCameraPages(event)">
     <input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="addPages(event)">
     <input type="file" id="stuPdfInput" accept=".pdf,application/pdf" style="display:none" onchange="addStudentPdf(event)">
 
@@ -437,6 +471,34 @@
     <button type="button" class="btn btn-copy-short" onclick="copyForExcel('SHORT')">📋 Chỉ Copy Rút gọn (STT, SBD, Mã phách, Họ tên, Lớp, Tổng điểm)</button>
 
     <button type="button" class="btn btn-danger" onclick="clearAllRecords()">🗑️ Xóa tất cả để chấm lớp mới</button>
+  </div>
+
+  <!-- MODAL LÀM PHẲNG SIÊU DOCUMENT (CHUẨN PHỐI CẢNH 4 GÓC + KHỬ BÓNG) -->
+  <div id="docScannerModal" class="doc-modal" aria-hidden="true">
+    <div class="doc-scan-top">
+      <div class="doc-scan-title">📐 Siêu Document — Làm phẳng bài làm</div>
+      <div class="doc-top-tools">
+        <button type="button" class="doc-tool-btn" onclick="docScanRotate90()">🔄 Xoay 90°</button>
+        <button type="button" class="doc-tool-btn" onclick="docScanAutoCorners()">🎯 Tự bắt góc</button>
+        <button type="button" class="doc-tool-btn" onclick="docScanFullFrame()">⬜ Toàn ảnh</button>
+      </div>
+    </div>
+    <div class="doc-scan-stage" id="docScanStage">
+      <div class="doc-scan-hint" id="docScanHint">Kéo 4 chấm tròn vào 4 góc tờ giấy → Bấm Làm phẳng</div>
+      <canvas id="docScanCanvas"></canvas>
+    </div>
+    <div class="doc-scan-bottom">
+      <div class="doc-filter-row">
+        <button type="button" class="doc-filter-btn active" id="docFilterSuper" onclick="setDocScanFilter('SUPER')">✨ Siêu Document (Màu AI)</button>
+        <button type="button" class="doc-filter-btn" id="docFilterBw" onclick="setDocScanFilter('BW')">⚫ Trắng đen nét cao</button>
+        <button type="button" class="doc-filter-btn" id="docFilterOrig" onclick="setDocScanFilter('ORIG')">🖼️ Chỉ làm phẳng</button>
+      </div>
+      <div class="doc-action-row">
+        <button type="button" class="doc-act-btn doc-act-cancel" onclick="closeDocScanner(false)">✕ Hủy</button>
+        <button type="button" class="doc-act-btn doc-act-preview" id="docPreviewBtn" onclick="toggleDocScanPreview()">👁️ Xem phẳng</button>
+        <button type="button" class="doc-act-btn doc-act-apply" id="docApplyBtn" onclick="applyDocScannerResult()">✅ Làm phẳng & Lưu</button>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -1375,6 +1437,9 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     if (safeGet('g_manualcode') !== null) document.getElementById('manualExamCode').value = safeGet('g_manualcode');
     if (safeGet('g_mode')) setMode(safeGet('g_mode'));
     if (safeGet('g_style')) setGradingStyle(safeGet('g_style'));
+    if (safeGet('g_superdoc') !== null && document.getElementById('autoSuperDocChk')) {
+      document.getElementById('autoSuperDocChk').checked = (safeGet('g_superdoc') !== '0');
+    }
 
     autoDetectStructureFromInputs(true);
 
@@ -3565,35 +3630,790 @@ JSON:
     applyExtractedRubricToUI(aiMcq, aiTf, aiSa, aiEssay, aiMulti, fileName, aiMcqBackup);
   }
 
-  // NẠP ẢNH BÀI LÀM CHUẨN SẮC NÉT 1024PX: TỐN CÙNG 258 TOKENS NHƯ 680PX NHƯNG NÉT CHỮ & VẾT KHOANH RÕ GẤP 2.2 LẦN
+  // ============================================================================
+  // BỘ XỬ LÝ LÀM PHẲNG SIÊU DOCUMENT (AUTO 4-CORNER + HOMOGRAPHY WARP + KHỬ BÓNG)
+  // ============================================================================
+  var docScanState = {
+    sourceCanvas: null,
+    corners: [],          // 4 điểm [TL, TR, BR, BL] chuẩn hóa theo tọa độ pixel trên sourceCanvas
+    activeCorner: -1,
+    filterMode: 'SUPER',  // 'SUPER' | 'BW' | 'ORIG'
+    isPreviewMode: false,
+    previewCanvas: null,
+    fileName: 'camera.jpg',
+    editIndex: -1,        // -1: thêm trang mới; >=0: sửa trang hiện có trong pagesData
+    queueFiles: [],
+    scaleX: 1,
+    scaleY: 1,
+    displayW: 0,
+    displayH: 0,
+    pointerBound: false
+  };
+
+  function saveSuperDocPref() {
+    var chk = document.getElementById('autoSuperDocChk');
+    if (chk) safeSet('g_superdoc', chk.checked ? '1' : '0');
+  }
+
+  function encodeCanvasForAI(canvas) {
+    var du = canvas.toDataURL('image/webp', 0.82);
+    var mimeType = (du.indexOf('data:image/webp') === 0) ? 'image/webp' : 'image/jpeg';
+    if (mimeType === 'image/jpeg') {
+      du = canvas.toDataURL('image/jpeg', 0.84);
+    }
+    return { mime: mimeType, base64: du.split(',')[1], dataUrl: du };
+  }
+
+  // Giải hệ phương trình tuyến tính 8x8 bằng khử Gauss có chọn phần tử trục (tính ma trận Homography 3x3)
+  function solveHomographyMatrix(dstPts, srcPts) {
+    var A = [];
+    var b = [];
+    for (var i = 0; i < 4; i++) {
+      var x = dstPts[i].x, y = dstPts[i].y;
+      var u = srcPts[i].x, v = srcPts[i].y;
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]);
+      b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v * x, -v * y]);
+      b.push(v);
+    }
+    var n = 8;
+    for (var col = 0; col < n; col++) {
+      var maxRow = col;
+      var maxVal = Math.abs(A[col][col]);
+      for (var r = col + 1; r < n; r++) {
+        var val = Math.abs(A[r][col]);
+        if (val > maxVal) { maxVal = val; maxRow = r; }
+      }
+      if (maxVal < 1e-10) return null;
+      if (maxRow !== col) {
+        var tmpRow = A[col]; A[col] = A[maxRow]; A[maxRow] = tmpRow;
+        var tmpB = b[col]; b[col] = b[maxRow]; b[maxRow] = tmpB;
+      }
+      var pivot = A[col][col];
+      for (var j = col; j < n; j++) A[col][j] /= pivot;
+      b[col] /= pivot;
+      for (var r2 = 0; r2 < n; r2++) {
+        if (r2 === col) continue;
+        var factor = A[r2][col];
+        if (factor === 0) continue;
+        for (var j2 = col; j2 < n; j2++) A[r2][j2] -= factor * A[col][j2];
+        b[r2] -= factor * b[col];
+      }
+    }
+    return [b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], 1.0];
+  }
+
+  // Biến đổi phối cảnh 4 góc bất kỳ -> trang chữ nhật phẳng với nội suy song tuyến (Bilinear Interpolation)
+  function warpPerspectiveCanvas(srcCanvas, corners, maxDimOut) {
+    var tl = corners[0], tr = corners[1], br = corners[2], bl = corners[3];
+    var wTop = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+    var wBot = Math.hypot(br.x - bl.x, br.y - bl.y);
+    var hLeft = Math.hypot(bl.x - tl.x, bl.y - tl.y);
+    var hRight = Math.hypot(br.x - tr.x, br.y - tr.y);
+
+    var outW = Math.max(64, Math.round(Math.max(wTop, wBot)));
+    var outH = Math.max(64, Math.round(Math.max(hLeft, hRight)));
+    var limit = maxDimOut || 1280;
+    if (outW > limit || outH > limit) {
+      var ratio = limit / Math.max(outW, outH);
+      outW = Math.max(64, Math.round(outW * ratio));
+      outH = Math.max(64, Math.round(outH * ratio));
+    }
+
+    var dstPts = [
+      { x: 0, y: 0 },
+      { x: outW - 1, y: 0 },
+      { x: outW - 1, y: outH - 1 },
+      { x: 0, y: outH - 1 }
+    ];
+    var H = solveHomographyMatrix(dstPts, corners);
+
+    var outCanvas = document.createElement('canvas');
+    outCanvas.width = outW;
+    outCanvas.height = outH;
+    var outCtx = outCanvas.getContext('2d');
+
+    if (!H) {
+      outCtx.drawImage(srcCanvas, 0, 0, outW, outH);
+      return outCanvas;
+    }
+
+    var srcW = srcCanvas.width, srcH = srcCanvas.height;
+    var srcData = srcCanvas.getContext('2d').getImageData(0, 0, srcW, srcH).data;
+    var outImg = outCtx.createImageData(outW, outH);
+    var dstData = outImg.data;
+
+    var h0 = H[0], h1 = H[1], h2 = H[2];
+    var h3 = H[3], h4 = H[4], h5 = H[5];
+    var h6 = H[6], h7 = H[7], h8 = H[8];
+    var maxSx = srcW - 2, maxSy = srcH - 2;
+
+    for (var y = 0; y < outH; y++) {
+      var uNumBase = h1 * y + h2;
+      var vNumBase = h4 * y + h5;
+      var wDenBase = h7 * y + h8;
+      var rowOff = y * outW * 4;
+      for (var x = 0; x < outW; x++) {
+        var denom = h6 * x + wDenBase;
+        var sx = (h0 * x + uNumBase) / denom;
+        var sy = (h3 * x + vNumBase) / denom;
+        var dIdx = rowOff + x * 4;
+
+        if (sx >= 0 && sy >= 0 && sx <= maxSx && sy <= maxSy) {
+          var x0 = sx | 0;
+          var y0 = sy | 0;
+          var fx = sx - x0;
+          var fy = sy - y0;
+          var ifx = 1 - fx;
+          var ify = 1 - fy;
+
+          var i00 = (y0 * srcW + x0) * 4;
+          var i10 = i00 + 4;
+          var i01 = i00 + srcW * 4;
+          var i11 = i01 + 4;
+
+          var w00 = ifx * ify;
+          var w10 = fx * ify;
+          var w01 = ifx * fy;
+          var w11 = fx * fy;
+
+          dstData[dIdx]     = (srcData[i00]     * w00 + srcData[i10]     * w10 + srcData[i01]     * w01 + srcData[i11]     * w11) | 0;
+          dstData[dIdx + 1] = (srcData[i00 + 1] * w00 + srcData[i10 + 1] * w10 + srcData[i01 + 1] * w01 + srcData[i11 + 1] * w11) | 0;
+          dstData[dIdx + 2] = (srcData[i00 + 2] * w00 + srcData[i10 + 2] * w10 + srcData[i01 + 2] * w01 + srcData[i11 + 2] * w11) | 0;
+          dstData[dIdx + 3] = 255;
+        } else {
+          var cx = sx < 0 ? 0 : (sx >= srcW ? srcW - 1 : (sx | 0));
+          var cy = sy < 0 ? 0 : (sy >= srcH ? srcH - 1 : (sy | 0));
+          var cIdx = (cy * srcW + cx) * 4;
+          dstData[dIdx]     = srcData[cIdx];
+          dstData[dIdx + 1] = srcData[cIdx + 1];
+          dstData[dIdx + 2] = srcData[cIdx + 2];
+          dstData[dIdx + 3] = 255;
+        }
+      }
+    }
+    outCtx.putImageData(outImg, 0, 0);
+    return outCanvas;
+  }
+
+  // Khử bóng đổ cục bộ + làm trắng nền giấy + giữ nguyên màu mực xanh/đỏ/đen + tăng độ nét (Siêu Document)
+  function enhanceSuperDocumentCanvas(canvas, mode) {
+    if (mode === 'ORIG') return canvas;
+    var w = canvas.width, h = canvas.height;
+    var ctx = canvas.getContext('2d');
+    var imgData = ctx.getImageData(0, 0, w, h);
+    var data = imgData.data;
+
+    // Bước 1: Ước lượng bản đồ ánh sáng nền giấy cục bộ (Downscale 1/16 -> Max-Pool 3x3 -> Box-Blur 2 lần)
+    var bw = Math.max(24, Math.round(w / 16));
+    var bh = Math.max(24, Math.round(h / 16));
+    var bgCanvas = document.createElement('canvas');
+    bgCanvas.width = bw; bgCanvas.height = bh;
+    var bgCtx = bgCanvas.getContext('2d');
+    bgCtx.drawImage(canvas, 0, 0, bw, bh);
+    var bgImg = bgCtx.getImageData(0, 0, bw, bh);
+    var bgSrc = bgImg.data;
+    var bgMax = new Uint8ClampedArray(bgSrc.length);
+
+    // 3x3 Max Filter để bỏ qua nét chữ tối, chỉ lấy độ sáng thực tế của mặt giấy
+    for (var y = 0; y < bh; y++) {
+      for (var x = 0; x < bw; x++) {
+        var mr = 0, mg = 0, mb = 0;
+        for (var dy = -1; dy <= 1; dy++) {
+          var ny = y + dy;
+          if (ny < 0 || ny >= bh) continue;
+          for (var dx = -1; dx <= 1; dx++) {
+            var nx = x + dx;
+            if (nx < 0 || nx >= bw) continue;
+            var k = (ny * bw + nx) * 4;
+            if (bgSrc[k] > mr) mr = bgSrc[k];
+            if (bgSrc[k + 1] > mg) mg = bgSrc[k + 1];
+            if (bgSrc[k + 2] > mb) mb = bgSrc[k + 2];
+          }
+        }
+        var o = (y * bw + x) * 4;
+        bgMax[o] = mr; bgMax[o + 1] = mg; bgMax[o + 2] = mb; bgMax[o + 3] = 255;
+      }
+    }
+
+    // 2 lần Box-Blur 5x5 để bản đồ ánh sáng mịn tuyệt đối
+    var bufA = bgMax, bufB = new Uint8ClampedArray(bgSrc.length);
+    for (var pass = 0; pass < 2; pass++) {
+      for (var by = 0; by < bh; by++) {
+        for (var bx = 0; bx < bw; bx++) {
+          var sr = 0, sg = 0, sb = 0, cnt = 0;
+          for (var ky = -2; ky <= 2; ky++) {
+            var yy = by + ky; if (yy < 0 || yy >= bh) continue;
+            for (var kx = -2; kx <= 2; kx++) {
+              var xx = bx + kx; if (xx < 0 || xx >= bw) continue;
+              var idx = (yy * bw + xx) * 4;
+              sr += bufA[idx]; sg += bufA[idx + 1]; sb += bufA[idx + 2];
+              cnt++;
+            }
+          }
+          var outI = (by * bw + bx) * 4;
+          bufB[outI] = (sr / cnt) | 0;
+          bufB[outI + 1] = (sg / cnt) | 0;
+          bufB[outI + 2] = (sb / cnt) | 0;
+          bufB[outI + 3] = 255;
+        }
+      }
+      var swp = bufA; bufA = bufB; bufB = swp;
+    }
+
+    bgImg.data.set(bufA);
+    bgCtx.putImageData(bgImg, 0, 0);
+
+    // Phóng lại bản đồ nền giấy về đúng kích thước ảnh phẳng
+    var upCanvas = document.createElement('canvas');
+    upCanvas.width = w; upCanvas.height = h;
+    var upCtx = upCanvas.getContext('2d');
+    upCtx.imageSmoothingEnabled = true;
+    upCtx.drawImage(bgCanvas, 0, 0, w, h);
+    var bgFull = upCtx.getImageData(0, 0, w, h).data;
+
+    // Bước 2: Chia ánh sáng cục bộ (Illumination Division) & kéo tương phản nét chữ
+    var len = data.length;
+    if (mode === 'BW') {
+      for (var i = 0; i < len; i += 4) {
+        var rN = (data[i] * 255) / (bgFull[i] > 28 ? bgFull[i] : 28);
+        var gN = (data[i + 1] * 255) / (bgFull[i + 1] > 28 ? bgFull[i + 1] : 28);
+        var bN = (data[i + 2] * 255) / (bgFull[i + 2] > 28 ? bgFull[i + 2] : 28);
+        var lum = 0.299 * rN + 0.587 * gN + 0.114 * bN;
+        var v = (lum - 92) * (255 / (228 - 92));
+        if (v < 0) v = 0; else if (v > 255) v = 255;
+        data[i] = data[i + 1] = data[i + 2] = v | 0;
+      }
+    } else {
+      // SUPER DOCUMENT (MÀU CHUẨN AI): Nền giấy trắng tinh, giữ nguyên màu mực xanh/đỏ/đen đậm nét
+      for (var j = 0; j < len; j += 4) {
+        var br = bgFull[j] > 32 ? bgFull[j] : 32;
+        var bg = bgFull[j + 1] > 32 ? bgFull[j + 1] : 32;
+        var bb = bgFull[j + 2] > 32 ? bgFull[j + 2] : 32;
+
+        var rn = (data[j] * 255) / br;
+        var gn = (data[j + 1] * 255) / bg;
+        var bn = (data[j + 2] * 255) / bb;
+
+        // Kéo trắng nền giấy (>= 236 -> 255) và kéo đậm nét mực (< 236)
+        rn = (rn - 26) * (255 / (236 - 26));
+        gn = (gn - 26) * (255 / (236 - 26));
+        bn = (bn - 26) * (255 / (236 - 26));
+
+        if (rn < 0) rn = 0; else if (rn > 255) rn = 255;
+        if (gn < 0) gn = 0; else if (gn > 255) gn = 255;
+        if (bn < 0) bn = 0; else if (bn > 255) bn = 255;
+
+        // Tăng nhẹ độ bão hòa cho các điểm mực màu (bút bi xanh/đỏ) để nổi bật trên nền trắng
+        var avg = (rn + gn + bn) * 0.3333;
+        if (avg < 225) {
+          var sat = 1.25;
+          rn = avg + (rn - avg) * sat;
+          gn = avg + (gn - avg) * sat;
+          bn = avg + (bn - avg) * sat;
+          if (rn < 0) rn = 0; else if (rn > 255) rn = 255;
+          if (gn < 0) gn = 0; else if (gn > 255) gn = 255;
+          if (bn < 0) bn = 0; else if (bn > 255) bn = 255;
+        }
+        data[j] = rn | 0;
+        data[j + 1] = gn | 0;
+        data[j + 2] = bn | 0;
+      }
+    }
+
+    // Bước 3: Lọc sắc nét Unsharp Mask nhẹ (3x3) giúp chữ viết tay & nét khoanh sắc nét cho AI đọc
+    var copy = new Uint8ClampedArray(data);
+    var stride = w * 4;
+    for (var sy = 1; sy < h - 1; sy++) {
+      var rowStart = sy * stride;
+      for (var sx = 1; sx < w - 1; sx++) {
+        var p = rowStart + sx * 4;
+        for (var ch = 0; ch < 3; ch++) {
+          var center = copy[p + ch];
+          var neighbors = (copy[p - 4 + ch] + copy[p + 4 + ch] + copy[p - stride + ch] + copy[p + stride + ch]) * 0.25;
+          var sharp = center + (center - neighbors) * 0.45;
+          data[p + ch] = sharp < 0 ? 0 : (sharp > 255 ? 255 : (sharp | 0));
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  }
+
+  // Tự động phát hiện 4 góc tờ giấy trắng trên nền bàn (chạy < 15ms không cần thư viện ngoài)
+  function autoDetectDocumentCorners(srcCanvas) {
+    var sw = srcCanvas.width, sh = srcCanvas.height;
+    var defaultCorners = [
+      { x: sw * 0.04, y: sh * 0.04 },
+      { x: sw * 0.96, y: sh * 0.04 },
+      { x: sw * 0.96, y: sh * 0.96 },
+      { x: sw * 0.04, y: sh * 0.96 }
+    ];
+    try {
+      var maxS = 200;
+      var scale = Math.min(1, maxS / Math.max(sw, sh));
+      var dw = Math.max(32, Math.round(sw * scale));
+      var dh = Math.max(32, Math.round(sh * scale));
+      var tmp = document.createElement('canvas');
+      tmp.width = dw; tmp.height = dh;
+      var tCtx = tmp.getContext('2d');
+      tCtx.drawImage(srcCanvas, 0, 0, dw, dh);
+      var px = tCtx.getImageData(0, 0, dw, dh).data;
+
+      var total = dw * dh;
+      var gray = new Uint8Array(total);
+      var hist = new Int32Array(256);
+      for (var i = 0; i < total; i++) {
+        var g = (px[i * 4] * 77 + px[i * 4 + 1] * 150 + px[i * 4 + 2] * 29) >> 8;
+        gray[i] = g;
+        hist[g]++;
+      }
+
+      // Tính ngưỡng Otsu phân tách giấy sáng vs nền bàn tối
+      var sum = 0;
+      for (var t = 0; t < 256; t++) sum += t * hist[t];
+      var sumB = 0, wB = 0, maxVar = 0, thresh = 128;
+      for (var t2 = 0; t2 < 256; t2++) {
+        wB += hist[t2];
+        if (wB === 0) continue;
+        var wF = total - wB;
+        if (wF === 0) break;
+        sumB += t2 * hist[t2];
+        var mB = sumB / wB;
+        var mF = (sum - sumB) / wF;
+        var between = wB * wF * (mB - mF) * (mB - mF);
+        if (between > maxVar) { maxVar = between; thresh = t2; }
+      }
+      if (thresh < 75 || thresh > 215) return defaultCorners;
+
+      var mask = new Uint8Array(total);
+      for (var m = 0; m < total; m++) mask[m] = gray[m] >= thresh ? 1 : 0;
+
+      // Tìm vùng liên thông sáng lớn nhất (tờ giấy bài làm) bằng BFS
+      var visited = new Uint8Array(total);
+      var queue = new Int32Array(total);
+      var bestCount = 0;
+      var bestPixels = null;
+
+      for (var idx = 0; idx < total; idx++) {
+        if (mask[idx] === 1 && !visited[idx]) {
+          var head = 0, tail = 0;
+          queue[tail++] = idx;
+          visited[idx] = 1;
+          while (head < tail) {
+            var cur = queue[head++];
+            var cx = cur % dw, cy = (cur / dw) | 0;
+            if (cx > 0 && mask[cur - 1] && !visited[cur - 1]) { visited[cur - 1] = 1; queue[tail++] = cur - 1; }
+            if (cx + 1 < dw && mask[cur + 1] && !visited[cur + 1]) { visited[cur + 1] = 1; queue[tail++] = cur + 1; }
+            if (cy > 0 && mask[cur - dw] && !visited[cur - dw]) { visited[cur - dw] = 1; queue[tail++] = cur - dw; }
+            if (cy + 1 < dh && mask[cur + dw] && !visited[cur + dw]) { visited[cur + dw] = 1; queue[tail++] = cur + dw; }
+          }
+          if (tail > bestCount) {
+            bestCount = tail;
+            bestPixels = queue.slice(0, tail);
+          }
+        }
+      }
+
+      var areaRatio = bestCount / total;
+      if (!bestPixels || areaRatio < 0.16 || areaRatio > 0.95) return defaultCorners;
+
+      var tlP = { x: dw, y: dh }, trP = { x: 0, y: dh }, brP = { x: 0, y: 0 }, blP = { x: dw, y: 0 };
+      var minSum = 1e9, maxSum = -1e9, maxDiff = -1e9, minDiff = 1e9;
+      for (var k = 0; k < bestPixels.length; k++) {
+        var pIdx = bestPixels[k];
+        var pxX = pIdx % dw;
+        var pxY = (pIdx / dw) | 0;
+        var sVal = pxX + pxY;
+        var dVal = pxX - pxY;
+        if (sVal < minSum) { minSum = sVal; tlP = { x: pxX, y: pxY }; }
+        if (sVal > maxSum) { maxSum = sVal; brP = { x: pxX, y: pxY }; }
+        if (dVal > maxDiff) { maxDiff = dVal; trP = { x: pxX, y: pxY }; }
+        if (dVal < minDiff) { minDiff = dVal; blP = { x: pxX, y: pxY }; }
+      }
+
+      var corners = [
+        { x: (tlP.x / dw) * sw, y: (tlP.y / dh) * sh },
+        { x: (trP.x / dw) * sw, y: (trP.y / dh) * sh },
+        { x: (brP.x / dw) * sw, y: (brP.y / dh) * sh },
+        { x: (blP.x / dw) * sw, y: (blP.y / dh) * sh }
+      ];
+
+      // Kiểm tra tính lồi & diện tích tứ giác phát hiện
+      var quadArea = 0.5 * Math.abs(
+        (corners[0].x * corners[1].y - corners[1].x * corners[0].y) +
+        (corners[1].x * corners[2].y - corners[2].x * corners[1].y) +
+        (corners[2].x * corners[3].y - corners[3].x * corners[2].y) +
+        (corners[3].x * corners[0].y - corners[0].x * corners[3].y)
+      );
+      var quadRatio = quadArea / (sw * sh);
+      if (quadRatio < 0.16 || quadRatio > 0.97) return defaultCorners;
+      return corners;
+    } catch (e) {
+      return defaultCorners;
+    }
+  }
+
+  function loadImageToWorkingCanvas(srcUrl, maxWorkDim) {
+    return new Promise(function(resolve, reject) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        var lim = maxWorkDim || 1600;
+        if (w > lim || h > lim) {
+          if (w >= h) { h = Math.round(h * (lim / w)); w = lim; }
+          else { w = Math.round(w * (lim / h)); h = lim; }
+        }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c);
+      };
+      img.onerror = reject;
+      img.src = srcUrl;
+    });
+  }
+
+  function bindDocScannerEvents() {
+    if (docScanState.pointerBound) return;
+    docScanState.pointerBound = true;
+    var canvas = document.getElementById('docScanCanvas');
+
+    function getCanvasPt(evt) {
+      var rect = canvas.getBoundingClientRect();
+      var clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      var clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return {
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function onStart(evt) {
+      if (docScanState.isPreviewMode || !docScanState.sourceCanvas) return;
+      var pt = getCanvasPt(evt);
+      var bestIdx = -1, bestDist = 52;
+      for (var i = 0; i < 4; i++) {
+        var cx = docScanState.corners[i].x * docScanState.scaleX;
+        var cy = docScanState.corners[i].y * docScanState.scaleY;
+        var d = Math.hypot(pt.x - cx, pt.y - cy);
+        if (d < bestDist) { bestDist = d; bestIdx = i; }
+      }
+      if (bestIdx !== -1) {
+        evt.preventDefault();
+        docScanState.activeCorner = bestIdx;
+        drawDocScannerView();
+      }
+    }
+
+    function onMove(evt) {
+      if (docScanState.activeCorner === -1 || docScanState.isPreviewMode) return;
+      evt.preventDefault();
+      var pt = getCanvasPt(evt);
+      var sx = Math.max(0, Math.min(docScanState.sourceCanvas.width, pt.x / docScanState.scaleX));
+      var sy = Math.max(0, Math.min(docScanState.sourceCanvas.height, pt.y / docScanState.scaleY));
+      docScanState.corners[docScanState.activeCorner] = { x: sx, y: sy };
+      drawDocScannerView();
+    }
+
+    function onEnd() {
+      if (docScanState.activeCorner !== -1) {
+        docScanState.activeCorner = -1;
+        drawDocScannerView();
+      }
+    }
+
+    canvas.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+    canvas.addEventListener('touchstart', onStart, { passive: false });
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+  }
+
+  function drawDocScannerView() {
+    var canvas = document.getElementById('docScanCanvas');
+    var stage = document.getElementById('docScanStage');
+    var ctx = canvas.getContext('2d');
+    var targetSrc = docScanState.isPreviewMode ? docScanState.previewCanvas : docScanState.sourceCanvas;
+    if (!targetSrc) return;
+
+    var maxW = Math.max(240, stage.clientWidth - 20);
+    var maxH = Math.max(240, stage.clientHeight - 20);
+    var ratio = Math.min(maxW / targetSrc.width, maxH / targetSrc.height);
+    var dispW = Math.round(targetSrc.width * ratio);
+    var dispH = Math.round(targetSrc.height * ratio);
+
+    canvas.width = dispW;
+    canvas.height = dispH;
+    docScanState.displayW = dispW;
+    docScanState.displayH = dispH;
+    docScanState.scaleX = dispW / targetSrc.width;
+    docScanState.scaleY = dispH / targetSrc.height;
+
+    ctx.clearRect(0, 0, dispW, dispH);
+    ctx.drawImage(targetSrc, 0, 0, dispW, dispH);
+
+    if (docScanState.isPreviewMode) return;
+
+    var pts = docScanState.corners.map(function(p) {
+      return { x: p.x * docScanState.scaleX, y: p.y * docScanState.scaleY };
+    });
+
+    // Phủ tối vùng bên ngoài tứ giác
+    ctx.save();
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+    ctx.beginPath();
+    ctx.rect(0, 0, dispW, dispH);
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[3].x, pts[3].y);
+    ctx.lineTo(pts[2].x, pts[2].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.closePath();
+    ctx.fill('evenodd');
+    ctx.restore();
+
+    // Vẽ đường viền khung tờ giấy
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.lineTo(pts[2].x, pts[2].y);
+    ctx.lineTo(pts[3].x, pts[3].y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Vẽ 4 nút kéo góc lớn dễ chạm trên điện thoại
+    for (var i = 0; i < 4; i++) {
+      var isAct = (i === docScanState.activeCorner);
+      ctx.beginPath();
+      ctx.arc(pts[i].x, pts[i].y, isAct ? 15 : 12, 0, Math.PI * 2);
+      ctx.fillStyle = isAct ? '#22c55e' : 'rgba(56, 189, 248, 0.9)';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+    }
+
+    // Kính lúp phóng đại góc đang kéo để căn chính xác tuyệt đối
+    if (docScanState.activeCorner !== -1) {
+      var ac = docScanState.corners[docScanState.activeCorner];
+      var loupeR = 48;
+      var lx = (pts[docScanState.activeCorner].x < dispW * 0.5) ? (dispW - loupeR - 12) : (loupeR + 12);
+      var ly = loupeR + 14;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(lx, ly, loupeR, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = '#000';
+      ctx.fillRect(lx - loupeR, ly - loupeR, loupeR * 2, loupeR * 2);
+      var cropSize = 96;
+      ctx.drawImage(
+        docScanState.sourceCanvas,
+        ac.x - cropSize / 2, ac.y - cropSize / 2, cropSize, cropSize,
+        lx - loupeR, ly - loupeR, loupeR * 2, loupeR * 2
+      );
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(lx - 14, ly); ctx.lineTo(lx + 14, ly);
+      ctx.moveTo(lx, ly - 14); ctx.lineTo(lx, ly + 14);
+      ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(lx, ly, loupeR, 0, Math.PI * 2);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }
+
+  function updateDocFilterButtons() {
+    document.getElementById('docFilterSuper').className = 'doc-filter-btn' + (docScanState.filterMode === 'SUPER' ? ' active' : '');
+    document.getElementById('docFilterBw').className = 'doc-filter-btn' + (docScanState.filterMode === 'BW' ? ' active' : '');
+    document.getElementById('docFilterOrig').className = 'doc-filter-btn' + (docScanState.filterMode === 'ORIG' ? ' active' : '');
+  }
+
+  function setDocScanFilter(mode) {
+    docScanState.filterMode = mode;
+    updateDocFilterButtons();
+    if (docScanState.isPreviewMode) {
+      buildDocScanPreview();
+    }
+  }
+
+  function buildDocScanPreview() {
+    if (!docScanState.sourceCanvas) return;
+    var warped = warpPerspectiveCanvas(docScanState.sourceCanvas, docScanState.corners, 1024);
+    enhanceSuperDocumentCanvas(warped, docScanState.filterMode);
+    docScanState.previewCanvas = warped;
+    drawDocScannerView();
+  }
+
+  function toggleDocScanPreview() {
+    docScanState.isPreviewMode = !docScanState.isPreviewMode;
+    var btn = document.getElementById('docPreviewBtn');
+    var hint = document.getElementById('docScanHint');
+    if (docScanState.isPreviewMode) {
+      btn.innerText = '✂️ Chỉnh lại 4 góc';
+      hint.innerText = 'Đang xem trước ảnh đã làm phẳng Siêu Document';
+      buildDocScanPreview();
+    } else {
+      btn.innerText = '👁️ Xem phẳng';
+      hint.innerText = 'Kéo 4 chấm tròn vào 4 góc tờ giấy → Bấm Làm phẳng';
+      drawDocScannerView();
+    }
+  }
+
+  function docScanAutoCorners() {
+    if (!docScanState.sourceCanvas) return;
+    docScanState.isPreviewMode = false;
+    document.getElementById('docPreviewBtn').innerText = '👁️ Xem phẳng';
+    document.getElementById('docScanHint').innerText = 'Đã tự động bắt 4 góc tờ giấy — Kéo chỉnh nếu cần';
+    docScanState.corners = autoDetectDocumentCorners(docScanState.sourceCanvas);
+    drawDocScannerView();
+  }
+
+  function docScanFullFrame() {
+    if (!docScanState.sourceCanvas) return;
+    docScanState.isPreviewMode = false;
+    document.getElementById('docPreviewBtn').innerText = '👁️ Xem phẳng';
+    var sw = docScanState.sourceCanvas.width, sh = docScanState.sourceCanvas.height;
+    docScanState.corners = [
+      { x: 0, y: 0 }, { x: sw, y: 0 }, { x: sw, y: sh }, { x: 0, y: sh }
+    ];
+    drawDocScannerView();
+  }
+
+  function docScanRotate90() {
+    if (!docScanState.sourceCanvas) return;
+    var oldC = docScanState.sourceCanvas;
+    var rotC = document.createElement('canvas');
+    rotC.width = oldC.height;
+    rotC.height = oldC.width;
+    var rCtx = rotC.getContext('2d');
+    rCtx.translate(rotC.width / 2, rotC.height / 2);
+    rCtx.rotate(Math.PI / 2);
+    rCtx.drawImage(oldC, -oldC.width / 2, -oldC.height / 2);
+    docScanState.sourceCanvas = rotC;
+    docScanState.isPreviewMode = false;
+    document.getElementById('docPreviewBtn').innerText = '👁️ Xem phẳng';
+    docScanState.corners = autoDetectDocumentCorners(rotC);
+    drawDocScannerView();
+  }
+
+  async function openDocScannerWithUrl(srcUrl, fileName, editIdx) {
+    bindDocScannerEvents();
+    var modal = document.getElementById('docScannerModal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    docScanState.editIndex = (editIdx !== undefined) ? editIdx : -1;
+    docScanState.fileName = fileName || 'camera.jpg';
+    docScanState.isPreviewMode = false;
+    docScanState.activeCorner = -1;
+    document.getElementById('docPreviewBtn').innerText = '👁️ Xem phẳng';
+    document.getElementById('docScanHint').innerText = 'Đang tự nhận diện 4 góc tờ giấy...';
+    updateDocFilterButtons();
+
+    try {
+      var workCanvas = await loadImageToWorkingCanvas(srcUrl, 1600);
+      docScanState.sourceCanvas = workCanvas;
+      docScanState.corners = autoDetectDocumentCorners(workCanvas);
+      document.getElementById('docScanHint').innerText = 'Kéo 4 chấm tròn vào 4 góc tờ giấy → Bấm Làm phẳng';
+      drawDocScannerView();
+    } catch (e) {
+      alert('Không đọc được ảnh chụp: ' + e.message);
+      closeDocScanner(false);
+    }
+  }
+
+  function closeDocScanner(proceedQueue) {
+    var modal = document.getElementById('docScannerModal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    docScanState.sourceCanvas = null;
+    docScanState.previewCanvas = null;
+    if (proceedQueue && docScanState.queueFiles.length > 0) {
+      var nextFile = docScanState.queueFiles.shift();
+      var objUrl = URL.createObjectURL(nextFile);
+      openDocScannerWithUrl(objUrl, nextFile.name, -1).then(function() {
+        URL.revokeObjectURL(objUrl);
+      });
+    } else {
+      docScanState.queueFiles = [];
+    }
+  }
+
+  function applyDocScannerResult() {
+    if (!docScanState.sourceCanvas) return;
+    var applyBtn = document.getElementById('docApplyBtn');
+    applyBtn.disabled = true;
+    applyBtn.innerText = '⏳ Đang làm phẳng...';
+
+    setTimeout(function() {
+      try {
+        var warped = warpPerspectiveCanvas(docScanState.sourceCanvas, docScanState.corners, 1280);
+        enhanceSuperDocumentCanvas(warped, docScanState.filterMode);
+        var encoded = encodeCanvasForAI(warped);
+        var rawEncoded = docScanState.sourceCanvas.toDataURL('image/jpeg', 0.85);
+
+        var pageItem = {
+          type: 'image',
+          mime: encoded.mime,
+          base64: encoded.base64,
+          dataUrl: encoded.dataUrl,
+          rawDataUrl: rawEncoded,
+          name: docScanState.fileName
+        };
+
+        if (docScanState.editIndex >= 0 && docScanState.editIndex < pagesData.length) {
+          pagesData[docScanState.editIndex] = pageItem;
+        } else {
+          pagesData.push(pageItem);
+        }
+        renderImagePacket();
+      } catch (err) {
+        alert('Lỗi xử lý làm phẳng: ' + err.message);
+      } finally {
+        applyBtn.disabled = false;
+        applyBtn.innerText = '✅ Làm phẳng & Lưu';
+        closeDocScanner(true);
+      }
+    }, 20);
+  }
+
+  function editPageScanner(idx) {
+    var p = pagesData[idx];
+    if (!p || p.type !== 'image') return;
+    openDocScannerWithUrl(p.rawDataUrl || p.dataUrl, p.name, idx);
+  }
+
+  // NẠP ẢNH TỪ THƯ VIỆN: Tự động nâng chuẩn Siêu Document (khử bóng, sáng nền, nét chữ)
   function processSingleImageFile(file) {
     return new Promise(function(resolve) {
       var objUrl = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function() {
-        var canvas = document.createElement('canvas'), maxDim = 1024;
+        var canvas = document.createElement('canvas'), maxDim = 1280;
         var w = img.width, h = img.height;
         if (w > maxDim || h > maxDim) {
-          if (w >= h) {
-            h = Math.round(h * (maxDim / w));
-            w = maxDim;
-          } else {
-            w = Math.round(w * (maxDim / h));
-            h = maxDim;
-          }
+          if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
         }
         canvas.width = w;
         canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        try { ctx.filter = 'contrast(1.18) brightness(1.02)'; } catch (e) {}
-        ctx.drawImage(img, 0, 0, w, h);
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var rawDu = canvas.toDataURL('image/jpeg', 0.84);
         URL.revokeObjectURL(objUrl);
-        var du = canvas.toDataURL('image/webp', 0.76);
-        var mimeType = (du.indexOf('data:image/webp') === 0) ? 'image/webp' : 'image/jpeg';
-        if (mimeType === 'image/jpeg') {
-          du = canvas.toDataURL('image/jpeg', 0.76);
+
+        var autoSuper = document.getElementById('autoSuperDocChk') ? document.getElementById('autoSuperDocChk').checked : true;
+        if (autoSuper) {
+          enhanceSuperDocumentCanvas(canvas, 'SUPER');
         }
-        resolve({ type: 'image', mime: mimeType, base64: du.split(',')[1], dataUrl: du, name: file.name });
+        var enc = encodeCanvasForAI(canvas);
+        resolve({ type: 'image', mime: enc.mime, base64: enc.base64, dataUrl: enc.dataUrl, rawDataUrl: rawDu, name: file.name });
       };
       img.onerror = function() {
         URL.revokeObjectURL(objUrl);
@@ -3601,6 +4421,25 @@ JSON:
       };
       img.src = objUrl;
     });
+  }
+
+  async function addCameraPages(event) {
+    var files = event.target.files; if (!files || files.length === 0) return;
+    var fileArr = Array.from(files);
+    event.target.value = '';
+    var autoSuper = document.getElementById('autoSuperDocChk') ? document.getElementById('autoSuperDocChk').checked : true;
+
+    if (autoSuper) {
+      docScanState.queueFiles = fileArr.slice(1);
+      var firstFile = fileArr[0];
+      var objUrl = URL.createObjectURL(firstFile);
+      await openDocScannerWithUrl(objUrl, firstFile.name, -1);
+      URL.revokeObjectURL(objUrl);
+    } else {
+      var processed = await Promise.all(fileArr.map(processSingleImageFile));
+      processed.forEach(function(item) { if (item) pagesData.push(item); });
+      renderImagePacket();
+    }
   }
 
   async function addPages(event) {
@@ -3667,7 +4506,7 @@ JSON:
     document.getElementById('gradeBtn').innerText = '⚡ Bắt đầu chấm siêu tốc (' + pagesData.length + ' tệp bài làm)';
     list.innerHTML = pagesData.map(function(p, i) {
       if (p.type === 'pdf') return '<div class="img-card"><div class="pdf-card">📄 PDF<br>' + escapeHtml(p.name) + '</div><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
-      return '<div class="img-card"><img src="' + p.dataUrl + '"><span class="img-badge">Trang ' + (i+1) + '</span><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
+      return '<div class="img-card"><img src="' + p.dataUrl + '"><span class="img-badge">Trang ' + (i+1) + '</span><button type="button" class="img-edit-btn" title="Làm phẳng / Cắt lại 4 góc" onclick="editPageScanner(' + i + ')">📐</button><button type="button" class="img-del" onclick="removePage(' + i + ')">✕</button></div>';
     }).join('');
   }
 
