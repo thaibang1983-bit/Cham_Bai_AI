@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v33 - Chấm Nhanh, Chuẩn & Ổn Định)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v34 - Chặn Omni/3.x & Chống 503)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -260,7 +260,7 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v33:</b> Tối ưu tốc độ &amp; độ chính xác: <b>Flash 2.5 (Thinking 192t - 4~7s)</b> + <b>Flash 2.0 (1500 lượt/ngày, thay thế bản Lite hay sai)</b>, chống timeout &amp; lỗi JSON.
+          ⚡ <b>Bản v34:</b> Chặn sạch model <b>omni / 3.x thử nghiệm</b>, tự động thử lại khi gặp quá tải <b>503</b> (giảm Thinking về 0 ở lần thử lại) &amp; đồng bộ chuẩn tên model khi quét API.
         </div>
       </div>
 
@@ -653,7 +653,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v33_fast_accurate_flash25_20';
+  var SCHEMA_CACHE_VERSION = 'v34_fix_omni_503_retry';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -781,7 +781,7 @@
   function isModelTempBusy(modelId) {
     var ts = tempBusyModelsMap[modelId];
     if (!ts) return false;
-    if (Date.now() - ts > 120000) { // Sau 2 phút tự mở khóa thử lại
+    if (Date.now() - ts > 30000) { // Sau 30 giây tự mở khóa thử lại
       delete tempBusyModelsMap[modelId];
       return false;
     }
@@ -949,6 +949,7 @@
     if (m.indexOf('gemini-') !== 0) return false;
     if (deadModelsMap[modelId]) return false;
     var blockedKeywords = [
+      'omni', 'native', 'realtime', 'dialog', 'nano', 'alpha', 'beta',
       'tts', 'audio', 'image', 'imagen', 'veo', 'embedding', 'aqa',
       'learnlm', 'robotics', 'computer-use', 'thinking', 'live', 'bisheng',
       'exp', 'carbon', 'argon', 'bison', 'gecko', 'unicorn', 'medlm',
@@ -964,8 +965,8 @@
 
   function isLowFreeQuotaModel(modelId) {
     var m = String(modelId || '').toLowerCase();
-    // Các model nhánh 3.8, 4.x hoặc preview/pro thường bị giới hạn 20-50 lượt/ngày trên Free Tier
-    if (m.indexOf('3.8') !== -1 || m.indexOf('gemini-4') === 0 || m.indexOf('preview') !== -1 || m.indexOf('pro') !== -1) {
+    // Các model nhánh 3.x (3.7/3.8...), 4.x hoặc preview/pro thường giới hạn thấp hoặc hay quá tải 503 trên Free Tier
+    if (m.indexOf('gemini-3') === 0 || m.indexOf('gemini-4') === 0 || m.indexOf('3.7') !== -1 || m.indexOf('3.8') !== -1 || m.indexOf('preview') !== -1 || m.indexOf('pro') !== -1) {
       return true;
     }
     return false;
@@ -1082,8 +1083,8 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     }).join('');
   }
 
-  function applyBestModelSelection(modelsList, showPopup) {
-    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+  function applyBestModelSelection(modelsList, showPopup, preferredVerifiedModel) {
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
     var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
     var cleanList = baseList.filter(function(m) { return !deadModelsMap[m] && isSuitableGradingModel(m); });
     if (cleanList.length === 0) cleanList = defaultSafeModels.slice();
@@ -1091,8 +1092,13 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     var sorted = cleanList.slice().sort(function(a, b) {
       return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
     });
-    var bestModel = sorted[0];
+    var bestModel = (preferredVerifiedModel && cleanList.indexOf(preferredVerifiedModel) !== -1)
+      ? preferredVerifiedModel
+      : sorted[0];
     populateModelDropdown(cleanList, bestModel);
+
+    var sel = document.getElementById('aiModel');
+    if (sel && bestModel) sel.value = bestModel;
 
     if (!document.getElementById('thinkingLevel').value) document.getElementById('thinkingLevel').value = 'FAST';
     saveConfig();
@@ -1104,7 +1110,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     noteBox.innerHTML = '✅ <b>' + tierBadge + '</b> — Đã chọn: <b>' + escapeHtml(bestModel) + '</b> — ' + info.desc;
 
     if (showPopup) {
-      alert('✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!\n\n• Phân loại tài khoản: ' + tierBadge + '\n• Model tốt nhất đã chọn: ' + bestModel + '\n• Đã loại bỏ các model ảo/giới hạn 20 lượt/ngày và bật chế độ tự động chuyển luồng khi máy chủ bận.');
+      alert('✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!\n\n• Phân loại tài khoản: ' + tierBadge + '\n• Model tốt nhất đã chọn: ' + bestModel + '\n• Đã chặn triệt để model omni / 3.x thử nghiệm và bật tự động thử lại khi gặp quá tải 503.');
     }
   }
 
@@ -1117,7 +1123,12 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       return;
     }
 
-    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra thực tế mô hình có hạn mức cao nhất...';
+    // Khi người dùng bấm Quét thủ công, mở khóa lại các model từng báo bận tạm thời để kiểm tra lại
+    if (!silent) {
+      tempBusyModelsMap = {};
+    }
+
+    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra thực tế mô hình ổn định nhất...';
     try {
       var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key), {
         method: 'GET',
@@ -1135,19 +1146,19 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       });
 
       if (rawModels.length === 0) {
-        rawModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+        rawModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
       }
 
       availableBackendModels = rawModels;
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
 
-      // Sắp xếp danh sách ứng viên và thực hiện Ping kiểm tra nhanh (1 token) trên ứng viên số 1
+      // Sắp xếp danh sách ứng viên chuẩn và thực hiện Ping kiểm tra nhanh (tối đa 6 ứng viên)
       var sortedCandidates = availableBackendModels.slice().sort(function(a, b) {
         return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
       });
 
       var verifiedModel = null;
-      for (var i = 0; i < Math.min(sortedCandidates.length, 4); i++) {
+      for (var i = 0; i < Math.min(sortedCandidates.length, 6); i++) {
         var cand = sortedCandidates[i];
         if (quotaExhaustedMap[cand] || isModelTempBusy(cand)) continue;
         var pingCtrl = new AbortController();
@@ -1198,12 +1209,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
         }
       }
 
-      applyBestModelSelection(availableBackendModels, !silent);
-      if (verifiedModel) {
-        var sel = document.getElementById('aiModel');
-        if (sel) sel.value = verifiedModel;
-        saveConfig();
-      }
+      applyBestModelSelection(availableBackendModels, !silent, verifiedModel);
     } catch (e) {
       noteBox.innerHTML = '⚠️ Chưa đồng bộ được danh sách model: <b>' + escapeHtml(e.message) + '</b>';
       if (!silent) alert('Lỗi kiểm tra API Key: ' + e.message);
@@ -1709,6 +1715,7 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
     var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'FAST';
     var modelsToTry = resolveWorkingModels(uiModelValue);
     var lastErr = null;
+    var hadBusyError = false;
 
     var budgetMap = { 'LOW': 0, 'FAST': 192, 'MEDIUM': 384, 'HIGH': 768 };
     var targetBudget = budgetMap[thinkLvl] !== undefined ? budgetMap[thinkLvl] : 192;
@@ -1719,9 +1726,10 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
       if (deadModelsMap[curModel] || quotaExhaustedMap[curModel]) continue;
 
       var useThinkParam = supportsThinkingConfig(curModel);
+      var attemptBudget = targetBudget;
 
       for (var attempt = 0; attempt < 2; attempt++) {
-        var effectiveBudget = useThinkParam ? targetBudget : 0;
+        var effectiveBudget = useThinkParam ? attemptBudget : 0;
         var safeOutTokens = Math.max(maxTokensOut || 2048, 2048) + effectiveBudget;
         var genConfig = {
           temperature: baseTemp,
@@ -1732,7 +1740,7 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
           genConfig.thinkingConfig = { thinkingBudget: effectiveBudget };
         }
 
-        // Timeout thông minh: đủ thời gian cho model có Thinking hoặc bài nhiều trang, không ngắt ngang ở 25s
+        // Timeout thông minh: đủ thời gian cho model có Thinking hoặc bài nhiều trang
         var reqTimeoutMs = (effectiveBudget > 0 || mediaCount >= 3) ? 45000 : 28000;
         var controller = new AbortController();
         var timeoutId = setTimeout(function() { controller.abort(); }, reqTimeoutMs);
@@ -1769,13 +1777,20 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
                 safeSet('g_tier', 'FREE');
               }
               markModelQuotaExhausted(curModel);
-              lastErr = new Error('Model ' + curModel + ' đã hết hạn mức miễn phí hôm nay, đang tự chuyển sang model khác...');
+              lastErr = new Error('Model ' + curModel + ' đã hết hạn mức miễn phí hôm nay.');
               break;
             }
 
             if (res.status === 503 || res.status === 502 || lowerMsg.indexOf('high demand') !== -1 || lowerMsg.indexOf('overloaded') !== -1 || lowerMsg.indexOf('unavailable') !== -1 || lowerMsg.indexOf('try again later') !== -1) {
+              hadBusyError = true;
+              if (attempt === 0) {
+                // Thử lại 1 lần sau 1.8 giây và hạ Thinking về 0 để giảm tải máy chủ
+                attemptBudget = 0;
+                await new Promise(function(resolve) { setTimeout(resolve, 1800); });
+                continue;
+              }
               markModelTempBusy(curModel);
-              lastErr = new Error('Model ' + curModel + ' đang quá tải tạm thời, đang chuyển sang model dự phòng...');
+              lastErr = new Error('Máy chủ Google cho ' + curModel + ' đang quá tải (503).');
               break;
             }
 
@@ -1820,14 +1835,29 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
             break;
           }
           if (err.isHighDemand) {
+            hadBusyError = true;
+            if (attempt === 0) {
+              attemptBudget = 0;
+              await new Promise(function(resolve) { setTimeout(resolve, 1800); });
+              continue;
+            }
             markModelTempBusy(curModel);
-            lastErr = err;
+            lastErr = new Error('Máy chủ Google cho ' + curModel + ' đang quá tải (503).');
             break;
           }
           if (err.name === 'AbortError') {
+            hadBusyError = true;
+            if (attempt === 0 && attemptBudget > 0) {
+              attemptBudget = 0;
+              continue;
+            }
             markModelTempBusy(curModel);
-            lastErr = new Error('Model ' + curModel + ' phản hồi quá ' + Math.round(reqTimeoutMs / 1000) + 's, đang tự chuyển model nhanh hơn...');
+            lastErr = new Error('Model ' + curModel + ' phản hồi chậm quá ' + Math.round(reqTimeoutMs / 1000) + 's.');
             break;
+          }
+          if (err.message && err.message.indexOf('cấu trúc JSON') !== -1 && attempt === 0) {
+            attemptBudget = 0;
+            continue;
           }
           lastErr = err;
           if (err.message && (err.message.indexOf('bị từ chối') !== -1 || err.message.indexOf('HTTP 413') !== -1)) {
@@ -1836,6 +1866,10 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
           break;
         }
       }
+    }
+
+    if (hadBusyError) {
+      throw new Error('Các máy chủ Google Gemini hiện đang quá tải tạm thời (503). Hãy bấm ⚡ Chấm lại sau 10-15 giây.');
     }
     throw lastErr || new Error('Tất cả các mô hình trong tài khoản hiện đang bận hoặc đã hết hạn mức ngày. Vui lòng thử lại sau hoặc đổi API Key khác.');
   }
