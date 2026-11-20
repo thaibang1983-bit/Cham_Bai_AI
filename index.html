@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v35 - Khóa Flash Chuẩn & Siêu Document Giữ 100% Chữ)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v36 - Sửa Lỗi API Auto & Siêu Document Giữ 100% Chữ)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -217,7 +217,7 @@
           <label style="margin-top:0;">🔑 API Key cá nhân:</label>
           <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:12px; color:#0f52ba; font-weight:bold; text-decoration:none;">👉 Lấy API Key miễn phí</a>
         </div>
-        <input type="text" id="apiKey" class="masked-key" placeholder="Dán nguyên vẹn API Key (AQ_... / AIza...) vào đây..." oninput="onApiInputChanged()" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true">
+        <input type="text" id="apiKey" class="masked-key" placeholder="Dán nguyên vẹn API Key (AIza... / AQ....) vào đây..." oninput="onApiInputChanged()" onchange="onApiInputChanged()" onpaste="setTimeout(onApiInputChanged, 10)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true">
 
         <div class="api-btn-row">
           <button type="button" class="btn-api-eye" id="btnEyeApi" onclick="toggleApiVisibility()">👁️ Hiện</button>
@@ -264,7 +264,7 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v35:</b> Khóa <b>Auto Quét ưu tiên Flash chuẩn (2.5 / 2.0 / flash-latest)</b> — không tự nhảy sang bản <b>Lite</b>; nâng cấp <b>Siêu Document giữ 100% nét bút bi/bút chì</b> chống mất chữ.
+          ⚡ <b>Bản v36:</b> Sửa lỗi nhận diện tự động mọi độ dài <b>API Key (39 / 52 / 53+ ký tự)</b>, khóa <b>Auto Quét ưu tiên Flash chuẩn</b> (không tự nhảy bản Lite) &amp; <b>Siêu Document giữ 100% nét chữ</b>.
         </div>
       </div>
 
@@ -657,7 +657,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v35_no_lite_auto_ink_preserve';
+  var SCHEMA_CACHE_VERSION = 'v36_fix_api_auto_ink_preserve';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -685,12 +685,16 @@
   }
 
   function sanitizeApiKey(rawKey) {
-    return String(rawKey || '').replace(/[\s\u200B-\u200D\uFEFF]+/g, '').trim();
+    return String(rawKey || '')
+      .replace(/[\s\u200B-\u200D\uFEFF\u00A0]+/g, '')
+      .replace(/^["'`]+|["'`]+$/g, '')
+      .trim();
   }
 
   function isValidGeminiKeyFormat(key) {
     var k = sanitizeApiKey(key);
-    return k.length >= 20 && k.length <= 150;
+    // Tự động nhận diện mọi độ dài API Key hợp lệ (AIza 39 ký tự, AQ. 52-53 ký tự, hoặc key mới dài hơn)
+    return k.length >= 16 && k.length <= 256 && /^[A-Za-z0-9_\-\.]+$/.test(k);
   }
 
   var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH';
@@ -943,7 +947,9 @@
       banner.innerText = '🔒 Chưa nhập API Key. Nếu chỉ dán vào mà không bấm "Lưu API", Key sẽ tự xóa khi thoát.';
     } else if (!isValidFmt) {
       banner.className = 'api-status api-invalid';
-      banner.innerText = '⚠️ Key đang nhập (' + curKey.length + ' ký tự) quá ngắn. Hãy dán đầy đủ chuỗi API Key của bạn!';
+      banner.innerText = (curKey.length < 16)
+        ? ('⚠️ Key đang nhập (' + curKey.length + ' ký tự) quá ngắn. Hãy dán đầy đủ chuỗi API Key của bạn!')
+        : ('⚠️ Key đang nhập (' + curKey.length + ' ký tự) chứa ký tự lạ không hợp lệ. Hãy kiểm tra và dán lại!');
     } else if (savedKey && curKey === savedKey) {
       banner.className = 'api-status api-saved';
       banner.innerText = '📌 API Key (' + curKey.length + ' ký tự) đang được lưu trên máy của bạn. Bấm "Xóa API" nếu muốn gỡ bỏ.';
@@ -1154,13 +1160,9 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     noteBox.innerHTML = '✅ <b>' + tierBadge + '</b> — Đã chọn: <b>' + escapeHtml(bestModel) + '</b> — ' + info.desc + skipNote;
 
     if (showPopup) {
-      var popMsg = '✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!
-
-• Phân loại tài khoản: ' + tierBadge + '
-• Model tốt nhất đã chọn: ' + bestModel;
+      var popMsg = '✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!\n\n• Phân loại tài khoản: ' + tierBadge + '\n• Model tốt nhất đã chọn: ' + bestModel;
       if (skipLogArr && skipLogArr.length > 0) {
-        popMsg += '
-• Lưu ý các model bị bỏ qua: ' + skipLogArr.join(', ');
+        popMsg += '\n• Lưu ý các model bị bỏ qua: ' + skipLogArr.join(', ');
       }
       alert(popMsg);
     }
