@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v30 - Chuẩn Khoanh/Gạch Bỏ & Sửa Điểm TL)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v32 - Chụp HDC & Camera Giữa)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -154,11 +154,13 @@
   .cam-thumb img { width: 48px; height: 62px; object-fit: cover; border-radius: 5px; border: 2px solid #38bdf8; display: block; }
   .cam-thumb-num { position: absolute; bottom: 2px; left: 2px; background: rgba(15,82,186,0.9); color: #fff; font-size: 9.5px; font-weight: 700; padding: 1px 4px; border-radius: 3px; }
   .cam-thumb-del { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; border: none; background: #dc2626; color: #fff; font-size: 10px; font-weight: 800; cursor: pointer; line-height: 18px; padding: 0; }
-  .cam-btn-row { display: flex; gap: 8px; align-items: center; }
-  .cam-shutter-btn { flex: 1.35; background: #16a34a; color: #fff; border: 2px solid #86efac; border-radius: 10px; padding: 13px 8px; font-size: 14.5px; font-weight: 800; cursor: pointer; }
-  .cam-shutter-btn:active { transform: scale(0.97); }
-  .cam-next-stu-btn { flex: 1.15; background: #7c3aed; color: #fff; border: none; border-radius: 10px; padding: 12px 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-  .cam-done-btn { flex: 0.9; background: #0284c7; color: #fff; border: none; border-radius: 10px; padding: 12px 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-hdc-cam { background: #16a34a; font-size: 13px; padding: 10px; margin-top: 6px; }
+  .btn-hdc-gallery { background: #0d9488; font-size: 13px; padding: 10px; margin-top: 6px; }
+  .cam-btn-row { display: flex; gap: 12px; align-items: stretch; justify-content: center; }
+  .cam-next-stu-btn { flex: 0.95; background: #6d28d9; color: #fff; border: 1px solid #a78bfa; border-radius: 10px; padding: 10px 6px; font-size: 12px; font-weight: 700; cursor: pointer; line-height: 1.25; }
+  .cam-shutter-btn { flex: 1.5; background: #16a34a; color: #fff; border: 3px solid #86efac; border-radius: 14px; padding: 14px 10px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 0 0 2px rgba(22,163,74,0.35); }
+  .cam-shutter-btn:active { transform: scale(0.96); }
+  .cam-done-btn { flex: 0.95; background: #0284c7; color: #fff; border: 1px solid #38bdf8; border-radius: 10px; padding: 10px 6px; font-size: 12px; font-weight: 700; cursor: pointer; line-height: 1.25; }
   .cam-next-stu-btn:disabled, .cam-done-btn:disabled { opacity: 0.45; }
 
   /* === TÚI CHẤM HÀNG LOẠT TỐI ĐA 50 BÀI === */
@@ -257,14 +259,20 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v28:</b> Nhận diện đủ <b>4 Mã đề (và nhiều mã đề)</b> từ file HDC Word/PDF, bổ sung <b>Chọn câu hỏi Trắc nghiệm cần chấm</b> & tách sạch TN/Tự luận.
+          ⚡ <b>Bản v32:</b> Thêm <b>Chụp ảnh Hướng dẫn chấm</b> trực tiếp, bố trí nút <b>Chụp ngay giữa</b> chống bấm nhầm Lưu 1 HS, Túi 50 bài &amp; Excel công thức động.
         </div>
       </div>
 
-      <!-- KHU VỰC NẠP FILE HƯỚNG DẪN CHẤM -->
-      <label>Nạp tự động từ file Word (.doc, .docx) hoặc PDF hướng dẫn chấm (0 tốn hạn mức API):</label>
+      <!-- KHU VỰC NẠP FILE & CHỤP ẢNH HƯỚNG DẪN CHẤM -->
+      <label>Nạp tự động từ File (.doc, .docx, .pdf) hoặc Chụp ảnh Hướng dẫn chấm:</label>
       <input type="file" id="ansFileInput" accept=".doc,.docx,.pdf,application/msword,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleAnswerFile(event)">
-      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án / Hướng dẫn chấm (.doc / .docx / .pdf) — Tự tách 4 Mã đề TN & Tự luận</button>
+      <input type="file" id="ansImgInput" accept="image/*" multiple style="display:none" onchange="handleAnswerImageFiles(event)">
+      <input type="file" id="ansCamFallbackInput" accept="image/*" capture="environment" style="display:none" onchange="handleAnswerImageFiles(event)">
+      <button type="button" class="btn btn-file" onclick="document.getElementById('ansFileInput').click()">📂 Chọn file Đáp án / HDC (.doc / .docx / .pdf) — 0 tốn API</button>
+      <div class="row">
+        <div><button type="button" class="btn btn-hdc-cam" onclick="openLiveCamera('HDC')">📷 Chụp ảnh HDC (Nhiều trang)</button></div>
+        <div><button type="button" class="btn btn-hdc-gallery" onclick="document.getElementById('ansImgInput').click()">🖼️ Chọn ảnh HDC từ máy</button></div>
+      </div>
       <button type="button" class="btn btn-clear-ans" onclick="clearAnswerKeysManual()">🗑️ Xóa trắng toàn bộ Đáp án & Biểu điểm hiện tại</button>
       <div id="fileStatusBox" class="file-status"></div>
 
@@ -371,7 +379,7 @@
   <div class="card" id="sec2Card">
     <h3>📷 2. Đưa bài làm Học sinh lên chấm</h3>
     <div class="hint" style="color:#0f52ba; font-style:normal; font-weight:600; margin-bottom:6px;">
-      ✨ Tự động chấm tối đa số câu Trắc nghiệm & Tự luận tùy theo <b>Hướng dẫn chấm</b> và <b>Bài làm học sinh chụp lên</b> (Chuẩn nét 1024px — Không tốn thêm token).
+      ✨ Tự động chấm tối đa số câu Trắc nghiệm & Tự luận tùy theo <b>Hướng dẫn chấm</b> và <b>Bài làm học sinh chụp lên</b> (Chuẩn nét 1600px — Lọc khoanh sạch &amp; bỏ gạch chéo).
     </div>
 
     <div class="row">
@@ -531,44 +539,47 @@
     </div>
 
     <div class="part-score-box" id="partScoreInputArea">
-      <div class="part-score-title">
-        <span>➕ Nhập điểm Phần 1 & Phần 2 (Cộng vào Điểm chấm & Tổng điểm)</span>
+      <div class="part-score-title" style="margin-bottom:0; cursor:pointer;" onclick="togglePartScoreBox()">
+        <span>➕ Nhập điểm bổ sung Phần 1 &amp; Phần 2</span>
+        <button type="button" class="toggle-btn" id="partScoreToggleBtn" style="background:#e0e7ff; color:#3730a3;" onclick="event.stopPropagation(); togglePartScoreBox();">Mở rộng ▼</button>
       </div>
-      <div class="hint" style="margin-top:0; margin-bottom:6px; color:#4338ca; font-style:normal;">
-        💡 Bạn có thể gõ trực tiếp vào ô <b>Phần 1</b>, <b>Phần 2</b> trên từng dòng của Bảng tổng hợp phía trên, hoặc chọn Học sinh bên dưới để nhập nhanh:
+      <div id="partScoreBody" style="display:none; margin-top:8px;">
+        <div class="hint" style="margin-top:0; margin-bottom:6px; color:#4338ca; font-style:normal;">
+          💡 Bạn có thể gõ trực tiếp vào ô <b>Phần 1</b>, <b>Phần 2</b> trên từng dòng của Bảng tổng hợp phía trên, sửa trực tiếp trong file Excel xuất ra, hoặc chọn Học sinh bên dưới để nhập nhanh:
+        </div>
+        <label style="margin-top:4px;">Chọn Học sinh trong danh sách (hoặc nhập mới bên dưới):</label>
+        <select id="partTargetStudentSel" onchange="onSelectStudentForPartScore(this.value)" style="background:#fff;">
+          <option value="">-- Chọn học sinh để nhập điểm Phần 1, Phần 2 --</option>
+        </select>
+        <div class="row" style="margin-top:6px;">
+          <div style="flex:1.6;">
+            <label style="margin-top:0;">Họ và tên HS:</label>
+            <input type="text" id="partStuName" placeholder="Tên học sinh..." oninput="updatePartScoreLivePreview()">
+          </div>
+          <div style="flex:0.8;">
+            <label style="margin-top:0;">SBD / Phách:</label>
+            <input type="text" id="partStuCode" placeholder="SBD hoặc Phách" oninput="updatePartScoreLivePreview()">
+          </div>
+          <div style="flex:0.7;">
+            <label style="margin-top:0;">Lớp:</label>
+            <input type="text" id="partStuClass" placeholder="Lớp">
+          </div>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <div>
+            <label style="margin-top:0; color:#1d4ed8;">Điểm Phần 1:</label>
+            <input type="number" id="part1ScoreInput" step="0.25" placeholder="Nhập điểm P1..." oninput="updatePartScoreLivePreview()">
+          </div>
+          <div>
+            <label style="margin-top:0; color:#047857;">Điểm Phần 2:</label>
+            <input type="number" id="part2ScoreInput" step="0.25" placeholder="Nhập điểm P2..." oninput="updatePartScoreLivePreview()">
+          </div>
+        </div>
+        <div id="partScorePreviewBanner" style="margin-top:8px; background:#fff; border:1px dashed #6366f1; border-radius:8px; padding:8px 10px; font-size:12.5px; color:#1e293b;">
+          📌 Điểm chấm hiện tại: <b id="prevGradedVal">0</b>đ &nbsp;|&nbsp; Cột riêng (<b>P1 + Điểm chấm</b>): <b id="prevP1PlusVal" style="color:#1d4ed8;">—</b> &nbsp;|&nbsp; <b>Tổng điểm mới</b>: <b id="prevFinalTotalVal" style="color:#dc2626;">0</b>đ
+        </div>
+        <button type="button" class="btn btn-merge" onclick="applyPart1Part2ScoreFromBox()">💾 Lưu điểm Phần 1 &amp; Phần 2 vào Bảng tổng hợp</button>
       </div>
-      <label style="margin-top:4px;">Chọn Học sinh trong danh sách (hoặc nhập mới bên dưới):</label>
-      <select id="partTargetStudentSel" onchange="onSelectStudentForPartScore(this.value)" style="background:#fff;">
-        <option value="">-- Chọn học sinh để nhập điểm Phần 1, Phần 2 --</option>
-      </select>
-      <div class="row" style="margin-top:6px;">
-        <div style="flex:1.6;">
-          <label style="margin-top:0;">Họ và tên HS:</label>
-          <input type="text" id="partStuName" placeholder="Tên học sinh..." oninput="updatePartScoreLivePreview()">
-        </div>
-        <div style="flex:0.8;">
-          <label style="margin-top:0;">SBD / Phách:</label>
-          <input type="text" id="partStuCode" placeholder="SBD hoặc Phách" oninput="updatePartScoreLivePreview()">
-        </div>
-        <div style="flex:0.7;">
-          <label style="margin-top:0;">Lớp:</label>
-          <input type="text" id="partStuClass" placeholder="Lớp">
-        </div>
-      </div>
-      <div class="row" style="margin-top:6px;">
-        <div>
-          <label style="margin-top:0; color:#1d4ed8;">Điểm Phần 1:</label>
-          <input type="number" id="part1ScoreInput" step="0.25" placeholder="Nhập điểm P1..." oninput="updatePartScoreLivePreview()">
-        </div>
-        <div>
-          <label style="margin-top:0; color:#047857;">Điểm Phần 2:</label>
-          <input type="number" id="part2ScoreInput" step="0.25" placeholder="Nhập điểm P2..." oninput="updatePartScoreLivePreview()">
-        </div>
-      </div>
-      <div id="partScorePreviewBanner" style="margin-top:8px; background:#fff; border:1px dashed #6366f1; border-radius:8px; padding:8px 10px; font-size:12.5px; color:#1e293b;">
-        📌 Điểm chấm hiện tại: <b id="prevGradedVal">0</b>đ &nbsp;|&nbsp; Cột riêng (<b>P1 + Điểm chấm</b>): <b id="prevP1PlusVal" style="color:#1d4ed8;">—</b> &nbsp;|&nbsp; <b>Tổng điểm mới</b>: <b id="prevFinalTotalVal" style="color:#dc2626;">0</b>đ
-      </div>
-      <button type="button" class="btn btn-merge" onclick="applyPart1Part2ScoreFromBox()">💾 Lưu điểm Phần 1 & Phần 2 vào Bảng tổng hợp</button>
     </div>
 
     <button type="button" class="btn btn-excel" onclick="exportExcelAPK()">📤 Xuất / Chia sẻ File Excel (.xlsx đủ cột từng câu)</button>
@@ -584,7 +595,7 @@
   <!-- MODAL CAMERA TRỰC TIẾP TRONG APP (CHỤP LIÊN TIẾP NHIỀU TRANG — KHÔNG LƯU VÀO THƯ VIỆN MÁY) -->
   <div id="liveCamModal" class="cam-modal" aria-hidden="true">
     <div class="cam-topbar">
-      <div class="cam-title">📷 Chụp liên tiếp (Lưu tạm RAM — Không lưu máy)</div>
+      <div class="cam-title" id="camModalTitle">📷 Chụp liên tiếp (Lưu tạm RAM — Không lưu máy)</div>
       <div class="cam-top-actions">
         <button type="button" class="cam-mini-btn" id="camTorchBtn" style="display:none;" onclick="toggleLiveCamTorch()">🔦 Đèn</button>
         <button type="button" class="cam-mini-btn" style="background:#dc2626; border-color:#f87171;" onclick="closeLiveCamDiscard()">✕ Đóng</button>
@@ -602,12 +613,12 @@
         <span id="camBatchStatus">Túi chấm: <b>0/50 bài</b></span>
       </div>
       <div class="cam-strip" id="liveCamStrip">
-        <span class="cam-strip-empty">Bấm 📸 CHỤP TRANG liên tiếp các mặt giấy của 1 học sinh, xong bấm Lưu bài...</span>
+        <span class="cam-strip-empty">Bấm 📸 CHỤP TRANG (ở giữa) liên tiếp nhiều trang...</span>
       </div>
       <div class="cam-btn-row">
+        <button type="button" class="cam-next-stu-btn" id="camNextStuBtn" onclick="commitLiveCamToBatchAndContinue()" disabled>➕ Lưu 1 HS<br>&amp; Chụp tiếp</button>
         <button type="button" class="cam-shutter-btn" id="camShutterBtn" onclick="captureLiveCamPage()">📸 CHỤP TRANG</button>
-        <button type="button" class="cam-next-stu-btn" id="camNextStuBtn" onclick="commitLiveCamToBatchAndContinue()" disabled>➕ Lưu 1 HS vào Túi &amp; Chụp tiếp</button>
-        <button type="button" class="cam-done-btn" id="camDoneBtn" onclick="finishLiveCamSession()" disabled>✅ Xong &amp; Lưu</button>
+        <button type="button" class="cam-done-btn" id="camDoneBtn" onclick="finishLiveCamSession()" disabled>✅ Xong<br>&amp; Lưu</button>
       </div>
     </div>
   </div>
@@ -641,7 +652,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v30_accurate_mcq_editable_table';
+  var SCHEMA_CACHE_VERSION = 'v32_hdc_cam_center_shutter';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -680,6 +691,12 @@
   var examMode = 'CIRCLE', gradingStyle = 'FLEX', examStructureMode = 'BOTH';
   var apiPrefMode = 'BALANCED';
   var pagesData = [];
+  var MAX_BATCH_PAPERS = 50;
+  var batchQueue = [];
+  var batchOrderCounter = 1;
+  var batchRunning = false;
+  var batchStopRequested = false;
+  var activeBatchReviewId = null;
   var currentMcqState = [], currentTfState = [], currentSaState = [], currentEssayState = [];
   var currentStuHasMcq = true, currentStuHasEssay = true;
   var currentDetectedExamCode = '', currentPageWarning = '', classRecords = [], masterRoster = [];
@@ -1489,6 +1506,20 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     else { area.style.display = 'none'; btn.innerText = 'Mở rộng ▼'; }
   }
 
+  function togglePartScoreBox() {
+    var body = document.getElementById('partScoreBody'), btn = document.getElementById('partScoreToggleBtn');
+    if (!body || !btn) return;
+    if (body.style.display === 'none') {
+      body.style.display = 'block';
+      btn.innerText = 'Thu gọn ▲';
+      populatePartTargetStudentSelect();
+      updatePartScoreLivePreview();
+    } else {
+      body.style.display = 'none';
+      btn.innerText = 'Mở rộng ▼';
+    }
+  }
+
   function toggleMultiCodeUI() {
     var isMulti = document.getElementById('useMultiCodeChk').checked;
     document.getElementById('multiCodeArea').style.display = isMulti ? 'block' : 'none';
@@ -1664,7 +1695,7 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
       throw new Error('Vui lòng dán đầy đủ API Key ở mục 1 trước khi thực hiện.');
     }
 
-    var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'LOW';
+    var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'MEDIUM';
     var modelsToTry = resolveWorkingModels(uiModelValue);
     var lastErr = null;
 
@@ -3730,7 +3761,7 @@ JSON:
 {"multi_codes": "", "mcq_key": "", "mcq_backup": "", "tf_key": "", "sa_key": "", "essay_rubric": ""}`;
 
     var reqParts = contentParts.concat([{ text: prompt }]);
-    var parsed = await callGeminiAPI(apiKey, modelName, reqParts, 0.0, 2048);
+    var parsed = await callGeminiAPI(apiKey, modelName, reqParts, 0.0, 4096);
 
     var aiMulti = normalizeMultiCodesOutput(parsed.multi_codes);
     var aiMcq = (parsed.mcq_key && String(parsed.mcq_key).trim()) || '';
@@ -5828,10 +5859,11 @@ JSON:
       var blank = r.isUngradedPlaceholder;
       var hasM = !blank && ((r.hasMcq !== undefined) ? r.hasMcq : (r.mcqScore !== '' || r.tfScore !== '' || r.saScore !== ''));
       var hasE = !blank && ((r.hasEssay !== undefined) ? r.hasEssay : (Object.keys(r.essayMap || {}).length > 0));
-      var tnVal = hasM ? parseNum(getStudentTnString(r), 0) : "";
-      var p1Val = (!blank && r.part1Score !== undefined && r.part1Score !== '') ? parseNum(r.part1Score, 0) : "";
-      var p1PlusVal = (!blank && r.part1PlusGraded !== undefined && r.part1PlusGraded !== '') ? parseNum(r.part1PlusGraded, 0) : "";
-      var p2Val = (!blank && r.part2Score !== undefined && r.part2Score !== '') ? parseNum(r.part2Score, 0) : "";
+      // Dùng null cho các ô điểm trống để Excel giữ đúng ô trống (General/Number), người dùng gõ bổ sung trực tiếp không bị định dạng Text
+      var tnVal = hasM ? parseNum(getStudentTnString(r), 0) : null;
+      var p1Val = (!blank && r.part1Score !== undefined && r.part1Score !== null && String(r.part1Score).trim() !== '') ? parseNum(r.part1Score, 0) : null;
+      var p1PlusVal = (!blank && r.part1PlusGraded !== undefined && r.part1PlusGraded !== null && String(r.part1PlusGraded).trim() !== '') ? parseNum(r.part1PlusGraded, 0) : null;
+      var p2Val = (!blank && r.part2Score !== undefined && r.part2Score !== null && String(r.part2Score).trim() !== '') ? parseNum(r.part2Score, 0) : null;
 
       var row = [
         r.displayOrder !== undefined ? r.displayOrder : (idx + 1),
@@ -5844,20 +5876,21 @@ JSON:
         hasE ? getStudentEssaySummaryString(r) : ""
       ];
       qCols.forEach(function(k) {
-        row.push((hasE && r.essayMap && r.essayMap[k] !== undefined) ? parseNum(r.essayMap[k], 0) : "");
+        row.push((hasE && r.essayMap && r.essayMap[k] !== undefined && r.essayMap[k] !== '') ? parseNum(r.essayMap[k], 0) : null);
       });
       row.push(
-        hasE ? parseNum(getStudentEssayTotalString(r), 0) : "",
+        hasE ? parseNum(getStudentEssayTotalString(r), 0) : null,
         p1Val,
         p1PlusVal,
         p2Val,
-        blank ? "" : parseNum(r.totalScore, 0)
+        blank ? null : parseNum(r.totalScore, 0)
       );
       aoa.push(row);
     });
 
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    // Gắn công thức động cho các cột Tổng TL, P1 + Điểm chấm, Tổng cộng để chỉnh sửa điểm trực tiếp trong Excel tự động nhảy tổng
+    // Gắn công thức động chuẩn OOXML cho Tổng TL, P1 + Điểm chấm, Tổng cộng
+    // Dù Phần 1 và Phần 2 chưa nhập trước trên App, khi mở Excel gõ số bổ sung vào 2 cột này thì công thức tự động cộng ngay lập tức
     var colLetter = function(cIdx) { return XLSX.utils.encode_col(cIdx); };
     var tnColL = colLetter(colIdxTn);
     var tlColL = colLetter(colIdxTotalTl);
@@ -5865,7 +5898,7 @@ JSON:
     var p2ColL = colLetter(colIdxP2);
 
     for (var i = 0; i < sorted.length; i++) {
-      var rNum = i + 2; // Excel row index (1-based, row 1 is header)
+      var rNum = i + 2; // Excel row 1-based (row 1 = header)
       var rec = sorted[i];
       var blank = rec.isUngradedPlaceholder;
 
@@ -5873,27 +5906,48 @@ JSON:
         var firstQL = colLetter(colIdxFirstQ);
         var lastQL = colLetter(colIdxLastQ);
         var tlCellRef = tlColL + rNum;
-        ws[tlCellRef] = {
-          t: 'n',
-          f: 'IF(COUNT(' + firstQL + rNum + ':' + lastQL + rNum + ')>0, ROUND(SUM(' + firstQL + rNum + ':' + lastQL + rNum + '), 2), "")',
-          v: (!blank && rec.essayScore !== '' && rec.essayScore !== undefined) ? parseNum(rec.essayScore, 0) : 0
-        };
+        var hasTlNum = (!blank && rec.essayScore !== '' && rec.essayScore !== null && rec.essayScore !== undefined);
+        var tlFormula = 'IF(COUNT(' + firstQL + rNum + ':' + lastQL + rNum + ')>0,ROUND(SUM(' + firstQL + rNum + ':' + lastQL + rNum + '),2),"")';
+        ws[tlCellRef] = hasTlNum
+          ? { t: 'n', f: tlFormula, v: parseNum(rec.essayScore, 0) }
+          : { t: 's', f: tlFormula, v: '' };
       }
 
       var p1PlusRef = colLetter(colIdxP1Plus) + rNum;
-      ws[p1PlusRef] = {
-        t: 'n',
-        f: 'IF(ISNUMBER(' + p1ColL + rNum + '), ROUND(' + p1ColL + rNum + '+N(' + tnColL + rNum + ')+N(' + tlColL + rNum + '), 2), "")',
-        v: (!blank && rec.part1PlusGraded !== '' && rec.part1PlusGraded !== undefined) ? parseNum(rec.part1PlusGraded, 0) : 0
-      };
+      var hasP1PlusNum = (!blank && rec.part1PlusGraded !== '' && rec.part1PlusGraded !== null && rec.part1PlusGraded !== undefined);
+      var p1PlusFormula = 'IF(COUNT(' + p1ColL + rNum + ')>0,ROUND(SUM(' + p1ColL + rNum + ',' + tnColL + rNum + ',' + tlColL + rNum + '),2),"")';
+      ws[p1PlusRef] = hasP1PlusNum
+        ? { t: 'n', f: p1PlusFormula, v: parseNum(rec.part1PlusGraded, 0) }
+        : { t: 's', f: p1PlusFormula, v: '' };
 
       var finalRef = colLetter(colIdxFinal) + rNum;
-      ws[finalRef] = {
-        t: 'n',
-        f: 'IF(COUNT(' + tnColL + rNum + ',' + tlColL + rNum + ',' + p1ColL + rNum + ',' + p2ColL + rNum + ')>0, ROUND(N(' + tnColL + rNum + ')+N(' + tlColL + rNum + ')+N(' + p1ColL + rNum + ')+N(' + p2ColL + rNum + '), 2), "")',
-        v: (!blank && rec.totalScore !== '' && rec.totalScore !== undefined) ? parseNum(rec.totalScore, 0) : 0
-      };
+      var hasFinalNum = (!blank && rec.totalScore !== '' && rec.totalScore !== null && rec.totalScore !== undefined);
+      var finalFormula = 'IF(COUNT(' + tnColL + rNum + ',' + tlColL + rNum + ',' + p1ColL + rNum + ',' + p2ColL + rNum + ')>0,ROUND(SUM(' + tnColL + rNum + ',' + tlColL + rNum + ',' + p1ColL + rNum + ',' + p2ColL + rNum + '),2),"")';
+      ws[finalRef] = hasFinalNum
+        ? { t: 'n', f: finalFormula, v: parseNum(rec.totalScore, 0) }
+        : { t: 's', f: finalFormula, v: '' };
     }
+
+    // Đặt độ rộng cột gọn đẹp để mở Excel không bị che số (###) và dễ gõ bổ sung Phần 1, Phần 2
+    var colWidths = [
+      { wch: 6 },  // STT
+      { wch: 12 }, // SBD
+      { wch: 11 }, // Mã phách
+      { wch: 9 },  // Mã đề
+      { wch: 24 }, // Họ và tên
+      { wch: 8 },  // Lớp
+      { wch: 10 }, // Điểm TN
+      { wch: 22 }  // TL từng câu
+    ];
+    qCols.forEach(function() { colWidths.push({ wch: 10 }); });
+    colWidths.push(
+      { wch: 10 }, // Tổng TL
+      { wch: 10 }, // Phần 1
+      { wch: 15 }, // P1 + Điểm chấm
+      { wch: 10 }, // Phần 2
+      { wch: 12 }  // Tổng cộng
+    );
+    ws['!cols'] = colWidths;
 
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "BangDiem");
@@ -5907,7 +5961,7 @@ JSON:
     var statusBox = document.getElementById('excelExportBox');
     statusBox.style.display = 'block';
     statusBox.innerHTML =
-      '<div>✅ <b>Đã tạo xong file Excel (có công thức tự động cộng khi sửa điểm):</b> <code>' + escapeHtml(fileName) + '</code></div>' +
+      '<div>✅ <b>Đã tạo xong file Excel (cho phép sửa trực tiếp TN, TL, Phần 1, Phần 2 và tự động cộng):</b> <code>' + escapeHtml(fileName) + '</code></div>' +
       '<div style="margin-top:4px;">📂 <b>Vị trí lưu trên máy:</b> Thư mục <b>Download (Tệp đã tải xuống)</b> của điện thoại / máy tính.</div>' +
       '<div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">' +
         '<a href="' + lastExportedBlobUrl + '" download="' + escapeHtml(fileName) + '" style="flex:1; background:#15803d; color:#fff; text-decoration:none; padding:9px; border-radius:6px; text-align:center; font-weight:bold;">📥 Bấm vào đây để Tải / Mở lại file .xlsx</a>' +
@@ -6022,18 +6076,14 @@ JSON:
   // V29: CAMERA TRỰC TIẾP TRONG APP (KHÔNG LƯU MÁY) + CHỤP LIÊN TIẾP NHIỀU TRANG
   //      + TÚI CHẤM HÀNG LOẠT TỐI ĐA 50 BÀI + TỰ XÓA ẢNH SAU KHI LƯU ĐIỂM
   // ============================================================================
-  var MAX_BATCH_PAPERS = 50;
-  var batchQueue = [];
-  var batchOrderCounter = 1;
-  var batchRunning = false;
-  var batchStopRequested = false;
-  var activeBatchReviewId = null;
+  // (Các biến Túi chấm 50 bài đã khai báo ở đầu script)
 
   var liveCamStream = null;
   var liveCamVideoTrack = null;
   var liveCamTorchOn = false;
   var liveCamSessionPages = [];
   var liveCamToastTimer = null;
+  var liveCamMode = 'STUDENT'; // 'STUDENT' | 'HDC'
 
   function saveBatchAutoPref() {
     var chk = document.getElementById('autoSavePurgeBatchChk');
@@ -6056,19 +6106,44 @@ JSON:
     liveCamToastTimer = setTimeout(function() { el.style.display = 'none'; }, 2000);
   }
 
-  async function openLiveCamera() {
+  async function openLiveCamera(mode) {
+    liveCamMode = (mode === 'HDC') ? 'HDC' : 'STUDENT';
+
+    if (liveCamMode === 'HDC') {
+      var apiKeyCheck = sanitizeApiKey(document.getElementById('apiKey').value);
+      if (!isValidGeminiKeyFormat(apiKeyCheck)) {
+        alert('⚠️ Để AI đọc Hướng dẫn chấm từ Ảnh chụp, vui lòng dán API Key ở Mục 1 trước!');
+        return;
+      }
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       alert('⚠️ Trình duyệt hiện tại không hỗ trợ Camera trực tiếp (thường do mở file offline file:// thay vì HTTPS).\nApp sẽ tự chuyển sang Camera hệ thống dự phòng.');
-      document.getElementById('camInput').click();
+      document.getElementById(liveCamMode === 'HDC' ? 'ansCamFallbackInput' : 'camInput').click();
       return;
     }
 
+    stopLiveCamStream();
     var modal = document.getElementById('liveCamModal');
     var video = document.getElementById('liveCamVideo');
     var torchBtn = document.getElementById('camTorchBtn');
+    var titleEl = document.getElementById('camModalTitle');
+    var nextBtn = document.getElementById('camNextStuBtn');
+    var doneBtn = document.getElementById('camDoneBtn');
+
     liveCamSessionPages = [];
     liveCamTorchOn = false;
     if (torchBtn) { torchBtn.style.display = 'none'; torchBtn.classList.remove('active'); }
+
+    if (liveCamMode === 'HDC') {
+      if (titleEl) titleEl.innerText = '📷 Chụp Hướng dẫn chấm (Lưu tạm RAM — Tự xóa sau khi nạp)';
+      if (nextBtn) nextBtn.style.display = 'none';
+      if (doneBtn) doneBtn.innerHTML = '✅ Xong &amp;<br>Nạp HDC';
+    } else {
+      if (titleEl) titleEl.innerText = '📷 Chụp bài HS liên tiếp (Lưu tạm RAM — Không lưu máy)';
+      if (nextBtn) nextBtn.style.display = 'block';
+      if (doneBtn) doneBtn.innerHTML = '✅ Xong<br>&amp; Lưu';
+    }
 
     try {
       var constraints = {
@@ -6098,7 +6173,7 @@ JSON:
     } catch (err) {
       stopLiveCamStream();
       var fallbackOk = confirm('⚠️ Không thể mở Camera trực tiếp (' + err.message + ').\n\nLưu ý: Camera trực tiếp cần cấp quyền Camera trên trình duyệt (HTTPS).\nBấm OK để dùng tạm Camera hệ thống dự phòng.');
-      if (fallbackOk) document.getElementById('camInput').click();
+      if (fallbackOk) document.getElementById(liveCamMode === 'HDC' ? 'ansCamFallbackInput' : 'camInput').click();
     }
   }
 
@@ -6199,16 +6274,24 @@ JSON:
     var nextBtn = document.getElementById('camNextStuBtn');
     var doneBtn = document.getElementById('camDoneBtn');
 
-    if (sessStatus) sessStatus.innerHTML = 'Bài HS đang chụp: <b>' + liveCamSessionPages.length + ' trang</b>';
-    if (batchStatus) batchStatus.innerHTML = 'Túi chấm: <b>' + batchQueue.length + '/' + MAX_BATCH_PAPERS + ' bài</b>';
-
     var hasPages = liveCamSessionPages.length > 0;
-    if (nextBtn) nextBtn.disabled = !hasPages || batchQueue.length >= MAX_BATCH_PAPERS;
-    if (doneBtn) doneBtn.disabled = !hasPages && batchQueue.length === 0;
+    if (liveCamMode === 'HDC') {
+      if (sessStatus) sessStatus.innerHTML = 'Ảnh HDC đã chụp: <b>' + liveCamSessionPages.length + ' trang</b>';
+      if (batchStatus) batchStatus.innerHTML = 'Chế độ: <b>Nạp Đáp án / Biểu điểm</b>';
+      if (nextBtn) nextBtn.disabled = true;
+      if (doneBtn) doneBtn.disabled = !hasPages;
+    } else {
+      if (sessStatus) sessStatus.innerHTML = 'Bài HS đang chụp: <b>' + liveCamSessionPages.length + ' trang</b>';
+      if (batchStatus) batchStatus.innerHTML = 'Túi chấm: <b>' + batchQueue.length + '/' + MAX_BATCH_PAPERS + ' bài</b>';
+      if (nextBtn) nextBtn.disabled = !hasPages || batchQueue.length >= MAX_BATCH_PAPERS;
+      if (doneBtn) doneBtn.disabled = !hasPages && batchQueue.length === 0;
+    }
 
     if (!strip) return;
     if (!hasPages) {
-      strip.innerHTML = '<span class="cam-strip-empty">Bấm 📸 CHỤP TRANG liên tiếp nhiều trang của 1 HS, sau đó bấm Lưu bài...</span>';
+      strip.innerHTML = (liveCamMode === 'HDC')
+        ? '<span class="cam-strip-empty">Bấm 📸 CHỤP TRANG (ở giữa) các trang Hướng dẫn chấm, xong bấm ✅ Xong &amp; Nạp HDC...</span>'
+        : '<span class="cam-strip-empty">Bấm 📸 CHỤP TRANG (ở giữa) liên tiếp nhiều trang của 1 HS, xong bấm Lưu bài...</span>';
       return;
     }
 
@@ -6258,22 +6341,89 @@ JSON:
     }
   }
 
-  function finishLiveCamSession() {
-    if (liveCamSessionPages.length > 0) {
-      if (batchQueue.length > 0) {
-        pushPagesIntoBatchQueue(liveCamSessionPages);
-        liveCamSessionPages = [];
-      } else {
-        liveCamSessionPages.forEach(function(p) { pagesData.push(p); });
-        liveCamSessionPages = [];
-        renderImagePacket();
-      }
+  async function processHdcCapturedPages(capturedPages, sourceLabel) {
+    if (!capturedPages || capturedPages.length === 0) return;
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
+    var selectedModel = document.getElementById('aiModel').value || 'gemini-2.5-flash';
+    var statusBox = document.getElementById('fileStatusBox');
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.innerText = '🤖 AI đang đọc & tách Trắc nghiệm / Tự luận từ ' + capturedPages.length + ' trang ảnh Hướng dẫn chấm...';
     }
+
+    if (!isValidGeminiKeyFormat(apiKey)) {
+      purgePagesArrayMemory(capturedPages);
+      alert('⚠️ Vui lòng dán đầy đủ API Key ở Mục 1 trước khi nạp ảnh Hướng dẫn chấm!');
+      if (statusBox) statusBox.style.display = 'none';
+      return;
+    }
+
+    try {
+      var aiParts = capturedPages.map(function(p) {
+        return { inline_data: { mime_type: p.mime, data: p.base64 } };
+      });
+      await extractRubricWithAI(apiKey, selectedModel, aiParts, sourceLabel || ('Ảnh chụp HDC (' + capturedPages.length + ' trang)'), null);
+    } catch (e) {
+      alert('Lỗi đọc ảnh Hướng dẫn chấm: ' + e.message);
+      if (statusBox) statusBox.innerText = '❌ Lỗi đọc ảnh HDC: ' + e.message;
+    } finally {
+      purgePagesArrayMemory(capturedPages);
+    }
+  }
+
+  async function handleAnswerImageFiles(event) {
+    var files = event.target.files;
+    if (!files || files.length === 0) return;
+    var fileArr = Array.from(files);
+    event.target.value = '';
+
+    var apiKey = sanitizeApiKey(document.getElementById('apiKey').value);
+    if (!isValidGeminiKeyFormat(apiKey)) {
+      alert('⚠️ Để AI đọc Hướng dẫn chấm từ Ảnh, vui lòng dán API Key ở Mục 1 trước!');
+      return;
+    }
+
+    var statusBox = document.getElementById('fileStatusBox');
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.innerText = '⏳ Đang xử lý ' + fileArr.length + ' ảnh Hướng dẫn chấm...';
+    }
+
+    var processed = await Promise.all(fileArr.map(processSingleImageFile));
+    var validPages = processed.filter(function(item) { return !!item; });
+    if (validPages.length === 0) {
+      if (statusBox) statusBox.innerText = '❌ Không đọc được file ảnh vừa chọn.';
+      return;
+    }
+    await processHdcCapturedPages(validPages, 'Ảnh HDC (' + validPages.length + ' trang)');
+  }
+
+  function finishLiveCamSession() {
+    var curMode = liveCamMode;
+    var capturedCopy = liveCamSessionPages.slice();
+    liveCamSessionPages = [];
+
     stopLiveCamStream();
     var modal = document.getElementById('liveCamModal');
     if (modal) {
       modal.classList.remove('open');
       modal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (curMode === 'HDC') {
+      if (capturedCopy.length > 0) {
+        processHdcCapturedPages(capturedCopy, 'Ảnh chụp HDC (' + capturedCopy.length + ' trang)');
+      }
+      return;
+    }
+
+    if (capturedCopy.length > 0) {
+      if (batchQueue.length > 0) {
+        pushPagesIntoBatchQueue(capturedCopy);
+      } else {
+        capturedCopy.forEach(function(p) { pagesData.push(p); });
+        renderImagePacket();
+      }
     }
     renderBatchQueueUI();
   }
@@ -6806,7 +6956,7 @@ JSON:
     var r = item.aiResult;
 
     activeBatchReviewId = batchId;
-    pagesData = (item.pages || []).slice();
+    pagesData = (item.pages || []).map(function(p) { return Object.assign({}, p); });
     renderImagePacket();
 
     currentPageWarning = r.pageWarning || '';
