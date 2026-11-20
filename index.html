@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v34 - Chặn Omni/3.x & Chống 503)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v35 - Khóa Flash Chuẩn & Siêu Document Giữ 100% Chữ)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -237,8 +237,12 @@
         <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model theo gói tài khoản:</label>
         <div class="mode-switch">
           <button type="button" class="mode-btn" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Nhanh &amp; Hạn mức cao (2.0 Flash - 1500/ngày)</button>
-          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác &amp; Nhanh (2.5 Flash - Khuyên dùng)</button>
+          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác cao (2.5 Flash / Pro - Khuyên dùng)</button>
         </div>
+        <label style="margin-top:6px; font-weight:600; font-size:12px; color:#0f52ba; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="blockLiteAutoChk" checked onchange="onToggleBlockLitePref()" style="width:16px; height:16px; margin:0; accent-color:#0f52ba;">
+          <span>🚫 Không tự động chọn các bản <b>Lite</b> khi quét API (Tránh nhận diện sai câu khoanh &amp; chữ viết)</span>
+        </label>
 
         <div class="row" style="margin-top:6px;">
           <div style="flex:1.45;">
@@ -260,7 +264,7 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v34:</b> Chặn sạch model <b>omni / 3.x thử nghiệm</b>, tự động thử lại khi gặp quá tải <b>503</b> (giảm Thinking về 0 ở lần thử lại) &amp; đồng bộ chuẩn tên model khi quét API.
+          ⚡ <b>Bản v35:</b> Khóa <b>Auto Quét ưu tiên Flash chuẩn (2.5 / 2.0 / flash-latest)</b> — không tự nhảy sang bản <b>Lite</b>; nâng cấp <b>Siêu Document giữ 100% nét bút bi/bút chì</b> chống mất chữ.
         </div>
       </div>
 
@@ -411,7 +415,7 @@
     <div class="superdoc-opt-bar">
       <label>
         <input type="checkbox" id="autoSuperDocChk" checked onchange="saveSuperDocPref()">
-        <span>📐 Làm phẳng Siêu Document tự động khi chụp Camera (Khử bóng, nắn thẳng 4 góc)</span>
+        <span>✨ Siêu Document rõ chữ AI (Khử bóng dịu, làm đậm mực xanh/bút chì — KHÔNG mất nét chữ)</span>
       </label>
     </div>
 
@@ -640,8 +644,8 @@
     </div>
     <div class="doc-scan-bottom">
       <div class="doc-filter-row">
-        <button type="button" class="doc-filter-btn active" id="docFilterSuper" onclick="setDocScanFilter('SUPER')">✨ Siêu Document (Màu AI)</button>
-        <button type="button" class="doc-filter-btn" id="docFilterBw" onclick="setDocScanFilter('BW')">⚫ Trắng đen nét cao</button>
+        <button type="button" class="doc-filter-btn active" id="docFilterSuper" onclick="setDocScanFilter('SUPER')">✨ Rõ chữ AI (Giữ 100% mực)</button>
+        <button type="button" class="doc-filter-btn" id="docFilterBw" onclick="setDocScanFilter('BW')">⚫ Đậm nét (Bút chì/mực mờ)</button>
         <button type="button" class="doc-filter-btn" id="docFilterOrig" onclick="setDocScanFilter('ORIG')">🖼️ Chỉ làm phẳng</button>
       </div>
       <div class="doc-action-row">
@@ -653,7 +657,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v34_fix_omni_503_retry';
+  var SCHEMA_CACHE_VERSION = 'v35_no_lite_auto_ink_preserve';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -887,6 +891,19 @@
     }
   }
 
+  function isBlockLiteAutoEnabled() {
+    var chk = document.getElementById('blockLiteAutoChk');
+    return chk ? chk.checked : true;
+  }
+
+  function onToggleBlockLitePref() {
+    var chk = document.getElementById('blockLiteAutoChk');
+    safeSet('g_block_lite', (chk && !chk.checked) ? '0' : '1');
+    if (availableBackendModels.length > 0) {
+      applyBestModelSelection(availableBackendModels, false);
+    }
+  }
+
   function setApiPrefMode(mode) {
     apiPrefMode = mode;
     document.getElementById('prefBalanced').className = (mode === 'BALANCED') ? 'mode-btn active' : 'mode-btn';
@@ -1022,41 +1039,53 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     var isPro = (m.indexOf('pro') !== -1);
     var isPreview = (m.indexOf('preview') !== -1);
     var isLowQ = isLowFreeQuotaModel(modelId);
+    var blockLite = isBlockLiteAutoEnabled();
 
-    if (isPro) return 50;
-    if (isLowQ && detectedAccountTier !== 'PAID') {
-      return 150 + (isLite ? 20 : 10);
-    }
-
-    // Luôn xếp dòng Flash chuẩn (2.5-flash & 2.0-flash) lên trên dòng Lite để tránh nhận diện sai câu khoanh
-    var highQuotaPriority = {
-      'gemini-2.5-flash':      (prefMode === 'QUOTA') ? 9350 : 9700,
-      'gemini-2.0-flash':      (prefMode === 'QUOTA') ? 9700 : 9450,
-      'gemini-2.5-flash-lite': (prefMode === 'QUOTA') ? 8700 : 8200,
-      'gemini-2.0-flash-lite': (prefMode === 'QUOTA') ? 8500 : 8000
+    // 1. Ưu tiên tuyệt đối các model Flash chuẩn (KHÔNG phải Lite)
+    var exactPriority = {
+      'gemini-2.5-flash':    (prefMode === 'QUOTA') ? 9650 : 9950,
+      'gemini-flash-latest': (prefMode === 'QUOTA') ? 9550 : 9800,
+      'gemini-2.0-flash':    (prefMode === 'QUOTA') ? 9850 : 9600
     };
-
-    if (highQuotaPriority[m] !== undefined) {
-      return highQuotaPriority[m];
+    if (exactPriority[m] !== undefined) {
+      return exactPriority[m];
     }
 
-    var score = 4000;
-    if (prefMode === 'QUOTA') {
-      if (isLite) score += 600;
-      else if (isFlash) score += 300;
-    } else {
-      if (isFlash) score += 600;
-      else if (isLite) score += 400;
+    // 2. Các model Flash chuẩn khác (không phải Lite, không phải 3.x/4.x/preview)
+    if (isFlash && !isLowQ && !isPreview) {
+      return 9300;
     }
-    if (!isPreview) score += 200;
-    return score;
+
+    // 3. Model Pro ổn định (dự phòng chất lượng cao khi BALANCED nếu Flash chuẩn bị bận)
+    if (isPro && !isPreview && m.indexOf('gemini-2.5-pro') === 0) {
+      return (prefMode === 'BALANCED') ? 7800 : 1200;
+    }
+    if (isPro) {
+      return (prefMode === 'BALANCED') ? 6500 : 500;
+    }
+
+    // 4. Các model Flash preview / 3.x (vẫn đọc chữ tốt hơn Lite trong chế độ BALANCED)
+    if (isFlash) {
+      return (prefMode === 'BALANCED') ? 5500 : 4500;
+    }
+
+    // 5. Các bản Lite: hạ điểm xuống rất thấp để không bao giờ tự chọn đè lên Flash chuẩn
+    if (isLite) {
+      if (blockLite) return 200;
+      if (m === 'gemini-2.5-flash-lite') return (prefMode === 'QUOTA') ? 3200 : 1500;
+      if (m === 'gemini-flash-lite-latest') return (prefMode === 'QUOTA') ? 3100 : 1400;
+      if (m === 'gemini-2.0-flash-lite') return (prefMode === 'QUOTA') ? 3000 : 1300;
+      return 1000;
+    }
+
+    return 2500;
   }
 
   function populateModelDropdown(modelsList, selectedModelId) {
     var sel = document.getElementById('aiModel');
     if (!sel) return;
 
-    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
     var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
 
     defaultSafeModels.forEach(function(dm) {
@@ -1083,8 +1112,8 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     }).join('');
   }
 
-  function applyBestModelSelection(modelsList, showPopup, preferredVerifiedModel) {
-    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+  function applyBestModelSelection(modelsList, showPopup, preferredVerifiedModel, skipLogArr) {
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
     var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
     var cleanList = baseList.filter(function(m) { return !deadModelsMap[m] && isSuitableGradingModel(m); });
     if (cleanList.length === 0) cleanList = defaultSafeModels.slice();
@@ -1092,9 +1121,21 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     var sorted = cleanList.slice().sort(function(a, b) {
       return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
     });
-    var bestModel = (preferredVerifiedModel && cleanList.indexOf(preferredVerifiedModel) !== -1)
-      ? preferredVerifiedModel
-      : sorted[0];
+
+    var bestModel = sorted[0];
+    if (preferredVerifiedModel && cleanList.indexOf(preferredVerifiedModel) !== -1) {
+      bestModel = preferredVerifiedModel;
+    }
+
+    // Nếu đang bật chặn Lite mà bestModel vẫn là Lite trong khi có Flash chuẩn chưa chết -> giữ Flash chuẩn làm mặc định
+    if (isBlockLiteAutoEnabled() && String(bestModel).toLowerCase().indexOf('lite') !== -1) {
+      var nonLiteFallback = sorted.find(function(m) {
+        var lm = String(m).toLowerCase();
+        return lm.indexOf('lite') === -1 && lm.indexOf('8b') === -1 && !deadModelsMap[m] && !quotaExhaustedMap[m];
+      });
+      if (nonLiteFallback) bestModel = nonLiteFallback;
+    }
+
     populateModelDropdown(cleanList, bestModel);
 
     var sel = document.getElementById('aiModel');
@@ -1105,16 +1146,27 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     updateRpdUI();
 
     var info = classifyGeminiModel(bestModel);
-    var tierBadge = (detectedAccountTier === 'PAID') ? 'Gói Trả phí (Paid Tier)' : 'Gói Miễn phí (Free Tier - Ưu tiên hạn mức 1500 lượt/ngày)';
+    var tierBadge = (detectedAccountTier === 'PAID') ? 'Gói Trả phí (Paid Tier)' : 'Gói Miễn phí (Free Tier)';
+    var skipNote = (skipLogArr && skipLogArr.length > 0)
+      ? ('<br><span style="color:#b45309;">ℹ️ Đã bỏ qua khi kiểm tra: ' + escapeHtml(skipLogArr.join(' | ')) + '</span>')
+      : '';
     var noteBox = document.getElementById('modelDetectNote');
-    noteBox.innerHTML = '✅ <b>' + tierBadge + '</b> — Đã chọn: <b>' + escapeHtml(bestModel) + '</b> — ' + info.desc;
+    noteBox.innerHTML = '✅ <b>' + tierBadge + '</b> — Đã chọn: <b>' + escapeHtml(bestModel) + '</b> — ' + info.desc + skipNote;
 
     if (showPopup) {
-      alert('✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!\n\n• Phân loại tài khoản: ' + tierBadge + '\n• Model tốt nhất đã chọn: ' + bestModel + '\n• Đã chặn triệt để model omni / 3.x thử nghiệm và bật tự động thử lại khi gặp quá tải 503.');
+      var popMsg = '✅ Đã kiểm tra & đồng bộ tài khoản Gemini API!
+
+• Phân loại tài khoản: ' + tierBadge + '
+• Model tốt nhất đã chọn: ' + bestModel;
+      if (skipLogArr && skipLogArr.length > 0) {
+        popMsg += '
+• Lưu ý các model bị bỏ qua: ' + skipLogArr.join(', ');
+      }
+      alert(popMsg);
     }
   }
 
-  // Quét danh sách model thực tế trong tài khoản + Ping kiểm tra sống 100% để tránh chọn nhầm model đang nghẽn (503) hoặc hết quota (429)
+  // Quét danh sách model thực tế trong tài khoản + Ping kiểm tra ưu tiên Flash chuẩn (KHÔNG nhảy sang Lite sớm)
   async function verifyAndAutoSelectModel(silent) {
     var key = sanitizeApiKey(document.getElementById('apiKey').value);
     var noteBox = document.getElementById('modelDetectNote');
@@ -1123,12 +1175,11 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       return;
     }
 
-    // Khi người dùng bấm Quét thủ công, mở khóa lại các model từng báo bận tạm thời để kiểm tra lại
     if (!silent) {
       tempBusyModelsMap = {};
     }
 
-    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra thực tế mô hình ổn định nhất...';
+    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra thực tế các model Flash chuẩn...';
     try {
       var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key), {
         method: 'GET',
@@ -1146,70 +1197,107 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       });
 
       if (rawModels.length === 0) {
-        rawModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+        rawModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
       }
 
       availableBackendModels = rawModels;
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
 
-      // Sắp xếp danh sách ứng viên chuẩn và thực hiện Ping kiểm tra nhanh (tối đa 6 ứng viên)
-      var sortedCandidates = availableBackendModels.slice().sort(function(a, b) {
+      // Tách riêng nhóm Flash/Pro chuẩn và nhóm Lite — luôn Ping nhóm chuẩn trước
+      var sortedAll = availableBackendModels.slice().sort(function(a, b) {
         return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
       });
+      var nonLiteList = sortedAll.filter(function(m) {
+        var lm = String(m).toLowerCase();
+        return lm.indexOf('lite') === -1 && lm.indexOf('8b') === -1;
+      });
+      var liteList = sortedAll.filter(function(m) {
+        var lm = String(m).toLowerCase();
+        return lm.indexOf('lite') !== -1 || lm.indexOf('8b') !== -1;
+      });
+
+      var candidatesToPing = isBlockLiteAutoEnabled()
+        ? (nonLiteList.length > 0 ? nonLiteList.slice(0, 6) : liteList.slice(0, 3))
+        : nonLiteList.slice(0, 4).concat(liteList.slice(0, 2));
 
       var verifiedModel = null;
-      for (var i = 0; i < Math.min(sortedCandidates.length, 6); i++) {
-        var cand = sortedCandidates[i];
-        if (quotaExhaustedMap[cand] || isModelTempBusy(cand)) continue;
-        var pingCtrl = new AbortController();
-        var pingTimer = setTimeout(function() { pingCtrl.abort(); }, 10000);
-        try {
-          var pingBody = {
-            contents: [{ parts: [{ text: '1' }] }],
-            generationConfig: { maxOutputTokens: 2, temperature: 0 }
-          };
-          if (supportsThinkingConfig(cand)) {
-            pingBody.generationConfig.thinkingConfig = { thinkingBudget: 0 };
-          }
-          var pingRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(cand) + ':generateContent?key=' + encodeURIComponent(key), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-            body: JSON.stringify(pingBody),
-            signal: pingCtrl.signal
-          });
-          clearTimeout(pingTimer);
-          var pingData = await safeParseResponse(pingRes);
-          if (pingData && pingData.error) {
-            var eMsg = String(pingData.error.message || '').toLowerCase();
-            if (eMsg.indexOf('quota') !== -1 || eMsg.indexOf('resource_exhausted') !== -1 || pingRes.status === 429) {
-              if (eMsg.indexOf('free_tier') !== -1) {
-                detectedAccountTier = 'FREE';
-                safeSet('g_tier', 'FREE');
+      var skipLog = [];
+
+      for (var i = 0; i < candidatesToPing.length; i++) {
+        var cand = candidatesToPing[i];
+        if (quotaExhaustedMap[cand]) { skipLog.push(cand + ' (hết lượt hôm nay)'); continue; }
+
+        // Thử tối đa 2 lần nếu gặp 503 nhất thời trên model chuẩn đầu bảng
+        var maxPingTry = (i < 2) ? 2 : 1;
+        for (var pt = 0; pt < maxPingTry; pt++) {
+          var pingCtrl = new AbortController();
+          var pingTimer = setTimeout(function() { pingCtrl.abort(); }, 10000);
+          try {
+            var pingBody = {
+              contents: [{ parts: [{ text: '1' }] }],
+              generationConfig: { maxOutputTokens: 2, temperature: 0 }
+            };
+            if (supportsThinkingConfig(cand)) {
+              pingBody.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+            }
+            var pingRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(cand) + ':generateContent?key=' + encodeURIComponent(key), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+              body: JSON.stringify(pingBody),
+              signal: pingCtrl.signal
+            });
+            clearTimeout(pingTimer);
+            var pingData = await safeParseResponse(pingRes);
+            if (pingData && pingData.error) {
+              var eMsg = String(pingData.error.message || '').toLowerCase();
+              if (eMsg.indexOf('quota') !== -1 || eMsg.indexOf('resource_exhausted') !== -1 || pingRes.status === 429) {
+                if (eMsg.indexOf('free_tier') !== -1) {
+                  detectedAccountTier = 'FREE';
+                  safeSet('g_tier', 'FREE');
+                }
+                markModelQuotaExhausted(cand);
+                skipLog.push(cand + ' (429 hết lượt)');
+                break;
               }
-              markModelQuotaExhausted(cand);
-              continue;
+              if (eMsg.indexOf('high demand') !== -1 || eMsg.indexOf('overloaded') !== -1 || pingRes.status === 503) {
+                if (pt + 1 < maxPingTry) {
+                  await new Promise(function(r) { setTimeout(r, 1200); });
+                  continue;
+                }
+                markModelTempBusy(cand);
+                skipLog.push(cand + ' (503 bận)');
+                break;
+              }
+              if (pingRes.status === 404 || eMsg.indexOf('not found') !== -1 || eMsg.indexOf('no longer available') !== -1) {
+                markModelAsDead(cand);
+                skipLog.push(cand + ' (404)');
+                break;
+              }
+              skipLog.push(cand + ' (lỗi ' + pingRes.status + ')');
+              break;
+            } else {
+              verifiedModel = cand;
+              break;
             }
-            if (eMsg.indexOf('high demand') !== -1 || eMsg.indexOf('overloaded') !== -1 || pingRes.status === 503) {
+          } catch (pingErr) {
+            clearTimeout(pingTimer);
+            if (pingErr.isQuotaError) { markModelQuotaExhausted(cand); skipLog.push(cand + ' (429)'); break; }
+            else if (pingErr.isHighDemand || pingErr.name === 'AbortError') {
+              if (pt + 1 < maxPingTry) {
+                await new Promise(function(r) { setTimeout(r, 1200); });
+                continue;
+              }
               markModelTempBusy(cand);
-              continue;
-            }
-            if (pingRes.status === 404 || eMsg.indexOf('not found') !== -1 || eMsg.indexOf('no longer available') !== -1) {
-              markModelAsDead(cand);
-              continue;
-            }
-          } else {
-            verifiedModel = cand;
+              skipLog.push(cand + ' (503/chậm)');
+              break;
+            } else if (pingErr.isModelNotFound) { markModelAsDead(cand); skipLog.push(cand + ' (404)'); break; }
             break;
           }
-        } catch (pingErr) {
-          clearTimeout(pingTimer);
-          if (pingErr.isQuotaError) markModelQuotaExhausted(cand);
-          else if (pingErr.isHighDemand || pingErr.name === 'AbortError') markModelTempBusy(cand);
-          else if (pingErr.isModelNotFound) markModelAsDead(cand);
         }
+        if (verifiedModel) break;
       }
 
-      applyBestModelSelection(availableBackendModels, !silent, verifiedModel);
+      applyBestModelSelection(availableBackendModels, !silent, verifiedModel, skipLog);
     } catch (e) {
       noteBox.innerHTML = '⚠️ Chưa đồng bộ được danh sách model: <b>' + escapeHtml(e.message) + '</b>';
       if (!silent) alert('Lỗi kiểm tra API Key: ' + e.message);
@@ -1628,6 +1716,9 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     if (safeGet('g_superdoc') !== null && document.getElementById('autoSuperDocChk')) {
       document.getElementById('autoSuperDocChk').checked = (safeGet('g_superdoc') !== '0');
     }
+    if (safeGet('g_block_lite') !== null && document.getElementById('blockLiteAutoChk')) {
+      document.getElementById('blockLiteAutoChk').checked = (safeGet('g_block_lite') !== '0');
+    }
 
     autoDetectStructureFromInputs(true);
 
@@ -1644,17 +1735,22 @@ function scoreModelForAutoSelect(modelId, prefMode) {
   // Trả về chuỗi lên tới 6 model dự phòng sạch, tự động loại trừ các model đã hết quota hôm nay hoặc đang nghẽn
   function resolveWorkingModels(uiModel) {
     var list = [];
+    var blockLite = isBlockLiteAutoEnabled();
     if (uiModel && !deadModelsMap[uiModel] && !quotaExhaustedMap[uiModel] && !isModelTempBusy(uiModel)) {
       list.push(uiModel);
     }
 
-    var highQuotaCore = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'];
+    var highQuotaCore = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
     var pool = (availableBackendModels && availableBackendModels.length > 0)
       ? availableBackendModels.concat(highQuotaCore)
       : highQuotaCore.slice();
 
     var sortedAvail = pool.filter(function(m) {
-      return !deadModelsMap[m] && !quotaExhaustedMap[m] && isSuitableGradingModel(m);
+      if (deadModelsMap[m] || quotaExhaustedMap[m] || !isSuitableGradingModel(m)) return false;
+      if (blockLite && m !== uiModel && (String(m).toLowerCase().indexOf('lite') !== -1 || String(m).toLowerCase().indexOf('8b') !== -1)) {
+        return false;
+      }
+      return true;
     }).sort(function(a, b) {
       return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
     });
@@ -1664,10 +1760,9 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     });
 
     if (list.length === 0) {
-      // Nếu tất cả đều bị đánh dấu tạm thời, mở khóa thử lại dòng 2.5-flash / 2.0-flash
-      list = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      list = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
     }
-    return list.slice(0, 6);
+    return list.slice(0, 5);
   }
 
   function safeExtractAndParseJson(data) {
@@ -4013,7 +4108,7 @@ JSON:
     return outCanvas;
   }
 
-  // Khử bóng đổ cục bộ + làm trắng nền giấy + giữ nguyên màu mực xanh/đỏ/đen + tăng độ nét (Siêu Document)
+  // SIÊU DOCUMENT GIỮ 100% NÉT CHỮ (INK-PRESERVING): Khử bóng dịu cho nền giấy, KHÔNG làm mất nét bút bi xanh/đỏ/bút chì mờ
   function enhanceSuperDocumentCanvas(canvas, mode) {
     if (mode === 'ORIG') return canvas;
     var w = canvas.width, h = canvas.height;
@@ -4021,40 +4116,19 @@ JSON:
     var imgData = ctx.getImageData(0, 0, w, h);
     var data = imgData.data;
 
-    // Bước 1: Ước lượng bản đồ ánh sáng nền giấy cục bộ (Downscale 1/16 -> Max-Pool 3x3 -> Box-Blur 2 lần)
-    var bw = Math.max(24, Math.round(w / 16));
-    var bh = Math.max(24, Math.round(h / 16));
+    // Bước 1: Ước lượng độ sáng nền giấy cục bộ bằng trung bình làm mịn (KHÔNG dùng Max-Pool gắt dễ xóa chữ mờ)
+    var bw = Math.max(24, Math.round(w / 20));
+    var bh = Math.max(24, Math.round(h / 20));
     var bgCanvas = document.createElement('canvas');
     bgCanvas.width = bw; bgCanvas.height = bh;
     var bgCtx = bgCanvas.getContext('2d');
     bgCtx.drawImage(canvas, 0, 0, bw, bh);
     var bgImg = bgCtx.getImageData(0, 0, bw, bh);
     var bgSrc = bgImg.data;
-    var bgMax = new Uint8ClampedArray(bgSrc.length);
 
-    // 3x3 Max Filter để bỏ qua nét chữ tối, chỉ lấy độ sáng thực tế của mặt giấy
-    for (var y = 0; y < bh; y++) {
-      for (var x = 0; x < bw; x++) {
-        var mr = 0, mg = 0, mb = 0;
-        for (var dy = -1; dy <= 1; dy++) {
-          var ny = y + dy;
-          if (ny < 0 || ny >= bh) continue;
-          for (var dx = -1; dx <= 1; dx++) {
-            var nx = x + dx;
-            if (nx < 0 || nx >= bw) continue;
-            var k = (ny * bw + nx) * 4;
-            if (bgSrc[k] > mr) mr = bgSrc[k];
-            if (bgSrc[k + 1] > mg) mg = bgSrc[k + 1];
-            if (bgSrc[k + 2] > mb) mb = bgSrc[k + 2];
-          }
-        }
-        var o = (y * bw + x) * 4;
-        bgMax[o] = mr; bgMax[o + 1] = mg; bgMax[o + 2] = mb; bgMax[o + 3] = 255;
-      }
-    }
-
-    // 2 lần Box-Blur 5x5 để bản đồ ánh sáng mịn tuyệt đối
-    var bufA = bgMax, bufB = new Uint8ClampedArray(bgSrc.length);
+    // Làm mịn nền bằng 2 lượt Box-Blur 5x5 (tránh lấy đỉnh trắng cực đại gây cháy nét mực)
+    var bufA = new Uint8ClampedArray(bgSrc);
+    var bufB = new Uint8ClampedArray(bgSrc.length);
     for (var pass = 0; pass < 2; pass++) {
       for (var by = 0; by < bh; by++) {
         for (var bx = 0; bx < bw; bx++) {
@@ -4081,7 +4155,6 @@ JSON:
     bgImg.data.set(bufA);
     bgCtx.putImageData(bgImg, 0, 0);
 
-    // Phóng lại bản đồ nền giấy về đúng kích thước ảnh phẳng
     var upCanvas = document.createElement('canvas');
     upCanvas.width = w; upCanvas.height = h;
     var upCtx = upCanvas.getContext('2d');
@@ -4089,74 +4162,87 @@ JSON:
     upCtx.drawImage(bgCanvas, 0, 0, w, h);
     var bgFull = upCtx.getImageData(0, 0, w, h).data;
 
-    // Bước 2: Chia ánh sáng cục bộ (Illumination Division) & kéo tương phản nét chữ
     var len = data.length;
     if (mode === 'BW') {
+      // CHẾ ĐỘ ĐẬM NÉT CHO BÚT CHÌ / MỰC MỜ: Giữ độ chuyển xám mượt, kéo đậm mọi nét tối hơn nền > 6 bậc
       for (var i = 0; i < len; i += 4) {
-        var rN = (data[i] * 255) / (bgFull[i] > 28 ? bgFull[i] : 28);
-        var gN = (data[i + 1] * 255) / (bgFull[i + 1] > 28 ? bgFull[i + 1] : 28);
-        var bN = (data[i + 2] * 255) / (bgFull[i + 2] > 28 ? bgFull[i + 2] : 28);
-        var lum = 0.299 * rN + 0.587 * gN + 0.114 * bN;
-        var v = (lum - 92) * (255 / (228 - 92));
-        if (v < 0) v = 0; else if (v > 255) v = 255;
-        data[i] = data[i + 1] = data[i + 2] = v | 0;
-      }
-    } else if (mode === 'GENTLE') {
-      // KHỬ BÓNG DỊU NHẸ: Giữ nguyên toàn bộ nét khoanh bút bi & nét gạch bỏ mảnh trên giấy cong
-      for (var g = 0; g < len; g += 4) {
-        var gbr = bgFull[g] > 36 ? bgFull[g] : 36;
-        var gbg = bgFull[g + 1] > 36 ? bgFull[g + 1] : 36;
-        var gbb = bgFull[g + 2] > 36 ? bgFull[g + 2] : 36;
-        var grn = (data[g] * 250) / gbr;
-        var ggn = (data[g + 1] * 250) / gbg;
-        var gbn = (data[g + 2] * 250) / gbb;
-        grn = (grn - 10) * (255 / 238);
-        ggn = (ggn - 10) * (255 / 238);
-        gbn = (gbn - 10) * (255 / 238);
-        data[g]     = grn < 0 ? 0 : (grn > 255 ? 255 : (grn | 0));
-        data[g + 1] = ggn < 0 ? 0 : (ggn > 255 ? 255 : (ggn | 0));
-        data[g + 2] = gbn < 0 ? 0 : (gbn > 255 ? 255 : (gbn | 0));
-      }
-      ctx.putImageData(imgData, 0, 0);
-      return canvas;
-    } else {
-      // SUPER DOCUMENT (MÀU CHUẨN AI): Nền giấy trắng tinh, giữ nguyên màu mực xanh/đỏ/đen đậm nét
-      for (var j = 0; j < len; j += 4) {
-        var br = bgFull[j] > 32 ? bgFull[j] : 32;
-        var bg = bgFull[j + 1] > 32 ? bgFull[j + 1] : 32;
-        var bb = bgFull[j + 2] > 32 ? bgFull[j + 2] : 32;
+        var r0 = data[i], g0 = data[i + 1], b0 = data[i + 2];
+        var bgLum = 0.299 * bgFull[i] + 0.587 * bgFull[i + 1] + 0.114 * bgFull[i + 2];
+        var pxLum = 0.299 * r0 + 0.587 * g0 + 0.114 * b0;
+        var maxC = r0 > g0 ? (r0 > b0 ? r0 : b0) : (g0 > b0 ? g0 : b0);
+        var minC = r0 < g0 ? (r0 < b0 ? r0 : b0) : (g0 < b0 ? g0 : b0);
+        var sat = maxC - minC;
+        var diff = bgLum - pxLum; // > 0 nếu điểm ảnh tối hơn nền giấy
 
-        var rn = (data[j] * 255) / br;
-        var gn = (data[j + 1] * 255) / bg;
-        var bn = (data[j + 2] * 255) / bb;
-
-        // Kéo trắng nền giấy (>= 236 -> 255) và kéo đậm nét mực (< 236)
-        rn = (rn - 26) * (255 / (236 - 26));
-        gn = (gn - 26) * (255 / (236 - 26));
-        bn = (bn - 26) * (255 / (236 - 26));
-
-        if (rn < 0) rn = 0; else if (rn > 255) rn = 255;
-        if (gn < 0) gn = 0; else if (gn > 255) gn = 255;
-        if (bn < 0) bn = 0; else if (bn > 255) bn = 255;
-
-        // Tăng nhẹ độ bão hòa cho các điểm mực màu (bút bi xanh/đỏ) để nổi bật trên nền trắng
-        var avg = (rn + gn + bn) * 0.3333;
-        if (avg < 225) {
-          var sat = 1.25;
-          rn = avg + (rn - avg) * sat;
-          gn = avg + (gn - avg) * sat;
-          bn = avg + (bn - avg) * sat;
-          if (rn < 0) rn = 0; else if (rn > 255) rn = 255;
-          if (gn < 0) gn = 0; else if (gn > 255) gn = 255;
-          if (bn < 0) bn = 0; else if (bn > 255) bn = 255;
+        var outV;
+        if (diff > 6 || sat > 22) {
+          // Là nét chữ / mực màu: kéo đậm mạnh nhưng không đứt nét
+          var inkStrength = Math.max(diff, sat * 0.75);
+          outV = 242 - inkStrength * 2.35;
+        } else {
+          // Nền giấy: làm sáng nhẹ nhàng về 246-252
+          outV = 246 + Math.min(8, -diff * 0.4);
         }
-        data[j] = rn | 0;
-        data[j + 1] = gn | 0;
-        data[j + 2] = bn | 0;
+        outV = outV < 12 ? 12 : (outV > 253 ? 253 : (outV | 0));
+        data[i] = data[i + 1] = data[i + 2] = outV;
+      }
+    } else {
+      // CHẾ ĐỘ MÀU CHUẨN AI ('GENTLE' & 'SUPER'): Khử bóng nhẹ trên nền + KÉO ĐẬM NÉT MỰC XANH/ĐỎ/ĐEN/BÚT CHÌ
+      // Tuyệt đối không chia ánh sáng gắt làm cháy trắng chữ viết tay!
+      var bgLiftFactor = (mode === 'GENTLE') ? 0.38 : 0.55;
+      var inkDarkenBoost = (mode === 'GENTLE') ? 1.22 : 1.38;
+
+      for (var j = 0; j < len; j += 4) {
+        var r = data[j], g = data[j + 1], b = data[j + 2];
+        var br = bgFull[j], bg = bgFull[j + 1], bb = bgFull[j + 2];
+
+        var pxL = 0.299 * r + 0.587 * g + 0.114 * b;
+        var bgL = 0.299 * br + 0.587 * bg + 0.114 * bb;
+        var maxCh = r > g ? (r > b ? r : b) : (g > b ? g : b);
+        var minCh = r < g ? (r < b ? r : b) : (g < b ? g : b);
+        var chroma = maxCh - minCh;
+
+        // Nhận diện điểm mực: tối hơn nền >= 7 bậc HOẶC có sắc màu mực (bút bi xanh/đỏ)
+        var isInk = (bgL - pxL) > 7 || chroma > 18;
+
+        if (isInk) {
+          // Điểm chữ viết tay / nét khoanh / gạch bỏ: giữ nguyên màu mực & kéo đậm nhẹ để nổi bật tuyệt đối
+          var dr = br - r;
+          var dg = bg - g;
+          var db = bb - b;
+          // Nền đích sáng dịu (242) trừ đi độ lệch mực đã khuếch đại
+          var targetBgR = br + (244 - br) * (bgLiftFactor * 0.65);
+          var targetBgG = bg + (244 - bg) * (bgLiftFactor * 0.65);
+          var targetBgB = bb + (244 - bb) * (bgLiftFactor * 0.65);
+
+          var nr = targetBgR - dr * inkDarkenBoost;
+          var ng = targetBgG - dg * inkDarkenBoost;
+          var nb = targetBgB - db * inkDarkenBoost;
+
+          // Tăng nhẹ độ bão hòa cho nét bút bi xanh/đỏ
+          if (chroma > 14) {
+            var avgM = (nr + ng + nb) * 0.3333;
+            nr = avgM + (nr - avgM) * 1.18;
+            ng = avgM + (ng - avgM) * 1.18;
+            nb = avgM + (nb - avgM) * 1.18;
+          }
+
+          data[j]     = nr < 0 ? 0 : (nr > 255 ? 255 : (nr | 0));
+          data[j + 1] = ng < 0 ? 0 : (ng > 255 ? 255 : (ng | 0));
+          data[j + 2] = nb < 0 ? 0 : (nb > 255 ? 255 : (nb | 0));
+        } else {
+          // Điểm nền giấy: chỉ nâng bóng tối dịu nhẹ về nền sáng sạch, không cháy trắng xóa nét mảnh kế bên
+          var lr = r + (246 - br) * bgLiftFactor;
+          var lg = g + (246 - bg) * bgLiftFactor;
+          var lb = b + (246 - bb) * bgLiftFactor;
+          data[j]     = lr < 0 ? 0 : (lr > 252 ? 252 : (lr | 0));
+          data[j + 1] = lg < 0 ? 0 : (lg > 252 ? 252 : (lg | 0));
+          data[j + 2] = lb < 0 ? 0 : (lb > 252 ? 252 : (lb | 0));
+        }
       }
     }
 
-    // Bước 3: Lọc sắc nét Unsharp Mask nhẹ (3x3) giúp chữ viết tay & nét khoanh sắc nét cho AI đọc
+    // Bước 3: Lọc sắc nét siêu nhẹ (0.22) giúp rõ biên nét chữ mà không gây đứt nét mảnh
     var copy = new Uint8ClampedArray(data);
     var stride = w * 4;
     for (var sy = 1; sy < h - 1; sy++) {
@@ -4166,7 +4252,7 @@ JSON:
         for (var ch = 0; ch < 3; ch++) {
           var center = copy[p + ch];
           var neighbors = (copy[p - 4 + ch] + copy[p + 4 + ch] + copy[p - stride + ch] + copy[p + stride + ch]) * 0.25;
-          var sharp = center + (center - neighbors) * 0.45;
+          var sharp = center + (center - neighbors) * 0.22;
           data[p + ch] = sharp < 0 ? 0 : (sharp > 255 ? 255 : (sharp | 0));
         }
       }
