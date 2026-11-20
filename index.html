@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v32 - Chụp HDC & Camera Giữa)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v33 - Chấm Nhanh, Chuẩn & Ổn Định)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -236,8 +236,8 @@
 
         <label style="margin-top:8px;">Chế độ ưu tiên khi tự động chọn Model theo gói tài khoản:</label>
         <div class="mode-switch">
-          <button type="button" class="mode-btn" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Hạn mức cao nhất (Lite - Siêu tốc)</button>
-          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác cao (Flash chuẩn - Khuyên dùng)</button>
+          <button type="button" class="mode-btn" id="prefQuota" onclick="setApiPrefMode('QUOTA')">⚡ Nhanh &amp; Hạn mức cao (2.0 Flash - 1500/ngày)</button>
+          <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác &amp; Nhanh (2.5 Flash - Khuyên dùng)</button>
         </div>
 
         <div class="row" style="margin-top:6px;">
@@ -252,14 +252,15 @@
           <div style="flex:0.95;">
             <label style="margin-top:2px;">Hạn mức tư duy (Thinking):</label>
             <select id="thinkingLevel" onchange="saveConfig()">
-              <option value="LOW">⚡ Tắt hẳn (0 token - Dễ nhầm gạch bỏ)</option>
-              <option value="MEDIUM" selected>🎯 Chuẩn xác (512 token - Lọc gạch bỏ tốt)</option>
-              <option value="HIGH">🧠 Sâu tối đa (1024 token - Giấy cong/nhăn)</option>
+              <option value="LOW">⚡ Tắt (0 token - 2~4s)</option>
+              <option value="FAST" selected>🎯 Nhanh &amp; Chuẩn (192 token - 4~7s, Khuyên dùng)</option>
+              <option value="MEDIUM">⚖️ Kỹ hơn (384 token - Nhiều gạch xóa)</option>
+              <option value="HIGH">🧠 Sâu tối đa (768 token - Giấy cong/tự luận dài)</option>
             </select>
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v32:</b> Thêm <b>Chụp ảnh Hướng dẫn chấm</b> trực tiếp, bố trí nút <b>Chụp ngay giữa</b> chống bấm nhầm Lưu 1 HS, Túi 50 bài &amp; Excel công thức động.
+          ⚡ <b>Bản v33:</b> Tối ưu tốc độ &amp; độ chính xác: <b>Flash 2.5 (Thinking 192t - 4~7s)</b> + <b>Flash 2.0 (1500 lượt/ngày, thay thế bản Lite hay sai)</b>, chống timeout &amp; lỗi JSON.
         </div>
       </div>
 
@@ -379,7 +380,7 @@
   <div class="card" id="sec2Card">
     <h3>📷 2. Đưa bài làm Học sinh lên chấm</h3>
     <div class="hint" style="color:#0f52ba; font-style:normal; font-weight:600; margin-bottom:6px;">
-      ✨ Tự động chấm tối đa số câu Trắc nghiệm & Tự luận tùy theo <b>Hướng dẫn chấm</b> và <b>Bài làm học sinh chụp lên</b> (Chuẩn nét 1600px — Lọc khoanh sạch &amp; bỏ gạch chéo).
+      ✨ Tự động chấm tối đa số câu Trắc nghiệm & Tự luận tùy theo <b>Hướng dẫn chấm</b> và <b>Bài làm học sinh chụp lên</b> (Chuẩn nét tối ưu 1360px — Tải nhanh, lọc khoanh sạch &amp; bỏ gạch chéo).
     </div>
 
     <div class="row">
@@ -652,7 +653,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v32_hdc_cam_center_shutter';
+  var SCHEMA_CACHE_VERSION = 'v33_fast_accurate_flash25_20';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -730,7 +731,7 @@
         safeRemove('g_quota_models');
         safeRemove('g_nothink_models');
         safeSet('g_apipref', 'BALANCED');
-        safeSet('g_think', 'MEDIUM');
+        safeSet('g_think', 'FAST');
         safeSet('g_model', 'gemini-2.5-flash');
         if (safeGet('g_mcq') === '1A, 2B, 3C, 4D, 5A, 6B, 7C, 8D') {
           safeSet('g_mcq', '');
@@ -894,7 +895,7 @@
     if (availableBackendModels.length > 0) {
       applyBestModelSelection(availableBackendModels, false);
     } else {
-      var defModel = (mode === 'QUOTA') ? 'gemini-2.5-flash-lite' : 'gemini-2.5-flash';
+      var defModel = (mode === 'QUOTA') ? 'gemini-2.0-flash' : 'gemini-2.5-flash';
       var sel = document.getElementById('aiModel');
       if (sel && Array.from(sel.options).some(function(o) { return o.value === defModel; })) {
         sel.value = defModel;
@@ -1026,11 +1027,12 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       return 150 + (isLite ? 20 : 10);
     }
 
+    // Luôn xếp dòng Flash chuẩn (2.5-flash & 2.0-flash) lên trên dòng Lite để tránh nhận diện sai câu khoanh
     var highQuotaPriority = {
-      'gemini-2.5-flash-lite': (prefMode === 'QUOTA') ? 9600 : 8900,
-      'gemini-2.5-flash':      (prefMode === 'QUOTA') ? 9300 : 9600,
-      'gemini-2.0-flash':      (prefMode === 'QUOTA') ? 9100 : 9000,
-      'gemini-2.0-flash-lite': (prefMode === 'QUOTA') ? 9000 : 8600
+      'gemini-2.5-flash':      (prefMode === 'QUOTA') ? 9350 : 9700,
+      'gemini-2.0-flash':      (prefMode === 'QUOTA') ? 9700 : 9450,
+      'gemini-2.5-flash-lite': (prefMode === 'QUOTA') ? 8700 : 8200,
+      'gemini-2.0-flash-lite': (prefMode === 'QUOTA') ? 8500 : 8000
     };
 
     if (highQuotaPriority[m] !== undefined) {
@@ -1092,7 +1094,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     var bestModel = sorted[0];
     populateModelDropdown(cleanList, bestModel);
 
-    if (!document.getElementById('thinkingLevel').value) document.getElementById('thinkingLevel').value = 'MEDIUM';
+    if (!document.getElementById('thinkingLevel').value) document.getElementById('thinkingLevel').value = 'FAST';
     saveConfig();
     updateRpdUI();
 
@@ -1148,15 +1150,23 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       for (var i = 0; i < Math.min(sortedCandidates.length, 4); i++) {
         var cand = sortedCandidates[i];
         if (quotaExhaustedMap[cand] || isModelTempBusy(cand)) continue;
+        var pingCtrl = new AbortController();
+        var pingTimer = setTimeout(function() { pingCtrl.abort(); }, 10000);
         try {
+          var pingBody = {
+            contents: [{ parts: [{ text: '1' }] }],
+            generationConfig: { maxOutputTokens: 2, temperature: 0 }
+          };
+          if (supportsThinkingConfig(cand)) {
+            pingBody.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+          }
           var pingRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(cand) + ':generateContent?key=' + encodeURIComponent(key), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: '1' }] }],
-              generationConfig: { maxOutputTokens: 1, temperature: 0 }
-            })
+            body: JSON.stringify(pingBody),
+            signal: pingCtrl.signal
           });
+          clearTimeout(pingTimer);
           var pingData = await safeParseResponse(pingRes);
           if (pingData && pingData.error) {
             var eMsg = String(pingData.error.message || '').toLowerCase();
@@ -1181,8 +1191,9 @@ function scoreModelForAutoSelect(modelId, prefMode) {
             break;
           }
         } catch (pingErr) {
+          clearTimeout(pingTimer);
           if (pingErr.isQuotaError) markModelQuotaExhausted(cand);
-          else if (pingErr.isHighDemand) markModelTempBusy(cand);
+          else if (pingErr.isHighDemand || pingErr.name === 'AbortError') markModelTempBusy(cand);
           else if (pingErr.isModelNotFound) markModelAsDead(cand);
         }
       }
@@ -1631,7 +1642,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       list.push(uiModel);
     }
 
-    var highQuotaCore = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    var highQuotaCore = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'];
     var pool = (availableBackendModels && availableBackendModels.length > 0)
       ? availableBackendModels.concat(highQuotaCore)
       : highQuotaCore.slice();
@@ -1648,7 +1659,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
 
     if (list.length === 0) {
       // Nếu tất cả đều bị đánh dấu tạm thời, mở khóa thử lại dòng 2.5-flash / 2.0-flash
-      list = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+      list = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
     }
     return list.slice(0, 6);
   }
@@ -1695,12 +1706,13 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
       throw new Error('Vui lòng dán đầy đủ API Key ở mục 1 trước khi thực hiện.');
     }
 
-    var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'MEDIUM';
+    var thinkLvl = document.getElementById('thinkingLevel') ? document.getElementById('thinkingLevel').value : 'FAST';
     var modelsToTry = resolveWorkingModels(uiModelValue);
     var lastErr = null;
 
-    var budgetMap = { 'LOW': 0, 'MEDIUM': 512, 'HIGH': 1024 };
-    var targetBudget = budgetMap[thinkLvl] !== undefined ? budgetMap[thinkLvl] : 0;
+    var budgetMap = { 'LOW': 0, 'FAST': 192, 'MEDIUM': 384, 'HIGH': 768 };
+    var targetBudget = budgetMap[thinkLvl] !== undefined ? budgetMap[thinkLvl] : 192;
+    var mediaCount = (parts || []).filter(function(p) { return !!(p && p.inline_data); }).length;
 
     for (var mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
       var curModel = modelsToTry[mIdx];
@@ -1709,17 +1721,21 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
       var useThinkParam = supportsThinkingConfig(curModel);
 
       for (var attempt = 0; attempt < 2; attempt++) {
+        var effectiveBudget = useThinkParam ? targetBudget : 0;
+        var safeOutTokens = Math.max(maxTokensOut || 2048, 2048) + effectiveBudget;
         var genConfig = {
           temperature: baseTemp,
-          maxOutputTokens: Math.max(maxTokensOut || 4096, 2048),
+          maxOutputTokens: safeOutTokens,
           responseMimeType: 'application/json'
         };
         if (useThinkParam) {
-          genConfig.thinkingConfig = { thinkingBudget: targetBudget };
+          genConfig.thinkingConfig = { thinkingBudget: effectiveBudget };
         }
 
+        // Timeout thông minh: đủ thời gian cho model có Thinking hoặc bài nhiều trang, không ngắt ngang ở 25s
+        var reqTimeoutMs = (effectiveBudget > 0 || mediaCount >= 3) ? 45000 : 28000;
         var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 25000);
+        var timeoutId = setTimeout(function() { controller.abort(); }, reqTimeoutMs);
 
         try {
           var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(curModel) + ':generateContent?key=' + encodeURIComponent(cleanKey), {
@@ -1810,7 +1826,7 @@ async function callGeminiAPI(apiKey, uiModelValue, parts, baseTemp, maxTokensOut
           }
           if (err.name === 'AbortError') {
             markModelTempBusy(curModel);
-            lastErr = new Error('Kết nối mạng quá 25 giây, đang chuyển luồng...');
+            lastErr = new Error('Model ' + curModel + ' phản hồi quá ' + Math.round(reqTimeoutMs / 1000) + 's, đang tự chuyển model nhanh hơn...');
             break;
           }
           lastErr = err;
@@ -3827,7 +3843,7 @@ JSON:
   }
 
   function encodeCanvasForAI(canvas) {
-    var du = canvas.toDataURL('image/jpeg', 0.88);
+    var du = canvas.toDataURL('image/jpeg', 0.84);
     return { mime: 'image/jpeg', base64: du.split(',')[1], dataUrl: du };
   }
 
@@ -4581,7 +4597,7 @@ JSON:
       var objUrl = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function() {
-        var canvas = document.createElement('canvas'), maxDim = 1600;
+        var canvas = document.createElement('canvas'), maxDim = 1360;
         var w = img.width, h = img.height;
         if (w > maxDim || h > maxDim) {
           if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
@@ -6219,7 +6235,7 @@ JSON:
     }
 
     var vw = video.videoWidth, vh = video.videoHeight;
-    var maxDim = 1600;
+    var maxDim = 1360;
     var cw = vw, ch = vh;
     if (cw > maxDim || ch > maxDim) {
       if (cw >= ch) { ch = Math.round(ch * (maxDim / cw)); cw = maxDim; }
@@ -6560,14 +6576,12 @@ JSON:
           backupInstruction = '. Nếu ở câu trắc nghiệm nào học sinh không ghi chữ cái A,B,C,D mà chỉ viết nội dung đáp án đúng bản chất khoa học của câu đó thì quy đổi về chữ cái đáp án đúng tương ứng';
         }
         var circleRules = (examMode === 'CIRCLE')
-          ? ('QUY TẮC NHẬN DIỆN KHOANH TRÒN & BỎ QUA GẠCH BỎ (BẮT BUỘC TUÂN THỦ 100%): ' +
-             '(1) CHỐNG LỆCH HÀNG TRÊN GIẤY CONG/NGHIÊNG: Luôn dò đúng nhãn số câu in trên giấy (Câu 1, Câu 2...) và đọc trực tiếp 4 phương án A, B, C, D thuộc đúng khối câu đó, TUYỆT ĐỐI không đoán theo hàng ngang ước lượng. ' +
-             '(2) CHỈ NHẬN KHOANH SẠCH: Chỉ chọn chữ cái A, B, C hoặc D có nét khoanh tròn SẠCH bằng bút mực/bút chì bao quanh rõ ràng và KHÔNG bị bất kỳ nét gạch nào đè lên. ' +
-             '(3) BỎ QUA TUYỆT ĐỐI ĐÁP ÁN BỊ GẠCH BỎ: Nếu một chữ cái A/B/C/D bị gạch chéo (X), gạch ngang (—), gạch xiên (/ hoặc \\), gạch đè nhiều nét, tô đè xóa bỏ, hoặc ĐÃ KHOANH TRÒN NHƯNG CÓ NÉT GẠCH CHÉO/GẠCH NGANG ĐÈ LÊN VÒNG KHOANH thì COI NHƯ HỌC SINH ĐÃ HỦY PHƯƠNG ÁN ĐÓ — TUYỆT ĐỐI KHÔNG ĐƯỢC CHỌN. ' +
-             '(4) Nếu 1 câu có 1 chữ cái bị gạch bỏ và 1 chữ cái khác được khoanh tròn sạch -> CHỈ xuất chữ cái khoanh sạch. ' +
-             '(5) Nếu 1 câu học sinh khoanh rồi gạch bỏ hết mà KHÔNG khoanh phương án mới -> xuất "_" (bỏ trống). Nếu khoanh sạch từ 2 phương án trở lên không gạch bỏ cái nào -> xuất "_". ' +
-             '(6) CHỈ đọc đúng dấu khoanh thực tế trên ảnh, KHÔNG tự giải đề hay tự đoán đáp án đúng')
-          : ('Đọc chính xác chữ cái A, B, C, D viết tay theo đúng số thứ tự câu trên giấy (dù giấy cong/nghiêng). BỎ QUA TUYỆT ĐỐI mọi đáp án bị gạch bỏ, gạch chéo (X), gạch ngang hoặc xóa đè; chỉ lấy đáp án viết sạch còn lại. Nếu gạch bỏ hết không viết lại -> ghi "_"');
+          ? ('LUẬT ĐỌC KHOANH SẠCH (BẮT BUỘC): ' +
+             '1) Dò đúng số câu in trên giấy (Câu 1, Câu 2...) rồi xét 4 đáp án A/B/C/D ngay dưới câu đó (chống lệch hàng trên giấy cong). ' +
+             '2) CHỈ chọn chữ cái có vòng khoanh tròn/đánh dấu SẠCH bằng bút mực hoặc bút chì, không bị gạch đè. ' +
+             '3) BỎ QUA TUYỆT ĐỐI phương án bị gạch chéo (X), gạch ngang (—), gạch xiên (/), tô xóa hoặc vòng khoanh bị gạch đè. ' +
+             '4) Gạch bỏ hết không khoanh mới hoặc khoanh sạch >=2 đáp án -> ghi "_". Chỉ đọc dấu khoanh thực tế, KHÔNG tự giải đề')
+          : ('Đọc chữ cái A/B/C/D viết tay theo đúng số câu trên giấy; BỎ QUA mọi đáp án bị gạch bỏ/gạch chéo/xóa đè; gạch bỏ hết không viết lại -> ghi "_"');
         promptLines.push('- "mcq": Kiểm tra kỹ TỪNG CÂU trong danh sách [' + expectedMcqNums.join(',') + '] theo nguyên tắc: ' + circleRules + backupInstruction + '. Xuất kết quả dạng chuỗi liền "1A 2B 3C..." (câu bỏ trống hoặc bị gạch hết ghi "1_"). Nếu ảnh hoàn toàn KHÔNG có phần trắc nghiệm ABCD thì để ""');
         jsonSchemaExample.mcq = "";
       }
@@ -6604,7 +6618,7 @@ JSON:
       aiData = JSON.parse(JSON.stringify(gradingCacheMap[cacheSig]));
       fromCache = true;
     } else {
-      aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.0, 1024);
+      aiData = await callGeminiAPI(apiKey, selectedModel, parts, 0.0, 1536);
       gradingCacheMap[cacheSig] = JSON.parse(JSON.stringify(aiData));
     }
 
