@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Chấm Bài KT By TVB CVA-HD-CM (v36 - Sửa Lỗi API Auto & Siêu Document Giữ 100% Chữ)</title>
+<title>Chấm Bài KT By TVB CVA-HD-CM (v37 - Chặn Gói 20 Lượt/Ngày & Ưu Tiên Flash Chuẩn)</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
@@ -240,8 +240,8 @@
           <button type="button" class="mode-btn active" id="prefBalanced" onclick="setApiPrefMode('BALANCED')">🎯 Chuẩn xác cao (2.5 Flash / Pro - Khuyên dùng)</button>
         </div>
         <label style="margin-top:6px; font-weight:600; font-size:12px; color:#0f52ba; display:flex; align-items:center; gap:6px; cursor:pointer;">
-          <input type="checkbox" id="blockLiteAutoChk" checked onchange="onToggleBlockLitePref()" style="width:16px; height:16px; margin:0; accent-color:#0f52ba;">
-          <span>🚫 Không tự động chọn các bản <b>Lite</b> khi quét API (Tránh nhận diện sai câu khoanh &amp; chữ viết)</span>
+          <input type="checkbox" id="blockLowQuotaAutoChk" checked onchange="onToggleBlockLowQuotaPref()" style="width:16px; height:16px; margin:0; accent-color:#0f52ba;">
+          <span>🚫 Chặn tự chọn gói <b>giới hạn ~20 lượt/ngày</b> (<code>preview</code> / <code>3.x</code> / <code>pro</code>) — Chỉ auto chọn model hạn mức cao</span>
         </label>
 
         <div class="row" style="margin-top:6px;">
@@ -264,7 +264,7 @@
           </div>
         </div>
         <div id="modelDetectNote" class="model-detect-note">
-          ⚡ <b>Bản v36:</b> Sửa lỗi nhận diện tự động mọi độ dài <b>API Key (39 / 52 / 53+ ký tự)</b>, khóa <b>Auto Quét ưu tiên Flash chuẩn</b> (không tự nhảy bản Lite) &amp; <b>Siêu Document giữ 100% nét chữ</b>.
+          ⚡ <b>Bản v37:</b> Chặn tuyệt đối các gói <b>giới hạn ~20 lượt/ngày (preview / 3.x / pro)</b> khỏi Auto Quét; luôn kiểm tra nhóm <b>Flash chuẩn hạn mức cao (2.5-flash / flash-latest / 2.0-flash)</b> trước tiên.
         </div>
       </div>
 
@@ -657,7 +657,7 @@
   </div>
 
 <script>
-  var SCHEMA_CACHE_VERSION = 'v36_fix_api_auto_ink_preserve';
+  var SCHEMA_CACHE_VERSION = 'v37_block_20rpd_preview_models';
   var memStore = {};
   function safeSet(k, v) { memStore[k] = v; try { window.localStorage.setItem(k, v); } catch (e) {} }
   function safeGet(k) { try { var v = window.localStorage.getItem(k); if (v !== null) return v; } catch (e) {} return memStore[k] || null; }
@@ -895,14 +895,14 @@
     }
   }
 
-  function isBlockLiteAutoEnabled() {
-    var chk = document.getElementById('blockLiteAutoChk');
+  function isBlockLowQuotaAutoEnabled() {
+    var chk = document.getElementById('blockLowQuotaAutoChk');
     return chk ? chk.checked : true;
   }
 
-  function onToggleBlockLitePref() {
-    var chk = document.getElementById('blockLiteAutoChk');
-    safeSet('g_block_lite', (chk && !chk.checked) ? '0' : '1');
+  function onToggleBlockLowQuotaPref() {
+    var chk = document.getElementById('blockLowQuotaAutoChk');
+    safeSet('g_block_lowq', (chk && !chk.checked) ? '0' : '1');
     if (availableBackendModels.length > 0) {
       applyBestModelSelection(availableBackendModels, false);
     }
@@ -1045,53 +1045,44 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     var isPro = (m.indexOf('pro') !== -1);
     var isPreview = (m.indexOf('preview') !== -1);
     var isLowQ = isLowFreeQuotaModel(modelId);
-    var blockLite = isBlockLiteAutoEnabled();
+    var blockLowQ = isBlockLowQuotaAutoEnabled() && (detectedAccountTier !== 'PAID');
 
-    // 1. Ưu tiên tuyệt đối các model Flash chuẩn (KHÔNG phải Lite)
-    var exactPriority = {
-      'gemini-2.5-flash':    (prefMode === 'QUOTA') ? 9650 : 9950,
-      'gemini-flash-latest': (prefMode === 'QUOTA') ? 9550 : 9800,
-      'gemini-2.0-flash':    (prefMode === 'QUOTA') ? 9850 : 9600
-    };
-    if (exactPriority[m] !== undefined) {
-      return exactPriority[m];
+    // HẠNG 3 (THẤP NHẤT): Các model giới hạn ~20 lượt/ngày (preview, 3.x, 4.x, pro) trên gói Free
+    // TUYỆT ĐỐI không được xếp trên bất kỳ model hạn mức cao nào!
+    if (isLowQ || isPreview || isPro) {
+      if (blockLowQ) return isFlash ? 250 : 100;
+      return isFlash ? 1500 : 800;
     }
 
-    // 2. Các model Flash chuẩn khác (không phải Lite, không phải 3.x/4.x/preview)
-    if (isFlash && !isLowQ && !isPreview) {
+    // HẠNG 1 (CAO NHẤT): Các model Flash chuẩn hạn mức lớn (KHÔNG phải Lite, KHÔNG phải preview/3.x)
+    var exactFlashPriority = {
+      'gemini-2.5-flash':    (prefMode === 'QUOTA') ? 9750 : 9950,
+      'gemini-flash-latest': (prefMode === 'QUOTA') ? 9650 : 9800,
+      'gemini-2.0-flash':    (prefMode === 'QUOTA') ? 9950 : 9600
+    };
+    if (exactFlashPriority[m] !== undefined) {
+      return exactFlashPriority[m];
+    }
+    if (isFlash) {
       return 9300;
     }
 
-    // 3. Model Pro ổn định (dự phòng chất lượng cao khi BALANCED nếu Flash chuẩn bị bận)
-    if (isPro && !isPreview && m.indexOf('gemini-2.5-pro') === 0) {
-      return (prefMode === 'BALANCED') ? 7800 : 1200;
-    }
-    if (isPro) {
-      return (prefMode === 'BALANCED') ? 6500 : 500;
-    }
-
-    // 4. Các model Flash preview / 3.x (vẫn đọc chữ tốt hơn Lite trong chế độ BALANCED)
-    if (isFlash) {
-      return (prefMode === 'BALANCED') ? 5500 : 4500;
-    }
-
-    // 5. Các bản Lite: hạ điểm xuống rất thấp để không bao giờ tự chọn đè lên Flash chuẩn
+    // HẠNG 2 (DỰ PHÒNG HẠN MỨC CAO 1500 LƯỢT/NGÀY): Flash Lite ổn định (chỉ dùng khi toàn bộ Flash chuẩn Hạng 1 không khả dụng)
     if (isLite) {
-      if (blockLite) return 200;
-      if (m === 'gemini-2.5-flash-lite') return (prefMode === 'QUOTA') ? 3200 : 1500;
-      if (m === 'gemini-flash-lite-latest') return (prefMode === 'QUOTA') ? 3100 : 1400;
-      if (m === 'gemini-2.0-flash-lite') return (prefMode === 'QUOTA') ? 3000 : 1300;
-      return 1000;
+      if (m === 'gemini-2.5-flash-lite') return 4500;
+      if (m === 'gemini-flash-lite-latest') return 4300;
+      if (m === 'gemini-2.0-flash-lite') return 4100;
+      return 3800;
     }
 
-    return 2500;
+    return 2000;
   }
 
   function populateModelDropdown(modelsList, selectedModelId) {
     var sel = document.getElementById('aiModel');
     if (!sel) return;
 
-    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
     var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
 
     defaultSafeModels.forEach(function(dm) {
@@ -1119,8 +1110,12 @@ function scoreModelForAutoSelect(modelId, prefMode) {
   }
 
   function applyBestModelSelection(modelsList, showPopup, preferredVerifiedModel, skipLogArr) {
-    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+    var defaultSafeModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
     var baseList = (modelsList && modelsList.length > 0) ? modelsList.slice() : defaultSafeModels.slice();
+    defaultSafeModels.forEach(function(dm) {
+      if (baseList.indexOf(dm) === -1 && !deadModelsMap[dm]) baseList.push(dm);
+    });
+
     var cleanList = baseList.filter(function(m) { return !deadModelsMap[m] && isSuitableGradingModel(m); });
     if (cleanList.length === 0) cleanList = defaultSafeModels.slice();
 
@@ -1133,13 +1128,12 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       bestModel = preferredVerifiedModel;
     }
 
-    // Nếu đang bật chặn Lite mà bestModel vẫn là Lite trong khi có Flash chuẩn chưa chết -> giữ Flash chuẩn làm mặc định
-    if (isBlockLiteAutoEnabled() && String(bestModel).toLowerCase().indexOf('lite') !== -1) {
-      var nonLiteFallback = sorted.find(function(m) {
-        var lm = String(m).toLowerCase();
-        return lm.indexOf('lite') === -1 && lm.indexOf('8b') === -1 && !deadModelsMap[m] && !quotaExhaustedMap[m];
+    // Chặn tuyệt đối không cho auto chọn model giới hạn 20 lượt/ngày (preview / 3.x / pro) nếu vẫn còn model hạn mức cao
+    if (isBlockLowQuotaAutoEnabled() && detectedAccountTier !== 'PAID' && isLowFreeQuotaModel(bestModel)) {
+      var highQuotaFallback = sorted.find(function(m) {
+        return !isLowFreeQuotaModel(m) && !deadModelsMap[m] && !quotaExhaustedMap[m];
       });
-      if (nonLiteFallback) bestModel = nonLiteFallback;
+      if (highQuotaFallback) bestModel = highQuotaFallback;
     }
 
     populateModelDropdown(cleanList, bestModel);
@@ -1152,7 +1146,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     updateRpdUI();
 
     var info = classifyGeminiModel(bestModel);
-    var tierBadge = (detectedAccountTier === 'PAID') ? 'Gói Trả phí (Paid Tier)' : 'Gói Miễn phí (Free Tier)';
+    var tierBadge = (detectedAccountTier === 'PAID') ? 'Gói Trả phí (Paid Tier)' : 'Gói Miễn phí (Free Tier - Chặn gói 20 lượt/ngày)';
     var skipNote = (skipLogArr && skipLogArr.length > 0)
       ? ('<br><span style="color:#b45309;">ℹ️ Đã bỏ qua khi kiểm tra: ' + escapeHtml(skipLogArr.join(' | ')) + '</span>')
       : '';
@@ -1168,7 +1162,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     }
   }
 
-  // Quét danh sách model thực tế trong tài khoản + Ping kiểm tra ưu tiên Flash chuẩn (KHÔNG nhảy sang Lite sớm)
+  // Quét danh sách model thực tế trong tài khoản + luôn ưu tiên Ping nhóm Flash chuẩn hạn mức cao trước, tuyệt đối KHÔNG auto chọn gói 20 lượt/ngày
   async function verifyAndAutoSelectModel(silent) {
     var key = sanitizeApiKey(document.getElementById('apiKey').value);
     var noteBox = document.getElementById('modelDetectNote');
@@ -1181,7 +1175,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
       tempBusyModelsMap = {};
     }
 
-    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra thực tế các model Flash chuẩn...';
+    noteBox.innerHTML = '⏳ Đang quét tài khoản API & kiểm tra các model Flash hạn mức cao...';
     try {
       var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key), {
         method: 'GET',
@@ -1198,29 +1192,44 @@ function scoreModelForAutoSelect(modelId, prefMode) {
         return m.name.replace('models/', '');
       });
 
-      if (rawModels.length === 0) {
-        rawModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
-      }
+      // Luôn gộp thêm các model Flash chuẩn ổn định vào danh sách ứng viên Ping (phòng trường hợp API list ẩn alias)
+      var coreStableModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
+      coreStableModels.forEach(function(cm) {
+        if (rawModels.indexOf(cm) === -1 && !deadModelsMap[cm]) {
+          rawModels.push(cm);
+        }
+      });
 
       availableBackendModels = rawModels;
       safeSet('g_avail_models', JSON.stringify(availableBackendModels));
 
-      // Tách riêng nhóm Flash/Pro chuẩn và nhóm Lite — luôn Ping nhóm chuẩn trước
       var sortedAll = availableBackendModels.slice().sort(function(a, b) {
         return scoreModelForAutoSelect(b, apiPrefMode) - scoreModelForAutoSelect(a, apiPrefMode);
       });
-      var nonLiteList = sortedAll.filter(function(m) {
+
+      // Tách rõ 3 tầng:
+      // Tầng 1: Flash chuẩn hạn mức cao (KHÔNG lite, KHÔNG preview/3.x/pro)
+      // Tầng 2: Flash Lite hạn mức cao (1500 lượt/ngày - dự phòng khi Tầng 1 hết lượt hoặc bị Google khóa)
+      // Tầng 3: Các bản giới hạn ~20 lượt/ngày (preview / 3.x / pro) -> CHẶN không đưa vào Auto Ping khi bật khóa!
+      var tier1Flash = sortedAll.filter(function(m) {
         var lm = String(m).toLowerCase();
-        return lm.indexOf('lite') === -1 && lm.indexOf('8b') === -1;
+        return !isLowFreeQuotaModel(m) && lm.indexOf('lite') === -1 && lm.indexOf('8b') === -1;
       });
-      var liteList = sortedAll.filter(function(m) {
+      var tier2HighQuotaLite = sortedAll.filter(function(m) {
         var lm = String(m).toLowerCase();
-        return lm.indexOf('lite') !== -1 || lm.indexOf('8b') !== -1;
+        return !isLowFreeQuotaModel(m) && (lm.indexOf('lite') !== -1 || lm.indexOf('8b') !== -1);
+      });
+      var tier3LowQuota = sortedAll.filter(function(m) {
+        return isLowFreeQuotaModel(m);
       });
 
-      var candidatesToPing = isBlockLiteAutoEnabled()
-        ? (nonLiteList.length > 0 ? nonLiteList.slice(0, 6) : liteList.slice(0, 3))
-        : nonLiteList.slice(0, 4).concat(liteList.slice(0, 2));
+      var candidatesToPing = tier1Flash.slice(0, 4).concat(tier2HighQuotaLite.slice(0, 3));
+      if (!isBlockLowQuotaAutoEnabled() || detectedAccountTier === 'PAID') {
+        candidatesToPing = candidatesToPing.concat(tier3LowQuota.slice(0, 2));
+      }
+      if (candidatesToPing.length === 0) {
+        candidatesToPing = sortedAll.slice(0, 4);
+      }
 
       var verifiedModel = null;
       var skipLog = [];
@@ -1229,7 +1238,6 @@ function scoreModelForAutoSelect(modelId, prefMode) {
         var cand = candidatesToPing[i];
         if (quotaExhaustedMap[cand]) { skipLog.push(cand + ' (hết lượt hôm nay)'); continue; }
 
-        // Thử tối đa 2 lần nếu gặp 503 nhất thời trên model chuẩn đầu bảng
         var maxPingTry = (i < 2) ? 2 : 1;
         for (var pt = 0; pt < maxPingTry; pt++) {
           var pingCtrl = new AbortController();
@@ -1718,8 +1726,8 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     if (safeGet('g_superdoc') !== null && document.getElementById('autoSuperDocChk')) {
       document.getElementById('autoSuperDocChk').checked = (safeGet('g_superdoc') !== '0');
     }
-    if (safeGet('g_block_lite') !== null && document.getElementById('blockLiteAutoChk')) {
-      document.getElementById('blockLiteAutoChk').checked = (safeGet('g_block_lite') !== '0');
+    if (safeGet('g_block_lowq') !== null && document.getElementById('blockLowQuotaAutoChk')) {
+      document.getElementById('blockLowQuotaAutoChk').checked = (safeGet('g_block_lowq') !== '0');
     }
 
     autoDetectStructureFromInputs(true);
@@ -1737,19 +1745,19 @@ function scoreModelForAutoSelect(modelId, prefMode) {
   // Trả về chuỗi lên tới 6 model dự phòng sạch, tự động loại trừ các model đã hết quota hôm nay hoặc đang nghẽn
   function resolveWorkingModels(uiModel) {
     var list = [];
-    var blockLite = isBlockLiteAutoEnabled();
+    var blockLowQ = isBlockLowQuotaAutoEnabled() && (detectedAccountTier !== 'PAID');
     if (uiModel && !deadModelsMap[uiModel] && !quotaExhaustedMap[uiModel] && !isModelTempBusy(uiModel)) {
       list.push(uiModel);
     }
 
-    var highQuotaCore = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+    var highQuotaCore = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest'];
     var pool = (availableBackendModels && availableBackendModels.length > 0)
       ? availableBackendModels.concat(highQuotaCore)
       : highQuotaCore.slice();
 
     var sortedAvail = pool.filter(function(m) {
       if (deadModelsMap[m] || quotaExhaustedMap[m] || !isSuitableGradingModel(m)) return false;
-      if (blockLite && m !== uiModel && (String(m).toLowerCase().indexOf('lite') !== -1 || String(m).toLowerCase().indexOf('8b') !== -1)) {
+      if (blockLowQ && m !== uiModel && isLowFreeQuotaModel(m)) {
         return false;
       }
       return true;
@@ -1762,7 +1770,7 @@ function scoreModelForAutoSelect(modelId, prefMode) {
     });
 
     if (list.length === 0) {
-      list = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+      list = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
     }
     return list.slice(0, 5);
   }
